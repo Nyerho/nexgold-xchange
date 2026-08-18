@@ -1,0 +1,55 @@
+# ================================
+# NEXGOLD EXCHANGE .gitignore
+# ================================
+
+# Reference / design archive (huge, not part of app)
+superverse/
+superverse copy/
+
+# Firebase Admin SDK private key (NEVER commit this)
+*.json
+!package.json
+!firebase.json
+!.firebaserc
+
+# Local env / secrets
+.env
+.env.local
+.env.*.local
+.secret
+*.key
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Firebase CLI
+.firebase/
+.firebaserc.bak
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Builds / logs
+build/
+dist/
+logs/
+*.log
+
+# Temporary
+*.tmp
+*.bak
+cache/

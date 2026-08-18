@@ -1,0 +1,13 @@
+{
+  "projects": {
+    "default": "nexgoldxchange",
+    "production": "nexgoldxchange"
+  },
+  "targets": {
+    "nexgoldxchange": {
+      "hosting": {
+        "nexgoldxchange": ["nexgoldxchange"]
+      }
+    }
+  }
+}

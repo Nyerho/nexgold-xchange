@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | NEXGOLD EXCHANGE</title>
+    
+    <!-- Bootstrap 5.3 CSS CDN -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    
+    <!-- jsPDF CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body data-page="dashboard" class="bg-pattern">
+
+    <!-- ========================================
+         TOP NAVBAR
+         ======================================== -->
+    <nav class="navbar navbar-expand-lg navbar-nexgold" style="padding:12px 0;">
+        <div class="container-fluid" style="padding:0 30px;">
+            <button id="mobileMenuToggle" class="navbar-toggler navbar-toggler-nexgold d-lg-none me-3 mobile-menu-btn" type="button">
+                <i class="bi bi-list text-gold"></i>
+            </button>
+
+            <a class="navbar-brand navbar-brand-nexgold" href="index.html">
+                <i class="bi bi-hexagon-fill"></i>NEXGOLD
+            </a>
+
+            <div class="ms-auto d-flex align-items-center gap-3">
+                <div class="d-none d-md-flex align-items-center gap-2 px-4 py-2 rounded-pill" style="background:rgba(212,175,55,0.08);border:1px solid rgba(212,175,55,0.2);">
+                    <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;box-shadow:0 0 10px #22c55e;"></span>
+                    <span style="font-size:13px;color:#b0b0b0;">Spot Price: <strong class="live-price text-gold">$65.00 USD/g</strong></span>
+                </div>
+
+                <div class="dropdown">
+                    <button class="btn d-flex align-items-center gap-2" style="border:1px solid var(--border-color);border-radius:12px;padding:8px 12px 8px 8px;background:var(--bg-card);color:white;">
+                        <div style="width:36px;height:36px;background:linear-gradient(135deg,#D4AF37,#B4941F);border-radius:50%;display:flex;align-items:center;justify-content:center;color:#000;font-weight:800;" id="userAvatar">J</div>
+                        <div class="d-none d-sm-block text-start">
+                            <div style="font-size:13px;font-weight:600;line-height:1.2;" id="welcomeName">User</div>
+                            <div style="font-size:11px;color:#6c757d;">Account Holder</div>
+                        </div>
+                        <i class="bi bi-chevron-down" style="color:#6c757d;font-size:12px;"></i>
+                    </button>
+                </div>
+
+                <button onclick="Auth.logout()" class="btn-sm-danger" style="text-decoration:none;">
+                    <i class="bi bi-box-arrow-right me-1"></i>Logout
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-wrapper" style="padding-top:80px;">
+        <!-- ========================================
+             SIDEBAR
+             ======================================== -->
+        <aside id="sidebar" class="sidebar">
+            <div style="padding:0 12px 20px;margin-bottom:20px;border-bottom:1px solid var(--border-color);">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6c757d;margin-bottom:16px;">Main Menu</div>
+                <a class="sidebar-link active" data-target="overviewSection">
+                    <i class="bi bi-speedometer2"></i> Overview
+                </a>
+                <a class="sidebar-link" data-target="tradeSection">
+                    <i class="bi bi-arrow-left-right"></i> Buy / Sell
+                </a>
+                <a class="sidebar-link" data-target="historySection">
+                    <i class="bi bi-journal-text"></i> Transactions
+                </a>
+                <a class="sidebar-link" data-target="calcSection">
+                    <i class="bi bi-calculator"></i> Investment Calc
+                </a>
+                <a class="sidebar-link" data-target="certsSection">
+                    <i class="bi bi-file-earmark-pdf"></i> Certificates
+                </a>
+            </div>
+
+            <div style="padding:0 12px 20px;margin-bottom:20px;border-bottom:1px solid var(--border-color);">
+                <div style="font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:#6c757d;margin-bottom:16px;">Accounts</div>
+                <a class="sidebar-link" data-target="transferSection">
+                    <i class="bi bi-arrow-left-right"></i> Transfer Bonus
+                </a>
+                <a class="sidebar-link" href="#market">
+                    <i class="bi bi-graph-up"></i> Live Market
+                </a>
+                <a class="sidebar-link" href="index.html#contact">
+                    <i class="bi bi-headset"></i> Support
+                </a>
+            </div>
+
+            <div class="p-3 rounded" style="background:linear-gradient(135deg, rgba(212,175,55,0.15), rgba(212,175,55,0.05));border:1px solid rgba(212,175,55,0.3);">
+                <i class="bi bi-shield-check" style="font-size:22px;color:#D4AF37;"></i>
+                <h6 style="margin:10px 0 4px;font-weight:700;">Assets Insured</h6>
+                <p style="font-size:12px;color:#6c757d;margin:0 0 10px;">Lloyd's of London + Brink's custody</p>
+                <button onclick="window.location.href='index.html'" class="btn-sm-gold w-100" style="font-size:12px;">Learn More</button>
+            </div>
+        </aside>
+
+        <!-- ========================================
+             DASHBOARD CONTENT
+             ======================================== -->
+        <main class="dashboard-content">
+
+            <!-- ============ OVERVIEW SECTION ============ -->
+            <section id="overviewSection" class="dashboard-section">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 style="font-weight:800;margin-bottom:4px;">Welcome back, <span id="welcomeHeader" class="gold-gradient">Investor</span> 👋</h2>
+                        <p style="color:#6c757d;margin:0;">Here's what's happening with your gold portfolio today.</p>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button onclick="document.querySelector('[data-target=tradeSection]').click()" class="btn btn-gold">
+                            <i class="bi bi-gem me-2"></i>Buy Gold
+                        </button>
+                        <button onclick="window.location.href='index.html#market'" class="btn btn-outline-gold">
+                            <i class="bi bi-graph-up me-2"></i>Live Market
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Wallet Cards -->
+                <div class="row g-4 mb-5">
+                    <div class="col-lg-4">
+                        <div class="wallet-card main" id="mainWalletCard">
+                            <div class="wallet-header">
+                                <div class="wallet-icon">
+                                    <i class="bi bi-wallet2"></i>
+                                </div>
+                                <span class="badge rounded-pill px-3 py-1" style="background:rgba(212,175,55,0.15);color:#D4AF37;font-size:11px;border:1px solid rgba(212,175,55,0.3);">
+                                    <i class="bi bi-lightning me-1"></i>LIQUID
+                                </span>
+                            </div>
+                            <div class="wallet-label">Main Wallet</div>
+                            <div class="wallet-balance-grams">0.0000 g</div>
+                            <div class="wallet-balance-usd">≈ USD <span class="amount">$0.00</span></div>
+                            <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;">
+                                <button onclick="document.querySelector('[data-target=tradeSection]').click()" style="background:transparent;border:none;color:#D4AF37;font-weight:600;font-size:13px;cursor:pointer;padding:0;">
+                                    <i class="bi bi-plus-circle me-1"></i>Add Gold
+                                </button>
+                                <button onclick="document.querySelector('[data-target=tradeSection]').click()" style="background:transparent;border:none;color:#b0b0b0;font-weight:600;font-size:13px;cursor:pointer;padding:0;">
+                                    <i class="bi bi-dash-circle me-1"></i>Sell
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="wallet-card vault" id="vaultWalletCard">
+                            <div class="wallet-header">
+                                <div class="wallet-icon">
+                                    <i class="bi bi-safe2"></i>
+                                </div>
+                                <span class="badge rounded-pill px-3 py-1" style="background:rgba(59,130,246,0.15);color:#60a5fa;font-size:11px;border:1px solid rgba(59,130,246,0.3);">
+                                    <i class="bi bi-lock me-1"></i>SECURE
+                                </span>
+                            </div>
+                            <div class="wallet-label">Vault Storage</div>
+                            <div class="wallet-balance-grams">0.0000 g</div>
+                            <div class="wallet-balance-usd">≈ USD <span class="amount">$0.00</span></div>
+                            <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border-color);">
+                                <span style="font-size:12px;color:#6c757d;">
+                                    <i class="bi bi-info-circle me-1" style="color:#60a5fa;"></i>
+                                    Long-term holding. Admin credited.
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-4">
+                        <div class="wallet-card bonus" id="bonusWalletCard">
+                            <div class="wallet-header">
+                                <div class="wallet-icon">
+                                    <i class="bi bi-gift"></i>
+                                </div>
+                                <span class="badge rounded-pill px-3 py-1" style="background:rgba(16,185,129,0.15);color:#34d399;font-size:11px;border:1px solid rgba(16,185,129,0.3);">
+                                    <i class="bi bi-star me-1"></i>BONUS
+                                </span>
+                            </div>
+                            <div class="wallet-label">Bonus Rewards</div>
+                            <div class="wallet-balance-grams">0.0000 g</div>
+                            <div class="wallet-balance-usd">≈ USD <span class="amount">$0.00</span></div>
+                            <div style="margin-top:20px;padding-top:20px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;">
+                                <button onclick="document.querySelector('[data-target=transferSection]').click()" style="background:transparent;border:none;color:#34d399;font-weight:600;font-size:13px;cursor:pointer;padding:0;">
+                                    <i class="bi bi-arrow-left-right me-1"></i>Transfer to Main
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Summary + Recent Transactions -->
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="table-card">
+                            <div class="table-card-header">
+                                <h4><i class="bi bi-graph-up-arrow text-gold me-2"></i>Portfolio Performance</h4>
+                                <select class="form-select-nexgold" style="width:auto;padding:8px 14px;font-size:13px;">
+                                    <option>Last 7 Days</option>
+                                    <option>Last 30 Days</option>
+                                    <option>Last 90 Days</option>
+                                    <option>All Time</option>
+                                </select>
+                            </div>
+                            <div style="padding:24px 28px;">
+                                <canvas id="portfolioChart" height="220"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-5">
+                        <div class="table-card">
+                            <div class="table-card-header">
+                                <h4><i class="bi bi-clock-history text-gold me-2"></i>Recent Activity</h4>
+                                <button onclick="document.querySelector('[data-target=historySection]').click()" style="background:transparent;border:none;color:#D4AF37;font-weight:600;font-size:13px;cursor:pointer;">
+                                    View All <i class="bi bi-arrow-right ms-1"></i>
+                                </button>
+                            </div>
+                            <div id="recentActivityList" style="padding:8px 0;">
+                                <div class="empty-state" style="padding:40px 20px;">
+                                    <i class="bi bi-journal-x"></i>
+                                    <h5>No Activity Yet</h5>
+                                    <p style="font-size:13px;">Buy gold to see your transactions here.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Last 10 Transactions Table - Brief -->
+                <div class="table-card mt-4">
+                    <div class="table-card-header">
+                        <h4><i class="bi bi-table text-gold me-2"></i>Transaction History</h4>
+                        <span style="font-size:13px;color:#6c757d;">Last 10 transactions</span>
+                    </div>
+                    <div id="transactionHistory" style="overflow-x:auto;">
+                        <div class="empty-state" style="padding:60px 20px;">
+                            <i class="bi bi-journal-x"></i>
+                            <h5>No Transactions Yet</h5>
+                            <p>Your transaction history will appear here after your first purchase.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ BUY / SELL SECTION ============ -->
+            <section id="tradeSection" class="dashboard-section" style="display:none;">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 style="font-weight:800;margin-bottom:4px;"><span class="gold-gradient">Trade Gold</span></h2>
+                        <p style="color:#6c757d;margin:0;">Instantly buy or sell digital gold at real-time spot prices.</p>
+                    </div>
+                </div>
+
+                <ul class="nav nav-tabs nav-tabs-nexgold" id="tradeTabs">
+                    <li class="nav-item">
+                        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#buyTab">
+                            <i class="bi bi-cart-plus me-2"></i>Buy Gold
+                        </button>
+                    </li>
+                    <li class="nav-item">
+                        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#sellTab">
+                            <i class="bi bi-cash-stack me-2"></i>Sell Gold
+                        </button>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <!-- BUY TAB -->
+                    <div class="tab-pane fade show active" id="buyTab">
+                        <div class="row g-4">
+                            <div class="col-lg-8">
+                                <div class="calculator-card">
+                                    <div class="d-flex align-items-center justify-content-between mb-4 pb-3" style="border-bottom:1px solid var(--border-color);">
+                                        <h4 style="margin:0;font-weight:700;"><i class="bi bi-gem text-gold me-2"></i>Purchase Calculator</h4>
+                                        <span class="badge rounded-pill px-3 py-1" style="background:rgba(34,197,94,0.15);color:#22c55e;font-size:11px;border:1px solid rgba(34,197,94,0.3);">
+                                            <i class="bi bi-shield-check me-1"></i>Insured
+                                        </span>
+                                    </div>
+
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Gold Purity (Karat)</label>
+                                            <select id="buykarat" class="form-select-nexgold">
+                                                <option value="24K">24 Karat (99.9% Pure)</option>
+                                                <option value="22K">22 Karat (91.6% Pure)</option>
+                                                <option value="18K">18 Karat (75.0% Pure)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Unit</label>
+                                            <select id="buyunit" class="form-select-nexgold">
+                                                <option value="Gram">Gram (g)</option>
+                                                <option value="Ounce">Ounce (oz) = 31.103g</option>
+                                                <option value="Kilo">Kilogram (kg) = 1000g</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Quantity</label>
+                                            <input type="number" id="buyquantity" class="form-control-nexgold" value="10" min="0.01" step="0.01">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Total Price (USD)</label>
+                                            <input type="text" id="buytotalPrice" class="form-control-nexgold" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 pt-4" style="border-top:1px solid var(--border-color);">
+                                        <div class="breakdown-row">
+                                            <span class="breakdown-label">Pure Gold Content</span>
+                                            <span class="breakdown-value" id="buybreakdownGrams">-</span>
+                                        </div>
+                                        <div class="breakdown-row">
+                                            <span class="breakdown-label">Price per Gram</span>
+                                            <span class="breakdown-value" id="buybreakdownPPG">-</span>
+                                        </div>
+                                        <div class="breakdown-row">
+                                            <span class="breakdown-label">Brink's Storage</span>
+                                            <span class="breakdown-value" style="color:#22c55e;">FREE</span>
+                                        </div>
+                                        <div class="breakdown-row" style="border:none;">
+                                            <span class="breakdown-label">Lloyd's Insurance</span>
+                                            <span class="breakdown-value" style="color:#22c55e;">INCLUDED</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="price-display mt-4">
+                                        <div class="price-label">You Pay</div>
+                                        <div class="price-value" id="buyDisplayTotal">$0.00 USD</div>
+                                    </div>
+
+                                    <div class="d-grid">
+                                        <button id="buySubmitBtn" class="btn btn-gold" style="padding:18px;font-size:16px;">
+                                            <i class="bi bi-gem me-2"></i> CONFIRM PURCHASE & GET CERTIFICATE
+                                        </button>
+                                        <!-- //TODO: Connect real API here - process payment gateway -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="calculator-card h-100">
+                                    <h5 style="font-weight:700;margin-bottom:20px;"><i class="bi bi-info-circle text-gold me-2"></i>What You Get</h5>
+                                    
+                                    <div style="display:flex;gap:16px;margin-bottom:24px;">
+                                        <div style="width:44px;height:44px;flex-shrink:0;background:rgba(212,175,55,0.1);border:1px solid rgba(212,175,55,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="bi bi-file-earmark-pdf" style="color:#D4AF37;font-size:20px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 style="font-weight:700;margin:0 0 4px;font-size:15px;">Insurance Certificate</h6>
+                                            <p style="color:#6c757d;margin:0;font-size:13px;">PDF certificate issued instantly, backed by Lloyd's of London.</p>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;gap:16px;margin-bottom:24px;">
+                                        <div style="width:44px;height:44px;flex-shrink:0;background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="bi bi-safe2" style="color:#60a5fa;font-size:20px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 style="font-weight:700;margin:0 0 4px;font-size:15px;">Brink's Global Vault</h6>
+                                            <p style="color:#6c757d;margin:0;font-size:13px;">Your gold is stored in Brink's secured facilities, audited monthly.</p>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;gap:16px;margin-bottom:24px;">
+                                        <div style="width:44px;height:44px;flex-shrink:0;background:rgba(16,185,129,0.1);border:1px solid rgba(16,185,129,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="bi bi-arrow-repeat" style="color:#34d399;font-size:20px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 style="font-weight:700;margin:0 0 4px;font-size:15px;">Redeem Physical Gold</h6>
+                                            <p style="color:#6c757d;margin:0;font-size:13px;">Request physical delivery of your gold bars anytime.</p>
+                                        </div>
+                                    </div>
+
+                                    <div style="display:flex;gap:16px;">
+                                        <div style="width:44px;height:44px;flex-shrink:0;background:rgba(139,92,246,0.1);border:1px solid rgba(139,92,246,0.3);border-radius:12px;display:flex;align-items:center;justify-content:center;">
+                                            <i class="bi bi-cash-coin" style="color:#a78bfa;font-size:20px;"></i>
+                                        </div>
+                                        <div>
+                                            <h6 style="font-weight:700;margin:0 0 4px;font-size:15px;">Instant Sell Anytime</h6>
+                                            <p style="color:#6c757d;margin:0;font-size:13px;">Liquidate your position 24/7 at spot prices. No lock-up periods.</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SELL TAB -->
+                    <div class="tab-pane fade" id="sellTab">
+                        <div class="row g-4">
+                            <div class="col-lg-8">
+                                <div class="calculator-card">
+                                    <div class="d-flex align-items-center justify-content-between mb-4 pb-3" style="border-bottom:1px solid var(--border-color);">
+                                        <h4 style="margin:0;font-weight:700;"><i class="bi bi-cash-stack me-2" style="color:#ef4444;"></i>Sell Calculator</h4>
+                                        <span class="badge rounded-pill px-3 py-1" style="background:rgba(239,68,68,0.15);color:#ef4444;font-size:11px;border:1px solid rgba(239,68,68,0.3);">
+                                            <i class="bi bi-lightning me-1"></i>Instant Payout
+                                        </span>
+                                    </div>
+
+                                    <div class="row g-4">
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Gold Purity (Karat)</label>
+                                            <select id="sellkarat" class="form-select-nexgold">
+                                                <option value="24K">24 Karat (99.9%)</option>
+                                                <option value="22K">22 Karat (91.6%)</option>
+                                                <option value="18K">18 Karat (75.0%)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Unit</label>
+                                            <select id="sellunit" class="form-select-nexgold">
+                                                <option value="Gram">Gram (g)</option>
+                                                <option value="Ounce">Ounce (oz)</option>
+                                                <option value="Kilo">Kilogram (kg)</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Quantity to Sell</label>
+                                            <input type="number" id="sellquantity" class="form-control-nexgold" value="5" min="0.01" step="0.01">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label-nexgold">Payout Amount (USD)</label>
+                                            <input type="text" id="selltotalPrice" class="form-control-nexgold" readonly>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 p-3 rounded" style="background:rgba(239,68,68,0.05);border:1px solid rgba(239,68,68,0.2);">
+                                        <div class="breakdown-row">
+                                            <span class="breakdown-label">Available in Main Wallet</span>
+                                            <span class="breakdown-value" id="sellAvailable">0.0000 g</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="price-display mt-4">
+                                        <div class="price-label">You Receive</div>
+                                        <div class="price-value" id="sellDisplayTotal">$0.00 USD</div>
+                                    </div>
+
+                                    <div class="d-grid">
+                                        <button id="sellSubmitBtn" class="btn btn-outline-gold" style="padding:18px;font-size:16px;border-color:#ef4444;color:#ef4444;" onmouseover="this.style.background='#ef4444';this.style.color='white';" onmouseout="this.style.background='transparent';this.style.color='#ef4444';">
+                                            <i class="bi bi-cash me-2"></i> CONFIRM SELL ORDER
+                                        </button>
+                                        <!-- //TODO: Connect real API here - process bank/crypto payout -->
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-lg-4">
+                                <div class="calculator-card h-100">
+                                    <h5 style="font-weight:700;margin-bottom:20px;"><i class="bi bi-credit-card me-2" style="color:#ef4444;"></i>Payout Methods</h5>
+                                    
+                                    <div style="padding:16px;border:1px solid var(--border-color);border-radius:12px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .3s;" onmouseover="this.style.borderColor='#D4AF37';">
+                                        <i class="bi bi-bank" style="font-size:24px;color:#D4AF37;"></i>
+                                        <div>
+                                            <h6 style="margin:0;font-size:14px;font-weight:700;">Bank Transfer</h6>
+                                            <p style="margin:0;font-size:12px;color:#6c757d;">1-3 business days</p>
+                                        </div>
+                                    </div>
+
+                                    <div style="padding:16px;border:1px solid var(--border-color);border-radius:12px;margin-bottom:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .3s;" onmouseover="this.style.borderColor='#D4AF37';">
+                                        <i class="bi bi-currency-bitcoin" style="font-size:24px;color:#f7931a;"></i>
+                                        <div>
+                                            <h6 style="margin:0;font-size:14px;font-weight:700;">Bitcoin (BTC)</h6>
+                                            <p style="margin:0;font-size:12px;color:#6c757d;">Instant (~1 hour)</p>
+                                        </div>
+                                    </div>
+
+                                    <div style="padding:16px;border:1px solid var(--border-color);border-radius:12px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .3s;" onmouseover="this.style.borderColor='#D4AF37';">
+                                        <i class="bi bi-lightning-charge" style="font-size:24px;color:#26a17b;"></i>
+                                        <div>
+                                            <h6 style="margin:0;font-size:14px;font-weight:700;">USDT (TRC20)</h6>
+                                            <p style="margin:0;font-size:12px;color:#6c757d;">Instant (~5 min)</p>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-4 p-3 rounded" style="background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);">
+                                        <p style="font-size:12px;color:#b0b0b0;margin:0;">
+                                            <i class="bi bi-info-circle text-gold me-1"></i>
+                                            Admin controls payout methods & addresses in the admin panel.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ TRANSACTIONS HISTORY SECTION ============ -->
+            <section id="historySection" class="dashboard-section" style="display:none;">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 style="font-weight:800;margin-bottom:4px;"><span class="gold-gradient">Transaction History</span></h2>
+                        <p style="color:#6c757d;margin:0;">Complete record of all your gold purchases, sales, and transfers.</p>
+                    </div>
+                    <button class="btn btn-outline-gold">
+                        <i class="bi bi-download me-2"></i>Export CSV
+                    </button>
+                </div>
+
+                <div class="table-card">
+                    <div class="table-card-header">
+                        <h4>All Transactions</h4>
+                        <div class="d-flex gap-2">
+                            <select class="form-select-nexgold" style="width:auto;padding:8px 14px;font-size:13px;">
+                                <option>All Types</option>
+                                <option>Buy</option>
+                                <option>Sell</option>
+                                <option>Transfer</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="fullTransactionHistory" style="overflow-x:auto;"></div>
+                </div>
+            </section>
+
+            <!-- ============ INVESTMENT CALCULATOR SECTION ============ -->
+            <section id="calcSection" class="dashboard-section" style="display:none;">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 style="font-weight:800;margin-bottom:4px;"><span class="gold-gradient">Investment Projection</span></h2>
+                        <p style="color:#6c757d;margin:0;">See how your gold investment can grow over time with compound returns.</p>
+                    </div>
+                </div>
+
+                <div class="row g-4">
+                    <div class="col-lg-5">
+                        <div class="calculator-card h-100">
+                            <h4 style="font-weight:700;margin-bottom:28px;"><i class="bi bi-calculator text-gold me-2"></i>Projection Calculator</h4>
+
+                            <div class="mb-4">
+                                <label class="form-label-nexgold">Initial Investment Amount (USD)</label>
+                                <div class="position-relative">
+                                    <span style="position:absolute;left:18px;top:50%;transform:translateY(-50%);color:#D4AF37;font-weight:700;font-size:18px;">$</span>
+                                    <input type="number" id="invAmount" class="form-control-nexgold" style="padding-left:44px;" value="10000" min="100" step="100">
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label-nexgold">Compound Period</label>
+                                <select id="invPeriodType" class="form-select-nexgold">
+                                    <option value="Weekly">Weekly Compounding</option>
+                                    <option value="Monthly" selected>Monthly Compounding</option>
+                                    <option value="Yearly">Yearly Compounding</option>
+                                </select>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label-nexgold">Number of Periods</label>
+                                <input type="number" id="invPeriods" class="form-control-nexgold" value="12" min="1" max="360" step="1">
+                                <p style="font-size:12px;color:#6c757d;margin-top:8px;">
+                                    <i class="bi bi-info-circle me-1 text-gold"></i>
+                                    E.g., 12 Monthly periods = 1 year
+                                </p>
+                            </div>
+
+                            <div class="p-3 rounded mb-4" style="background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);">
+                                <p style="font-size:13px;color:#b0b0b0;margin:0 0 8px;">Current Rate Settings (from Admin):</p>
+                                <div style="font-size:12px;color:#6c757d;">
+                                    • Weekly: <span class="text-gold" id="rateWeekly">2%</span><br>
+                                    • Monthly: <span class="text-gold" id="rateMonthly">8%</span><br>
+                                    • Yearly: <span class="text-gold" id="rateYearly">100%</span>
+                                </div>
+                            </div>
+
+                            <button id="invCalculateBtn" class="btn btn-gold w-100" style="padding:14px;">
+                                <i class="bi bi-magic me-2"></i>CALCULATE PROJECTION
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="col-lg-7">
+                        <div class="projection-card mb-4">
+                            <div class="projection-label">Projected Future Value</div>
+                            <div class="projection-value" id="invProjection">$0.00</div>
+                            <div class="projection-growth" id="invGrowth">
+                                <i class="bi bi-arrow-up-right"></i> +$0.00 (0.00%)
+                            </div>
+                            <div style="margin-top:14px;font-size:13px;color:#6c757d;">
+                                at <span id="invRate" class="text-gold font-weight-bold">8% Monthly</span> for selected duration
+                            </div>
+                        </div>
+
+                        <div class="table-card">
+                            <div class="table-card-header">
+                                <h4>Growth Chart</h4>
+                            </div>
+                            <div style="padding:24px;">
+                                <canvas id="investmentChart" height="260"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ============ CERTIFICATES SECTION ============ -->
+            <section id="certsSection" class="dashboard-section" style="display:none;">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 style="font-weight:800;margin-bottom:4px;"><span class="gold-gradient">Your Certificates</span></h2>
+                        <p style="color:#6c757d;margin:0;">All your insurance & custodial coverage certificates in one place.</p>
+                    </div>
+                    <span style="font-size:13px;color:#b0b0b0;"><i class="bi bi-file-earmark-pdf text-gold me-1"></i>PDF format</span>
+                </div>
+
+                <div class="row g-4 mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card stat-gold">
+                            <div class="stat-icon"><i class="bi bi-file-earmark-check"></i></div>
+                            <div class="stat-label">Total Certificates</div>
+                            <div class="stat-value text-gold" id="certCount">0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-blue">
+                            <div class="stat-icon"><i class="bi bi-gem"></i></div>
+                            <div class="stat-label">Gold Insured</div>
+                            <div class="stat-value" style="color:#60a5fa;" id="certGold">0g</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-green">
+                            <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
+                            <div class="stat-label">Total Coverage</div>
+                            <div class="stat-value" style="color:#34d399;" id="certCoverage">$0</div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card stat-purple">
+                            <div class="stat-icon"><i class="bi bi-building"></i></div>
+                            <div class="stat-label">Custodian</div>
+                            <div class="stat-value" style="color:#a78bfa;font-size:20px;">Brink's</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="certificatesList"></div>
+            </section>
+
+            <!-- ============ TRANSFER BONUS SECTION ============ -->
+            <section id="transferSection" class="dashboard-section" style="display:none;">
+                <div class="dashboard-header">
+                    <div>
+                        <h2 style="font-weight:800;margin-bottom:4px;"><span class="gold-gradient">Transfer Bonus to Main</span></h2>
+                        <p style="color:#6c757d;margin:0;">Move your bonus rewards into your liquid main wallet.</p>
+                    </div>
+                </div>
+
+                <div class="row justify-content-center">
+                    <div class="col-lg-6">
+                        <div class="calculator-card text-center">
+                            <div style="width:80px;height:80px;margin:0 auto 20px;background:rgba(16,185,129,0.15);border:2px solid rgba(16,185,129,0.4);border-radius:24px;display:flex;align-items:center;justify-content:center;">
+                                <i class="bi bi-arrow-left-right" style="font-size:36px;color:#34d399;"></i>
+                            </div>
+                            <h4 style="font-weight:700;margin-bottom:8px;">Transfer Bonus Gold</h4>
+                            <p style="color:#6c757d;max-width:400px;margin:0 auto 24px;">
+                                Bonus gold transfers to your main wallet are subject to per-transaction limits set by the administrator.
+                            </p>
+
+                            <div class="p-4 rounded mb-4" style="background:rgba(16,185,129,0.05);border:1px solid rgba(16,185,129,0.2);">
+                                <div class="row">
+                                    <div class="col-6 text-start">
+                                        <div style="font-size:11px;text-transform:uppercase;color:#6c757d;letter-spacing:1px;">Bonus Balance</div>
+                                        <div style="font-size:20px;font-weight:800;color:#34d399;" id="transferBonusBal">0.0000 g</div>
+                                    </div>
+                                    <div class="col-6 text-end">
+                                        <div style="font-size:11px;text-transform:uppercase;color:#6c757d;letter-spacing:1px;">Transfer Limit</div>
+                                        <div style="font-size:20px;font-weight:800;color:#D4AF37;" id="transferLimit">100 g</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label-nexgold">Amount to Transfer (Grams)</label>
+                                <input type="number" id="transferAmount" class="form-control-nexgold text-center" style="font-size:22px;font-weight:700;padding:20px;" placeholder="0.00" min="0.01" step="0.01">
+                            </div>
+
+                            <div class="d-flex gap-3 justify-content-center mb-4 flex-wrap">
+                                <button onclick="document.getElementById('transferAmount').value='10'" class="btn-sm-blue">10g</button>
+                                <button onclick="document.getElementById('transferAmount').value='25'" class="btn-sm-blue">25g</button>
+                                <button onclick="document.getElementById('transferAmount').value='50'" class="btn-sm-blue">50g</button>
+                                <button onclick="document.getElementById('transferAmount').value=parseFloat(document.getElementById('transferLimit').textContent)" class="btn-sm-gold">MAX</button>
+                            </div>
+
+                            <button id="transferBonusBtn" class="btn btn-gold w-100" style="padding:16px;">
+                                <i class="bi bi-arrow-right-circle me-2"></i> TRANSFER TO MAIN WALLET
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- NEXGOLD JS: Firebase → shared core → page-specific -->
+    <script src="firebase-init.js"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+</body>
+</html>

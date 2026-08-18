@@ -1,0 +1,27 @@
+{
+  "hosting": {
+    "site": "nexgoldxchange",
+    "public": ".",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**",
+      "nexgoldxchange-firebase-adminsdk-*.json",
+      "README.md"
+    ],
+    "rewrites": [
+      { "source": "/",            "destination": "/index.html" },
+      { "source": "/dashboard",   "destination": "/dashboard.html" },
+      { "source": "/auth",        "destination": "/auth.html" },
+      { "source": "/admin",       "destination": "/admin.html" },
+      { "source": "/login",       "destination": "/auth.html?tab=login" },
+      { "source": "/register",    "destination": "/auth.html?tab=register" }
+    ],
+    "headers": [{
+      "source": "**/*.@(jpg|jpeg|png|webp|svg|js|css)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600" }
+      ]
+    }]
+  }
+}
