@@ -15,17 +15,29 @@ function initializeDashboard() {
     const user   = Auth.getCurrentUser();
 
     // ---------------------------------------------------------------
-    // 1. Wallet cards + quick stats
+    // 1. Wallet cards + quick stats & profile fill
     // ---------------------------------------------------------------
     renderWalletCards(userId);
 
-    // Avatar initial
-    const avatar = document.getElementById('userAvatar');
-    if (avatar && user) avatar.textContent = user.name.charAt(0).toUpperCase();
+    // Avatar / name fill (for both old & new premium nav)
+    const letter = (user && user.name) ? String(user.name).charAt(0).toUpperCase() : 'I';
+    ['userAvatar', 'userAvatarBig'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.textContent = letter;
+            if (id === 'userAvatarBig') { el.setAttribute('data-letter', letter); }
+        }
+    });
 
-    // Welcome header
+    // Welcome header / profile name dropdown / email
     const welcomeHeader = document.getElementById('welcomeHeader');
     if (welcomeHeader && user) welcomeHeader.textContent = user.name;
+    ['welcomeName', 'welcomeNameBig'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el && user) el.textContent = user.name;
+    });
+    const emailEl = document.getElementById('userEmail');
+    if (emailEl && user) emailEl.textContent = user.email;
 
     // Live sell-available balance
     updateTransferAndSellBalances();

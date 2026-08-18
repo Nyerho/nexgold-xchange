@@ -42,7 +42,8 @@ function handleAuthPage() {
             const email    = document.getElementById('loginEmail').value;
             const password = document.getElementById('loginPassword').value;
             const submit   = loginForm.querySelector('button[type="submit"]');
-            if (submit) { submit.disabled = true; const originalHTML = submit.innerHTML; submit.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>SIGNING IN...'; }
+            let originalHTML = '';
+            if (submit) { submit.disabled = true; originalHTML = submit.innerHTML; submit.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>SIGNING IN...'; }
             try {
                 const result = await Promise.resolve(Auth.login(email, password));
                 if (result && result.success) {
@@ -71,7 +72,8 @@ function handleAuthPage() {
             const country  = document.getElementById('regCountry').value;
             const address  = document.getElementById('regAddress').value;
             const submit   = registerForm.querySelector('button[type="submit"]');
-            if (submit) { submit.disabled = true; const originalHTML = submit.innerHTML; submit.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>CREATING ACCOUNT...'; }
+            let originalHTML = '';
+            if (submit) { submit.disabled = true; originalHTML = submit.innerHTML; submit.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>CREATING ACCOUNT...'; }
             try {
                 const result = await Promise.resolve(Auth.register(name, email, password, country, address));
                 if (result && result.success) {

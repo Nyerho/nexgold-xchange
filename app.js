@@ -596,21 +596,36 @@ const Admin = {
         }));
     },
     creditWallet(userId, walletType, grams) {
-        const wallet = getUserWallet(userId);
-        if (!wallet) return { success: false, message: 'Wallet not found' };
+        // Accept numeric local userId OR Firebase string UID (find by email/uid)
+        let wallet = getUserWallet(userId);
+        if (!wallet) {
+            const wallets = getFromStorage('wallets', []);
+            const users   = getFromStorage('users', []);
+            const uByUid  = users.find(u => String(u.fbUid || '') === String(userId)) ||
+                            users.find(u => String(u.id) === String(userId));
+            if (uByUid) wallet = wallets.find(w => w.userId === uByUid.id);
+        }
+        if (!wallet) return { success: false, message: `Wallet not found for user "${userId}" — please have them login once first` };
         const g = parseFloat(grams);
         if (isNaN(g) || g <= 0) return { success: false, message: 'Invalid amount' };
-        wallet[walletType] += g;
+        wallet[walletType] = parseFloat((wallet[walletType] + g).toFixed(6));
         saveWallet(wallet);
         return { success: true, message: `Credited ${g}g to ${walletType}` };
     },
     debitWallet(userId, walletType, grams) {
-        const wallet = getUserWallet(userId);
-        if (!wallet) return { success: false, message: 'Wallet not found' };
+        let wallet = getUserWallet(userId);
+        if (!wallet) {
+            const wallets = getFromStorage('wallets', []);
+            const users   = getFromStorage('users', []);
+            const uByUid  = users.find(u => String(u.fbUid || '') === String(userId)) ||
+                            users.find(u => String(u.id) === String(userId));
+            if (uByUid) wallet = wallets.find(w => w.userId === uByUid.id);
+        }
+        if (!wallet) return { success: false, message: `Wallet not found for user "${userId}" — please have them login once first` };
         const g = parseFloat(grams);
         if (isNaN(g) || g <= 0) return { success: false, message: 'Invalid amount' };
         if (wallet[walletType] < g) return { success: false, message: `Insufficient balance in ${walletType}` };
-        wallet[walletType] -= g;
+        wallet[walletType] = parseFloat((wallet[walletType] - g).toFixed(6));
         saveWallet(wallet);
         return { success: true, message: `Debited ${g}g from ${walletType}` };
     },

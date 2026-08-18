@@ -102,25 +102,27 @@ function renderUsersTable() {
         return;
     }
 
-    tbody.innerHTML = users.map(u => `
+    tbody.innerHTML = users.map(u => {
+        const uid = JSON.stringify(String(u.id));
+        return `
         <tr>
-            <td><strong>#${u.id.toString().slice(-5)}</strong></td>
+            <td><strong>#${String(u.id).slice(-5)}</strong></td>
             <td>${u.name}<br><small class="text-muted">${u.email}</small></td>
             <td>${u.country || '-'}</td>
             <td><strong class="text-gold">${formatNumber(u.wallet.main, 4)}g</strong></td>
             <td><strong style="color:#60a5fa;">${formatNumber(u.wallet.vault, 4)}g</strong></td>
             <td><strong style="color:#34d399;">${formatNumber(u.wallet.bonus, 4)}g</strong></td>
             <td>
-                <button class="btn-sm-gold me-1 mb-1" onclick="adminAction('credit','main',${u.id})"><i class="bi bi-plus"></i> Main</button>
-                <button class="btn-sm-gold me-1 mb-1" onclick="adminAction('credit','vault',${u.id})"><i class="bi bi-plus"></i> Vault</button>
-                <button class="btn-sm-gold me-1 mb-1" onclick="adminAction('credit','bonus',${u.id})"><i class="bi bi-plus"></i> Bonus</button>
+                <button class="btn-sm-gold me-1 mb-1"   onclick="adminAction('credit','main',${uid})"><i class="bi bi-plus"></i> Main</button>
+                <button class="btn-sm-gold me-1 mb-1"   onclick="adminAction('credit','vault',${uid})"><i class="bi bi-plus"></i> Vault</button>
+                <button class="btn-sm-gold me-1 mb-1"   onclick="adminAction('credit','bonus',${uid})"><i class="bi bi-plus"></i> Bonus</button>
             </td>
             <td>
-                <button class="btn-sm-danger me-1 mb-1" onclick="adminAction('debit','main',${u.id})"><i class="bi bi-dash"></i> Main</button>
-                <button class="btn-sm-danger me-1 mb-1" onclick="adminAction('debit','vault',${u.id})"><i class="bi bi-dash"></i> Vault</button>
-                <button class="btn-sm-danger mb-1"       onclick="adminAction('debit','bonus',${u.id})"><i class="bi bi-dash"></i> Bonus</button>
+                <button class="btn-sm-danger me-1 mb-1" onclick="adminAction('debit','main',${uid})"><i class="bi bi-dash"></i> Main</button>
+                <button class="btn-sm-danger me-1 mb-1" onclick="adminAction('debit','vault',${uid})"><i class="bi bi-dash"></i> Vault</button>
+                <button class="btn-sm-danger mb-1"      onclick="adminAction('debit','bonus',${uid})"><i class="bi bi-dash"></i> Bonus</button>
             </td>
-        </tr>`).join('');
+        </tr>`; }).join('');
 }
 
 function loadSettingsIntoForm() {
@@ -151,19 +153,25 @@ function loadPaymentMethodsIntoForm() {
    Global admin action (prompt + credit/debit)
    ================================================================ */
 window.adminAction = function (action, walletType, userId) {
-    const grams = prompt(`Enter grams to ${action} to user's ${walletType.toUpperCase()} wallet:`);
+    if (userId === null || userId === undefined || userId === '') {
+        showToast('Invalid user ID — please refresh the table', 'error');
+        return;
+    }
+    const uidNumOrStr = !isNaN(parseFloat(userId)) && isFinite(userId) ? Number(userId) : String(userId);
+
+    const grams = prompt(`[${action.toUpperCase()}] Enter GRAMS to add/remove from user's ${walletType.toUpperCase()} wallet\n(User: ${userId})`);
     if (!grams || isNaN(parseFloat(grams))) return;
 
     const result = (action === 'credit')
-        ? Admin.creditWallet(userId, walletType, grams)
-        : Admin.debitWallet (userId, walletType, grams);
+        ? Admin.creditWallet(uidNumOrStr, walletType, grams)
+        : Admin.debitWallet (uidNumOrStr, walletType, grams);
 
     if (result.success) {
-        showToast(result.message, 'success');
+        showToast(result.message + ` (user ${userId})`, 'success');
         renderUsersTable();
         renderStats();
     } else {
-        showToast(result.message, 'error');
+        showToast(result.message || 'Invalid user / wallet not found', 'error');
     }
 };
 
