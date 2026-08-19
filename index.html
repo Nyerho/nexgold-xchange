@@ -6,29 +6,17 @@
     <meta name="description" content="NEXGOLD Exchange — Digital Gold Investment Platform. Buy, sell, and invest in physical gold with secure, insured custody.">
     <title>NEXGOLD EXCHANGE | Digital Gold Investment Platform</title>
 
-    <!-- Google Fonts: Inter + Playfair Display (for serif titles matching reference) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap 5.3.2 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
-    <!-- Bootstrap Icons -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-
-    <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="style.css?v=1.2">
+    <link rel="stylesheet" href="style.css?v=1.3">
 </head>
 <body data-page="index" class="bg-pattern">
 
-    <!-- =========================================================
-         NAVBAR (matches reference EXACTLY)
-         ========================================================= -->
     <nav class="navbar navbar-expand-lg navbar-nexgold-home" id="homeNavbar">
         <div class="container-fluid" style="padding:0 40px;max-width:1920px;margin:0 auto;">
-
-            <!-- NG handwritten monogram logo -->
             <a class="navbar-brand-home" href="index.html">
                 <div class="ng-monogram">
                     <svg viewBox="0 0 64 64" width="44" height="44" aria-label="NG">
@@ -70,17 +58,9 @@
         </div>
     </nav>
 
-    <!-- =========================================================
-         HERO SECTION (EXACT MATCH TO REFERENCE IMAGE)
-         Full-bleed black, no card wrapper, no container border
-         ========================================================= -->
     <section id="home" class="hero-v2">
-
-        <!-- Background radial gold glows (subtle, behind image) -->
         <div class="hero-bg-glow hero-glow-1"></div>
         <div class="hero-bg-glow hero-glow-2"></div>
-
-        <!-- Tiny sparkle particles -->
         <span class="sparkle" style="top:22%;left:6%;--s:1.6s;--d:0s"></span>
         <span class="sparkle" style="top:68%;left:14%;--s:2.2s;--d:.4s"></span>
         <span class="sparkle" style="top:40%;left:48%;--s:1.8s;--d:.8s"></span>
@@ -90,23 +70,19 @@
         <div class="container-fluid hero-v2-inner" style="max-width:1920px;padding:40px 40px 0;">
             <div class="row hero-v2-row align-items-center g-0">
 
-                <!-- LEFT: Title block (white Playfair Display with gold italic keywords) -->
                 <div class="col-lg-6 hero-v2-left">
                     <div class="hero-eyebrow">
                         <span class="eyebrow-dot"></span>
                         <span>GLOBALLY TRUSTED · LLOYDS INSURED · BRINKS CUSTODY</span>
                     </div>
-
                     <h1 class="hero-title-v2">
                         Invest in <em class="gold-word">Gold.</em><br>
                         Secure Your <em class="gold-word">Future.</em>
                     </h1>
-
                     <p class="hero-sub-v2">
                         Trusted gold trading and investment solutions<br>
                         designed to grow and preserve your wealth.
                     </p>
-
                     <div class="hero-cta-row">
                         <a href="#invest" class="btn-hero-gold">
                             <i class="bi bi-gem"></i>
@@ -117,8 +93,6 @@
                             LEARN MORE
                         </a>
                     </div>
-
-                    <!-- Quick 3-stat strip (visible, matches premium feel) -->
                     <div class="hero-quick-stats">
                         <div class="h-stat">
                             <div class="h-stat-num">$2.4B+</div>
@@ -137,114 +111,18 @@
                     </div>
                 </div>
 
-                <!-- RIGHT: Composite visual = nexagoldhero.jpg (gold bars) + gold globe overlay -->
+                <!-- ===========================================
+                     DIRECT HERO IMAGE: assest/nexagoldhero.jpg
+                     Sole main visual, fills 100%, no overlays
+                     =========================================== -->
                 <div class="col-lg-6 hero-v2-right">
                     <div class="hero-visual-wrap">
+                        <img src="assest/nexagoldhero.jpg" alt="NEXGOLD Hero — Gold bullion bars" class="hero-direct-image"
+                             onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1610375461246-83df859d849d?w=1600&auto=format&fit=crop&q=92';">
+                        <div class="hero-direct-fade"></div>
+                        <div class="hero-direct-glow"></div>
 
-                        <!-- Gold earth globe floating behind bars (SVG recreated to match reference) -->
-                        <div class="hero-globe-wrap">
-                            <svg viewBox="0 0 540 540" class="hero-globe" aria-hidden="true">
-                                <defs>
-                                    <radialGradient id="globeInner" cx="35%" cy="35%" r="70%">
-                                        <stop offset="0%"  stop-color="#2a1e04" stop-opacity="0.95"/>
-                                        <stop offset="55%" stop-color="#0a0600" stop-opacity="1"/>
-                                        <stop offset="100%" stop-color="#000"    stop-opacity="1"/>
-                                    </radialGradient>
-                                    <linearGradient id="globeStroke" x1="0%" y1="0%" x2="100%" y2="100%">
-                                        <stop offset="0%"  stop-color="#F4D98B" stop-opacity="0.95"/>
-                                        <stop offset="50%" stop-color="#D4AF37" stop-opacity="0.85"/>
-                                        <stop offset="100%" stop-color="#8A6A12" stop-opacity="0.7"/>
-                                    </linearGradient>
-                                    <filter id="globeGlow" x="-50%" y="-50%" width="200%" height="200%">
-                                        <feGaussianBlur stdDeviation="6" result="b"/>
-                                        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
-                                    </filter>
-                                    <radialGradient id="dotGrad" cx="0%" cy="0%" r="100%">
-                                        <stop offset="0%" stop-color="#F4D98B"/>
-                                        <stop offset="100%" stop-color="#D4AF37"/>
-                                    </radialGradient>
-                                </defs>
-
-                                <!-- Outer gold ring aura -->
-                                <circle cx="270" cy="270" r="242" fill="none" stroke="url(#globeStroke)" stroke-width="1.2" opacity="0.5" filter="url(#globeGlow)"/>
-                                <!-- Globe sphere background -->
-                                <circle cx="270" cy="270" r="225" fill="url(#globeInner)" stroke="url(#globeStroke)" stroke-width="2.2" opacity="0.95"/>
-                                <!-- Latitude lines -->
-                                <ellipse cx="270" cy="120" rx="212" ry="34"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.4"/>
-                                <ellipse cx="270" cy="195" rx="232" ry="62"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.45"/>
-                                <ellipse cx="270" cy="270" rx="240" ry="74"  fill="none" stroke="url(#globeStroke)" stroke-width="0.9" opacity="0.55"/>
-                                <ellipse cx="270" cy="345" rx="232" ry="62"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.45"/>
-                                <ellipse cx="270" cy="420" rx="212" ry="34"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.4"/>
-                                <!-- Longitude lines -->
-                                <path d="M 58 270 A 212 225 0 0 1 482 270 A 212 225 0 0 1 58 270 Z" fill="none" stroke="url(#globeStroke)" stroke-width="0.85" opacity="0.5"/>
-                                <g stroke="url(#globeStroke)" stroke-width="0.75" opacity="0.4" fill="none">
-                                    <path d="M 130 80 Q 270 220 130 460"/>
-                                    <path d="M 200 58 Q 270 220 200 482"/>
-                                    <path d="M 340 58 Q 270 220 340 482"/>
-                                    <path d="M 410 80 Q 270 220 410 460"/>
-                                </g>
-
-                                <!-- Dotted pixelated continents (AFRICA + EUROPE + AMERICAS) matching reference -->
-                                <g fill="url(#dotGrad)" filter="url(#globeGlow)">
-                                    <!-- Africa body (largest, most visible in reference) -->
-                                    <g transform="translate(248 174)">
-                                        <!-- Generate dots with nested rects -->
-                                        <g id="dots-af"></g>
-                                        <script>/* populate dynamically below */</script>
-                                    </g>
-                                </g>
-                                <!-- Programmatic dot continents (to avoid huge inline SVG dot list) -->
-                                <g id="continentsDots" fill="url(#dotGrad)" filter="url(#globeGlow)"></g>
-                                <script id="dotGen">
-                                    (function(){
-                                        var host = document.getElementById('continentsDots');
-                                        if (!host) return;
-                                        function dots(cx,cy,cols,rows,density){
-                                            var out='',x,y,sz=5.6;
-                                            for(var r=0;r<rows;r++){
-                                                for(var c=0;c<cols;c++){
-                                                    if (Math.random()<density){
-                                                        var rx = cx - (cols*sz)/2 + c*sz + (Math.random()*2-1)*1.8;
-                                                        var ry = cy - (rows*sz)/2 + r*sz + (Math.random()*2-1)*1.8;
-                                                        var d=Math.sqrt(Math.pow(rx-270,2)+Math.pow(ry-270,2));
-                                                        if(d<223){
-                                                            out += '<rect x="'+rx.toFixed(2)+'" y="'+ry.toFixed(2)+'" width="4.2" height="4.2" rx="1.1" opacity="'+(0.7+Math.random()*0.3).toFixed(2)+'"/>';
-                                                        }
-                                                    }
-                                                }
-                                            }
-                                            return out;
-                                        }
-                                        // AFRICA + MIDDLE EAST
-                                        var html = dots(330,300, 26,46, 0.72);
-                                        // EUROPE
-                                        html += dots(260,158, 22,16, 0.7);
-                                        // NORTH AMERICA
-                                        html += dots(120,190, 22,24, 0.66);
-                                        // SOUTH AMERICA
-                                        html += dots(150,360, 14,32, 0.66);
-                                        // ASIA (partial top-right)
-                                        html += dots(410,210, 22,18, 0.72);
-                                        // AUSTRALIA
-                                        html += dots(440,370, 12,12, 0.65);
-                                        host.innerHTML = html;
-                                    })();
-                                </script>
-                            </svg>
-                        </div>
-
-                        <!-- Hero image: gold bars photo (nexagoldhero.jpg) -->
-                        <div class="hero-image-wrap">
-                            <img src="assest/nexagoldhero.jpg" alt="Gold bullion bars" class="hero-image"
-                                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1610375461246-83df859d849d?w=1200&auto=format&fit=crop&q=90';">
-                            <div class="hero-image-fade"></div>
-                            <!-- Gold light shafts -->
-                            <div class="hero-shaft hero-shaft-1"></div>
-                            <div class="hero-shaft hero-shaft-2"></div>
-                        </div>
-
-                        <!-- Floating price card over image (bottom-right) -->
-                        <div class="float-price-card">
+                        <div class="float-price-card float-tr">
                             <div class="fpc-top">
                                 <span class="fpc-bull"><i class="bi bi-graph-up-arrow"></i></span>
                                 <div>
@@ -260,8 +138,7 @@
                             </div>
                         </div>
 
-                        <!-- Floating verified card (top-left) -->
-                        <div class="float-verified-card">
+                        <div class="float-verified-card float-bl">
                             <i class="bi bi-patch-check-fill"></i>
                             <div>
                                 <div class="fvc-title">LBMA Certified</div>
@@ -274,9 +151,6 @@
             </div>
         </div>
 
-        <!-- ================================================================
-             TRUST BAR (4 cells, BORDERLESS, no visible wrapper grid per image)
-             ================================================================ -->
         <div class="container-fluid" style="max-width:1920px;padding:0 40px 40px;margin:0 auto;">
             <div class="trust-v2">
                 <div class="trust-v2-cell">
@@ -322,9 +196,6 @@
         </div>
     </section>
 
-    <!-- =========================================================
-         ABOUT US
-         ========================================================= -->
     <section id="about" class="section-pad">
         <div class="container-xl">
             <div class="row g-5 align-items-center">
@@ -350,7 +221,6 @@
                         modern blockchain-grade security — so you own real, LBMA-certified 999.9 fine gold bars
                         stored in offshore vaults, instantly redeemable or deliverable to your door.
                     </p>
-
                     <div class="row g-3 mt-4">
                         <div class="col-md-6">
                             <div class="about-mini-card">
@@ -389,7 +259,6 @@
                             </div>
                         </div>
                     </div>
-
                     <a href="#invest" class="btn-home-outline mt-5 d-inline-flex align-items-center gap-2">
                         START INVESTING <i class="bi bi-arrow-right"></i>
                     </a>
@@ -398,9 +267,6 @@
         </div>
     </section>
 
-    <!-- =========================================================
-         SERVICES
-         ========================================================= -->
     <section id="services" class="section-pad section-dark-stripe">
         <div class="container-xl">
             <div class="text-center mb-6">
@@ -411,7 +277,6 @@
                     capital, and timeline.
                 </p>
             </div>
-
             <div class="row g-4">
                 <div class="col-lg-3 col-md-6">
                     <div class="service-card">
@@ -450,9 +315,6 @@
         </div>
     </section>
 
-    <!-- =========================================================
-         INVEST CALCULATOR
-         ========================================================= -->
     <section id="invest" class="section-pad">
         <div class="container-xl">
             <div class="row g-5 align-items-center">
@@ -470,7 +332,6 @@
                         <li><i class="bi bi-check-circle-fill"></i> Withdraw gold or sell-back to USD anytime</li>
                     </ul>
                 </div>
-
                 <div class="col-lg-7">
                     <div class="calc-wrap">
                         <div class="calc-header">
@@ -518,8 +379,6 @@
                                     </select>
                                 </div>
                             </div>
-
-                            <!-- Live breakdown panel -->
                             <div class="calc-breakdown">
                                 <div class="cb-row"><span>Subtotal (pure 24K)</span><strong id="breakSubtotal">$650.00 USD</strong></div>
                                 <div class="cb-row"><span>Karat Adjustment (<span id="breakKarat">24K · 100%</span>)</span><strong id="breakKaratAmt">$0.00 USD</strong></div>
@@ -528,7 +387,6 @@
                                 <div class="cb-row cb-total"><span>TOTAL DUE</span><strong id="breakTotal">$652.21 USD</strong></div>
                                 <div class="cb-row cb-sub2"><span id="breakTotalGrams">≈ 10.00 grams gold credited to vault</span></div>
                             </div>
-
                             <div class="calc-actions">
                                 <button id="buyGoldBtn" class="btn-hero-gold w-100 justify-content-center">
                                     <i class="bi bi-gem"></i>
@@ -546,13 +404,8 @@
         </div>
     </section>
 
-    <!-- =========================================================
-         MARKET INSIGHTS (ADVANCED TRADINGVIEW WIDGET + TERMINAL)
-         ========================================================= -->
     <section id="market" class="section-pad section-dark-stripe">
         <div class="container-xl">
-
-            <!-- Ticker strip (always-on) -->
             <div class="ticker-strip">
                 <div class="ticker-track" id="tickerTrack"></div>
             </div>
@@ -575,7 +428,6 @@
                 </div>
             </div>
 
-            <!-- 4x SPOT PRICE CARDS -->
             <div class="row g-4 mb-4">
                 <div class="col-xl-3 col-lg-6 col-md-6">
                     <div class="spot-card up">
@@ -659,9 +511,7 @@
                 </div>
             </div>
 
-            <!-- Main grid: ADVANCED TRADINGVIEW WIDGET (left) + performance + calendar (right) -->
             <div class="row g-4">
-                <!-- Main chart (col-lg-8) — ADVANCED TradingView widget -->
                 <div class="col-lg-8">
                     <div class="chart-frame">
                         <div class="chart-frame-header">
@@ -680,9 +530,7 @@
                                 <button>1Y</button>
                             </div>
                         </div>
-                        <!-- TradingView ADVANCED interactive widget (dark theme, toolbar, drawing, vol) -->
                         <div class="tradingview-widget-wrap" id="tvWrap">
-                            <!-- TradingView Widget BEGIN: Advanced Real-Time Chart (full features) -->
                             <div class="tradingview-widget-container" style="height:540px;width:100%;">
                                 <div id="tradingview_2b3c8" style="height:calc(100%);width:100%;"></div>
                             </div>
@@ -719,9 +567,7 @@
                                     ]
                                 });
                             </script>
-                            <!-- TradingView Widget END -->
                         </div>
-                        <!-- Drawer (meta row below) -->
                         <div class="chart-frame-footer">
                             <div class="cf-meta"><span>24h Open</span><strong>$2,121.60</strong></div>
                             <div class="cf-meta"><span>24h High</span><strong class="up2">$2,153.10</strong></div>
@@ -733,10 +579,7 @@
                     </div>
                 </div>
 
-                <!-- RIGHT column: order book + metals performance + economic calendar -->
                 <div class="col-lg-4">
-
-                    <!-- Metals performance table (7d / 30d / YTD bars) -->
                     <div class="market-panel mb-4">
                         <div class="mp-head">
                             <h6>Metals Performance</h6>
@@ -744,13 +587,7 @@
                         </div>
                         <table class="mp-table">
                             <thead>
-                                <tr>
-                                    <th>Asset</th>
-                                    <th>Price</th>
-                                    <th>7D</th>
-                                    <th>30D</th>
-                                    <th>YTD</th>
-                                </tr>
+                                <tr><th>Asset</th><th>Price</th><th>7D</th><th>30D</th><th>YTD</th></tr>
                             </thead>
                             <tbody>
                                 <tr>
@@ -792,7 +629,6 @@
                         </table>
                     </div>
 
-                    <!-- Economic calendar mini widget -->
                     <div class="market-panel">
                         <div class="mp-head">
                             <h6>Today · Key Economic Events</h6>
@@ -851,9 +687,6 @@
         </div>
     </section>
 
-    <!-- =========================================================
-         CONTACT
-         ========================================================= -->
     <section id="contact" class="section-pad">
         <div class="container-xl">
             <div class="contact-wrap">
@@ -868,7 +701,6 @@
                             Have questions about custody, insurance, or enterprise onboarding? Our gold
                             specialists are available 24/7 for a zero-obligation strategy call.
                         </p>
-
                         <div class="contact-mini">
                             <i class="bi bi-telephone-inbound-fill"></i>
                             <div>
@@ -890,7 +722,6 @@
                                 <strong>16 Leadenhall St · EC3V 4QT · UK</strong>
                             </div>
                         </div>
-
                         <div class="contact-socials">
                             <a href="#" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
                             <a href="#" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
@@ -946,9 +777,6 @@
         </div>
     </section>
 
-    <!-- =========================================================
-         FOOTER
-         ========================================================= -->
     <footer class="footer-nex">
         <div class="container-xl">
             <div class="row g-5">
@@ -1021,18 +849,12 @@
         </div>
     </footer>
 
-    <!-- Live toast container -->
     <div id="toastContainer" class="toast-container toast-container-nex" aria-live="polite" aria-atomic="true"></div>
 
-    <!-- =========================================================
-         SCRIPTS
-         ========================================================= -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="firebase-init.js"></script>
     <script src="app.js"></script>
     <script src="home.js"></script>
-    <script>
-        document.getElementById('yr').textContent = new Date().getFullYear();
-    </script>
+    <script>document.getElementById('yr').textContent = new Date().getFullYear();</script>
 </body>
 </html>
