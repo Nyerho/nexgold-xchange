@@ -1,1 +1,1038 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEXGOLD Exchange — Digital Gold Investment Platform. Buy, sell, and invest in physical gold with secure, insured custody.">
+    <title>NEXGOLD EXCHANGE | Digital Gold Investment Platform</title>
+
+    <!-- Google Fonts: Inter + Playfair Display (for serif titles matching reference) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5.3.2 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style.css?v=1.2">
+</head>
+<body data-page="index" class="bg-pattern">
+
+    <!-- =========================================================
+         NAVBAR (matches reference EXACTLY)
+         ========================================================= -->
+    <nav class="navbar navbar-expand-lg navbar-nexgold-home" id="homeNavbar">
+        <div class="container-fluid" style="padding:0 40px;max-width:1920px;margin:0 auto;">
+
+            <!-- NG handwritten monogram logo -->
+            <a class="navbar-brand-home" href="index.html">
+                <div class="ng-monogram">
+                    <svg viewBox="0 0 64 64" width="44" height="44" aria-label="NG">
+                        <defs>
+                            <linearGradient id="ngGold" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%"  stop-color="#F4D98B"/>
+                                <stop offset="55%" stop-color="#D4AF37"/>
+                                <stop offset="100%" stop-color="#8A6A12"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M14 10 L14 54 L24 30 L14 30 M24 10 L36 34 L26 54 L32 54 L46 30 L32 10 Z M46 10 L46 54" fill="none" stroke="url(#ngGold)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="3" y="3" width="58" height="58" rx="12" ry="12" fill="none" stroke="url(#ngGold)" stroke-width="1.4" opacity="0.55"/>
+                    </svg>
+                </div>
+                <div class="ng-wordmark">
+                    <h6>NEXGOLD</h6>
+                    <span>Digital Gold Exchange</span>
+                </div>
+            </a>
+
+            <button class="navbar-toggler navbar-toggler-nexgold" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list text-gold"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2 nav-links-home">
+                    <li class="nav-item"><a class="nav-link-home active" href="#home">HOME</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="#about">ABOUT US</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="#invest">INVEST</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="#services">SERVICES</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="#market">MARKET INSIGHTS</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="#contact">CONTACT</a></li>
+                    <li class="nav-item ms-lg-4 mt-3 mt-lg-0">
+                        <a href="auth.html?tab=login" class="btn-home-outline me-2 mb-2 mb-lg-0 d-inline-block"><i class="bi bi-person-check"></i> LOGIN</a>
+                        <a href="auth.html?tab=register" class="btn-home-square-gold d-inline-block">GET STARTED</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- =========================================================
+         HERO SECTION (EXACT MATCH TO REFERENCE IMAGE)
+         Full-bleed black, no card wrapper, no container border
+         ========================================================= -->
+    <section id="home" class="hero-v2">
+
+        <!-- Background radial gold glows (subtle, behind image) -->
+        <div class="hero-bg-glow hero-glow-1"></div>
+        <div class="hero-bg-glow hero-glow-2"></div>
+
+        <!-- Tiny sparkle particles -->
+        <span class="sparkle" style="top:22%;left:6%;--s:1.6s;--d:0s"></span>
+        <span class="sparkle" style="top:68%;left:14%;--s:2.2s;--d:.4s"></span>
+        <span class="sparkle" style="top:40%;left:48%;--s:1.8s;--d:.8s"></span>
+        <span class="sparkle" style="top:72%;right:40%;--s:2.4s;--d:1.2s"></span>
+        <span class="sparkle" style="top:20%;right:8%;--s:1.9s;--d:1.6s"></span>
+
+        <div class="container-fluid hero-v2-inner" style="max-width:1920px;padding:40px 40px 0;">
+            <div class="row hero-v2-row align-items-center g-0">
+
+                <!-- LEFT: Title block (white Playfair Display with gold italic keywords) -->
+                <div class="col-lg-6 hero-v2-left">
+                    <div class="hero-eyebrow">
+                        <span class="eyebrow-dot"></span>
+                        <span>GLOBALLY TRUSTED · LLOYDS INSURED · BRINKS CUSTODY</span>
+                    </div>
+
+                    <h1 class="hero-title-v2">
+                        Invest in <em class="gold-word">Gold.</em><br>
+                        Secure Your <em class="gold-word">Future.</em>
+                    </h1>
+
+                    <p class="hero-sub-v2">
+                        Trusted gold trading and investment solutions<br>
+                        designed to grow and preserve your wealth.
+                    </p>
+
+                    <div class="hero-cta-row">
+                        <a href="#invest" class="btn-hero-gold">
+                            <i class="bi bi-gem"></i>
+                            INVEST NOW
+                        </a>
+                        <a href="#about" class="btn-hero-outline">
+                            <i class="bi bi-arrow-right-circle"></i>
+                            LEARN MORE
+                        </a>
+                    </div>
+
+                    <!-- Quick 3-stat strip (visible, matches premium feel) -->
+                    <div class="hero-quick-stats">
+                        <div class="h-stat">
+                            <div class="h-stat-num">$2.4B+</div>
+                            <div class="h-stat-label">Assets Managed</div>
+                        </div>
+                        <div class="h-stat-sep"></div>
+                        <div class="h-stat">
+                            <div class="h-stat-num">140+</div>
+                            <div class="h-stat-label">Countries</div>
+                        </div>
+                        <div class="h-stat-sep"></div>
+                        <div class="h-stat">
+                            <div class="h-stat-num">99.99%</div>
+                            <div class="h-stat-label">Uptime SLA</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT: Composite visual = nexagoldhero.jpg (gold bars) + gold globe overlay -->
+                <div class="col-lg-6 hero-v2-right">
+                    <div class="hero-visual-wrap">
+
+                        <!-- Gold earth globe floating behind bars (SVG recreated to match reference) -->
+                        <div class="hero-globe-wrap">
+                            <svg viewBox="0 0 540 540" class="hero-globe" aria-hidden="true">
+                                <defs>
+                                    <radialGradient id="globeInner" cx="35%" cy="35%" r="70%">
+                                        <stop offset="0%"  stop-color="#2a1e04" stop-opacity="0.95"/>
+                                        <stop offset="55%" stop-color="#0a0600" stop-opacity="1"/>
+                                        <stop offset="100%" stop-color="#000"    stop-opacity="1"/>
+                                    </radialGradient>
+                                    <linearGradient id="globeStroke" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%"  stop-color="#F4D98B" stop-opacity="0.95"/>
+                                        <stop offset="50%" stop-color="#D4AF37" stop-opacity="0.85"/>
+                                        <stop offset="100%" stop-color="#8A6A12" stop-opacity="0.7"/>
+                                    </linearGradient>
+                                    <filter id="globeGlow" x="-50%" y="-50%" width="200%" height="200%">
+                                        <feGaussianBlur stdDeviation="6" result="b"/>
+                                        <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+                                    </filter>
+                                    <radialGradient id="dotGrad" cx="0%" cy="0%" r="100%">
+                                        <stop offset="0%" stop-color="#F4D98B"/>
+                                        <stop offset="100%" stop-color="#D4AF37"/>
+                                    </radialGradient>
+                                </defs>
+
+                                <!-- Outer gold ring aura -->
+                                <circle cx="270" cy="270" r="242" fill="none" stroke="url(#globeStroke)" stroke-width="1.2" opacity="0.5" filter="url(#globeGlow)"/>
+                                <!-- Globe sphere background -->
+                                <circle cx="270" cy="270" r="225" fill="url(#globeInner)" stroke="url(#globeStroke)" stroke-width="2.2" opacity="0.95"/>
+                                <!-- Latitude lines -->
+                                <ellipse cx="270" cy="120" rx="212" ry="34"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.4"/>
+                                <ellipse cx="270" cy="195" rx="232" ry="62"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.45"/>
+                                <ellipse cx="270" cy="270" rx="240" ry="74"  fill="none" stroke="url(#globeStroke)" stroke-width="0.9" opacity="0.55"/>
+                                <ellipse cx="270" cy="345" rx="232" ry="62"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.45"/>
+                                <ellipse cx="270" cy="420" rx="212" ry="34"  fill="none" stroke="url(#globeStroke)" stroke-width="0.8" opacity="0.4"/>
+                                <!-- Longitude lines -->
+                                <path d="M 58 270 A 212 225 0 0 1 482 270 A 212 225 0 0 1 58 270 Z" fill="none" stroke="url(#globeStroke)" stroke-width="0.85" opacity="0.5"/>
+                                <g stroke="url(#globeStroke)" stroke-width="0.75" opacity="0.4" fill="none">
+                                    <path d="M 130 80 Q 270 220 130 460"/>
+                                    <path d="M 200 58 Q 270 220 200 482"/>
+                                    <path d="M 340 58 Q 270 220 340 482"/>
+                                    <path d="M 410 80 Q 270 220 410 460"/>
+                                </g>
+
+                                <!-- Dotted pixelated continents (AFRICA + EUROPE + AMERICAS) matching reference -->
+                                <g fill="url(#dotGrad)" filter="url(#globeGlow)">
+                                    <!-- Africa body (largest, most visible in reference) -->
+                                    <g transform="translate(248 174)">
+                                        <!-- Generate dots with nested rects -->
+                                        <g id="dots-af"></g>
+                                        <script>/* populate dynamically below */</script>
+                                    </g>
+                                </g>
+                                <!-- Programmatic dot continents (to avoid huge inline SVG dot list) -->
+                                <g id="continentsDots" fill="url(#dotGrad)" filter="url(#globeGlow)"></g>
+                                <script id="dotGen">
+                                    (function(){
+                                        var host = document.getElementById('continentsDots');
+                                        if (!host) return;
+                                        function dots(cx,cy,cols,rows,density){
+                                            var out='',x,y,sz=5.6;
+                                            for(var r=0;r<rows;r++){
+                                                for(var c=0;c<cols;c++){
+                                                    if (Math.random()<density){
+                                                        var rx = cx - (cols*sz)/2 + c*sz + (Math.random()*2-1)*1.8;
+                                                        var ry = cy - (rows*sz)/2 + r*sz + (Math.random()*2-1)*1.8;
+                                                        var d=Math.sqrt(Math.pow(rx-270,2)+Math.pow(ry-270,2));
+                                                        if(d<223){
+                                                            out += '<rect x="'+rx.toFixed(2)+'" y="'+ry.toFixed(2)+'" width="4.2" height="4.2" rx="1.1" opacity="'+(0.7+Math.random()*0.3).toFixed(2)+'"/>';
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                            return out;
+                                        }
+                                        // AFRICA + MIDDLE EAST
+                                        var html = dots(330,300, 26,46, 0.72);
+                                        // EUROPE
+                                        html += dots(260,158, 22,16, 0.7);
+                                        // NORTH AMERICA
+                                        html += dots(120,190, 22,24, 0.66);
+                                        // SOUTH AMERICA
+                                        html += dots(150,360, 14,32, 0.66);
+                                        // ASIA (partial top-right)
+                                        html += dots(410,210, 22,18, 0.72);
+                                        // AUSTRALIA
+                                        html += dots(440,370, 12,12, 0.65);
+                                        host.innerHTML = html;
+                                    })();
+                                </script>
+                            </svg>
+                        </div>
+
+                        <!-- Hero image: gold bars photo (nexagoldhero.jpg) -->
+                        <div class="hero-image-wrap">
+                            <img src="assest/nexagoldhero.jpg" alt="Gold bullion bars" class="hero-image"
+                                 onerror="this.onerror=null;this.src='https://images.unsplash.com/photo-1610375461246-83df859d849d?w=1200&auto=format&fit=crop&q=90';">
+                            <div class="hero-image-fade"></div>
+                            <!-- Gold light shafts -->
+                            <div class="hero-shaft hero-shaft-1"></div>
+                            <div class="hero-shaft hero-shaft-2"></div>
+                        </div>
+
+                        <!-- Floating price card over image (bottom-right) -->
+                        <div class="float-price-card">
+                            <div class="fpc-top">
+                                <span class="fpc-bull"><i class="bi bi-graph-up-arrow"></i></span>
+                                <div>
+                                    <small>XAU / USD · Spot</small>
+                                    <h5 data-live-price>$65.00 USD/g</h5>
+                                </div>
+                                <span class="fpc-change up"><i class="bi bi-arrow-up"></i> 1.24%</span>
+                            </div>
+                            <div class="fpc-bar"></div>
+                            <div class="fpc-foot">
+                                <span>24h Vol 18.2M oz</span>
+                                <span class="live-pulse"><i></i> Live</span>
+                            </div>
+                        </div>
+
+                        <!-- Floating verified card (top-left) -->
+                        <div class="float-verified-card">
+                            <i class="bi bi-patch-check-fill"></i>
+                            <div>
+                                <div class="fvc-title">LBMA Certified</div>
+                                <div class="fvc-sub">999.9 Pure Gold Bars</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================================================================
+             TRUST BAR (4 cells, BORDERLESS, no visible wrapper grid per image)
+             ================================================================ -->
+        <div class="container-fluid" style="max-width:1920px;padding:0 40px 40px;margin:0 auto;">
+            <div class="trust-v2">
+                <div class="trust-v2-cell">
+                    <div class="tv2-icon shield">
+                        <i class="bi bi-shield-check"></i>
+                    </div>
+                    <div class="tv2-texts">
+                        <div class="tv2-title">100%</div>
+                        <div class="tv2-sub">SECURE & INSURED</div>
+                    </div>
+                </div>
+                <div class="trust-v2-sep"></div>
+                <div class="trust-v2-cell">
+                    <div class="tv2-icon globe">
+                        <i class="bi bi-globe-asia-australia"></i>
+                    </div>
+                    <div class="tv2-texts">
+                        <div class="tv2-title">GLOBAL</div>
+                        <div class="tv2-sub">MARKET ACCESS</div>
+                    </div>
+                </div>
+                <div class="trust-v2-sep"></div>
+                <div class="trust-v2-cell">
+                    <div class="tv2-icon clock">
+                        <i class="bi bi-alarm"></i>
+                    </div>
+                    <div class="tv2-texts">
+                        <div class="tv2-title">24/7</div>
+                        <div class="tv2-sub">TRADING SUPPORT</div>
+                    </div>
+                </div>
+                <div class="trust-v2-sep"></div>
+                <div class="trust-v2-cell">
+                    <div class="tv2-icon chart">
+                        <i class="bi bi-bar-chart-line-fill"></i>
+                    </div>
+                    <div class="tv2-texts">
+                        <div class="tv2-title">EXPERT</div>
+                        <div class="tv2-sub">MARKET INSIGHTS</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         ABOUT US
+         ========================================================= -->
+    <section id="about" class="section-pad">
+        <div class="container-xl">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-6">
+                    <div class="about-image-frame">
+                        <img src="https://images.unsplash.com/photo-1610375461246-83df859d849d?w=1000&auto=format&fit=crop&q=85" alt="NEXGOLD vault custody" class="about-img">
+                        <div class="about-stat-badge asb-1">
+                            <div class="asb-num">15+</div>
+                            <div class="asb-label">Years Experience</div>
+                        </div>
+                        <div class="about-stat-badge asb-2">
+                            <div class="asb-num">A+</div>
+                            <div class="asb-label">S&P Rating</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="section-eyebrow"><span class="eyebrow-dot"></span>ABOUT NEXGOLD EXCHANGE</div>
+                    <h2 class="section-title">A Legacy of Trust. <em class="gold-word">A Future of Gold.</em></h2>
+                    <p class="section-lead">
+                        NEXGOLD Exchange is a regulated digital gold investment platform backed by Brink's Global
+                        Services vaulting and Lloyd's of London insurance. We bridge physical precious metals with
+                        modern blockchain-grade security — so you own real, LBMA-certified 999.9 fine gold bars
+                        stored in offshore vaults, instantly redeemable or deliverable to your door.
+                    </p>
+
+                    <div class="row g-3 mt-4">
+                        <div class="col-md-6">
+                            <div class="about-mini-card">
+                                <i class="bi bi-bank"></i>
+                                <div>
+                                    <h6>Regulated Custodian</h6>
+                                    <p>Brink's Global Services · Switzerland + Singapore vaults</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="about-mini-card">
+                                <i class="bi bi-shield-fill-check"></i>
+                                <div>
+                                    <h6>Fully Insured</h6>
+                                    <p>Lloyd's of London all-risk policy up to $500M</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="about-mini-card">
+                                <i class="bi bi-cash-coin"></i>
+                                <div>
+                                    <h6>Instant Redemption</h6>
+                                    <p>24h sell-to-cash or physical delivery worldwide</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="about-mini-card">
+                                <i class="bi bi-arrow-repeat"></i>
+                                <div>
+                                    <h6>Transparent Audit</h6>
+                                    <p>Monthly third-party vault audit reports published</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <a href="#invest" class="btn-home-outline mt-5 d-inline-flex align-items-center gap-2">
+                        START INVESTING <i class="bi bi-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         SERVICES
+         ========================================================= -->
+    <section id="services" class="section-pad section-dark-stripe">
+        <div class="container-xl">
+            <div class="text-center mb-6">
+                <div class="section-eyebrow justify-content-center"><span class="eyebrow-dot"></span>OUR SERVICES</div>
+                <h2 class="section-title text-center">Tailored Gold Solutions<br>For Every <em class="gold-word">Investor</em></h2>
+                <p class="section-lead text-center w-75 mx-auto">
+                    From first-time savers to institutions — NEXGOLD Exchange has a plan built for your risk,
+                    capital, and timeline.
+                </p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-3 col-md-6">
+                    <div class="service-card">
+                        <div class="svc-icon"><i class="bi bi-gem"></i></div>
+                        <h5>Spot Buy & Sell</h5>
+                        <p>Trade physical gold in real-time at live interbank prices with 0.3% spreads. Instant settlement.</p>
+                        <div class="svc-meta">Starts at <strong class="text-gold">1g</strong></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="service-card featured">
+                        <div class="svc-badge">MOST POPULAR</div>
+                        <div class="svc-icon"><i class="bi bi-diagram-3-fill"></i></div>
+                        <h5>Savings Vault Plan</h5>
+                        <p>Auto-recurring weekly/monthly purchases with 2% weekly yield. Dollar-cost average into gold.</p>
+                        <div class="svc-meta">APY <strong class="text-gold">8% – 100%</strong></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="service-card">
+                        <div class="svc-icon"><i class="bi bi-building-fill-check"></i></div>
+                        <h5>Institutional OTC</h5>
+                        <p>Block-sized trades from $250k+ with dedicated relationship desk, vault-to-vault settlement.</p>
+                        <div class="svc-meta">Spread <strong class="text-gold">0.12%</strong></div>
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <div class="service-card">
+                        <div class="svc-icon"><i class="bi bi-truck"></i></div>
+                        <h5>Physical Delivery</h5>
+                        <p>Redeem your balances for minted bars and coins. Fully insured delivery to 140+ countries.</p>
+                        <div class="svc-meta">Free at <strong class="text-gold">100g+</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         INVEST CALCULATOR
+         ========================================================= -->
+    <section id="invest" class="section-pad">
+        <div class="container-xl">
+            <div class="row g-5 align-items-center">
+                <div class="col-lg-5">
+                    <div class="section-eyebrow"><span class="eyebrow-dot"></span>START INVESTING TODAY</div>
+                    <h2 class="section-title">Calculate Your<br><em class="gold-word">Gold Purchase</em></h2>
+                    <p class="section-lead">
+                        Select karat purity, weight unit, and quantity — our calculator instantly shows the
+                        total at live spot pricing.
+                    </p>
+                    <ul class="calc-perks">
+                        <li><i class="bi bi-check-circle-fill"></i> Live interbank price updates</li>
+                        <li><i class="bi bi-check-circle-fill"></i> 0.3% all-in spread, no hidden fees</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Instant LBMA insurance certificate PDF</li>
+                        <li><i class="bi bi-check-circle-fill"></i> Withdraw gold or sell-back to USD anytime</li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-7">
+                    <div class="calc-wrap">
+                        <div class="calc-header">
+                            <div>
+                                <div class="calc-tab-dot"></div>
+                                <h5>Instant Gold Purchase</h5>
+                            </div>
+                            <div class="calc-base-price">
+                                <small>BASE PRICE · 24K / GRAM</small>
+                                <strong data-live-price>$65.00 USD</strong>
+                            </div>
+                        </div>
+                        <div class="calc-body">
+                            <div class="row g-4">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-600">Karat Purity</label>
+                                    <select id="calcKarat" class="form-select form-select-lg">
+                                        <option value="24">24K Gold · 999.9 Pure (100%)</option>
+                                        <option value="22">22K Gold · 916 (91.6%)</option>
+                                        <option value="18">18K Gold · 750 (75%)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-600">Weight Unit</label>
+                                    <select id="calcUnit" class="form-select form-select-lg">
+                                        <option value="g">Gram (g)</option>
+                                        <option value="oz">Troy Ounce (oz · 31.103g)</option>
+                                        <option value="kg">Kilogram (kg · 1,000g)</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-600">Quantity</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                                        <input type="number" id="calcQty" min="0.1" step="0.01" value="10" class="form-control form-control-lg">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-600">Payment Method</label>
+                                    <select class="form-select form-select-lg">
+                                        <option>Bank Wire Transfer · SEPA / SWIFT</option>
+                                        <option>USDT (TRC20 / ERC20)</option>
+                                        <option>Bitcoin (BTC)</option>
+                                        <option>Visa / Mastercard · +1.5%</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <!-- Live breakdown panel -->
+                            <div class="calc-breakdown">
+                                <div class="cb-row"><span>Subtotal (pure 24K)</span><strong id="breakSubtotal">$650.00 USD</strong></div>
+                                <div class="cb-row"><span>Karat Adjustment (<span id="breakKarat">24K · 100%</span>)</span><strong id="breakKaratAmt">$0.00 USD</strong></div>
+                                <div class="cb-row"><span>Spread (0.3%)</span><strong id="breakSpread">$1.95 USD</strong></div>
+                                <div class="cb-row"><span>Insurance (0.04%)</span><strong id="breakIns">$0.26 USD</strong></div>
+                                <div class="cb-row cb-total"><span>TOTAL DUE</span><strong id="breakTotal">$652.21 USD</strong></div>
+                                <div class="cb-row cb-sub2"><span id="breakTotalGrams">≈ 10.00 grams gold credited to vault</span></div>
+                            </div>
+
+                            <div class="calc-actions">
+                                <button id="buyGoldBtn" class="btn-hero-gold w-100 justify-content-center">
+                                    <i class="bi bi-gem"></i>
+                                    BUY GOLD · <span id="displayTotal">$652.21</span>
+                                </button>
+                                <div class="calc-foot">
+                                    <i class="bi bi-shield-lock-fill"></i>
+                                    Secured with Lloyd's of London · Brink's vault custody
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         MARKET INSIGHTS (ADVANCED TRADINGVIEW WIDGET + TERMINAL)
+         ========================================================= -->
+    <section id="market" class="section-pad section-dark-stripe">
+        <div class="container-xl">
+
+            <!-- Ticker strip (always-on) -->
+            <div class="ticker-strip">
+                <div class="ticker-track" id="tickerTrack"></div>
+            </div>
+
+            <div class="row mt-5 mb-4 g-4 align-items-end">
+                <div class="col-lg-7">
+                    <div class="section-eyebrow"><span class="eyebrow-dot"></span>MARKET INSIGHTS · LIVE TERMINAL</div>
+                    <h2 class="section-title mb-0">Precious Metals <em class="gold-word">Live Market</em></h2>
+                </div>
+                <div class="col-lg-5 d-flex justify-content-lg-end align-items-end gap-2 flex-wrap">
+                    <div class="market-switcher" id="marketSwitcher">
+                        <button data-sym="XAUUSD" class="active">XAU/USD</button>
+                        <button data-sym="XAGUSD">XAG/USD</button>
+                        <button data-sym="XPTUSD">XPT/USD</button>
+                        <button data-sym="XPDUSD">XPD/USD</button>
+                    </div>
+                    <a href="#invest" class="btn-home-square-gold">
+                        <i class="bi bi-arrow-up-right-circle"></i> TRADE NOW
+                    </a>
+                </div>
+            </div>
+
+            <!-- 4x SPOT PRICE CARDS -->
+            <div class="row g-4 mb-4">
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="spot-card up">
+                        <div class="sp-top">
+                            <div class="sp-sym">
+                                <div class="sp-icon gold"><i class="bi bi-gem"></i></div>
+                                <div>
+                                    <h6>XAU / USD</h6>
+                                    <small>Spot Gold</small>
+                                </div>
+                            </div>
+                            <span class="sp-trend up">+1.24%</span>
+                        </div>
+                        <div class="sp-price" data-spot="XAUUSD">$2,147.82 <small>/ oz</small></div>
+                        <div class="sp-bar sp-bar-up"></div>
+                        <div class="sp-foot">
+                            <span>High $2,153.10</span>
+                            <span>Low $2,121.44</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="spot-card up">
+                        <div class="sp-top">
+                            <div class="sp-sym">
+                                <div class="sp-icon silver"><i class="bi bi-circle-fill"></i></div>
+                                <div>
+                                    <h6>XAG / USD</h6>
+                                    <small>Spot Silver</small>
+                                </div>
+                            </div>
+                            <span class="sp-trend up">+0.86%</span>
+                        </div>
+                        <div class="sp-price" data-spot="XAGUSD">$29.84 <small>/ oz</small></div>
+                        <div class="sp-bar sp-bar-up"></div>
+                        <div class="sp-foot">
+                            <span>High $30.02</span>
+                            <span>Low $29.51</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="spot-card down">
+                        <div class="sp-top">
+                            <div class="sp-sym">
+                                <div class="sp-icon platinum"><i class="bi bi-hexagon-fill"></i></div>
+                                <div>
+                                    <h6>XPT / USD</h6>
+                                    <small>Spot Platinum</small>
+                                </div>
+                            </div>
+                            <span class="sp-trend down">-0.41%</span>
+                        </div>
+                        <div class="sp-price" data-spot="XPTUSD">$942.11 <small>/ oz</small></div>
+                        <div class="sp-bar sp-bar-down"></div>
+                        <div class="sp-foot">
+                            <span>High $951.80</span>
+                            <span>Low $938.22</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-xl-3 col-lg-6 col-md-6">
+                    <div class="spot-card up">
+                        <div class="sp-top">
+                            <div class="sp-sym">
+                                <div class="sp-icon palladium"><i class="bi bi-diamond-fill"></i></div>
+                                <div>
+                                    <h6>XPD / USD</h6>
+                                    <small>Spot Palladium</small>
+                                </div>
+                            </div>
+                            <span class="sp-trend up">+2.07%</span>
+                        </div>
+                        <div class="sp-price" data-spot="XPDUSD">$1,208.64 <small>/ oz</small></div>
+                        <div class="sp-bar sp-bar-up"></div>
+                        <div class="sp-foot">
+                            <span>High $1,214.7</span>
+                            <span>Low $1,182.5</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main grid: ADVANCED TRADINGVIEW WIDGET (left) + performance + calendar (right) -->
+            <div class="row g-4">
+                <!-- Main chart (col-lg-8) — ADVANCED TradingView widget -->
+                <div class="col-lg-8">
+                    <div class="chart-frame">
+                        <div class="chart-frame-header">
+                            <div class="cfh-sym">
+                                <div class="cfh-dot gold"></div>
+                                <strong id="cfSymName">XAU/USD</strong>
+                                <span id="cfSymPrice" class="cf-price-up">$2,147.82</span>
+                                <span class="cf-spread-up" id="cfSymChange">+26.22 · +1.24%</span>
+                            </div>
+                            <div class="cfh-timeframe">
+                                <button class="active">1H</button>
+                                <button>4H</button>
+                                <button>1D</button>
+                                <button>1W</button>
+                                <button>1M</button>
+                                <button>1Y</button>
+                            </div>
+                        </div>
+                        <!-- TradingView ADVANCED interactive widget (dark theme, toolbar, drawing, vol) -->
+                        <div class="tradingview-widget-wrap" id="tvWrap">
+                            <!-- TradingView Widget BEGIN: Advanced Real-Time Chart (full features) -->
+                            <div class="tradingview-widget-container" style="height:540px;width:100%;">
+                                <div id="tradingview_2b3c8" style="height:calc(100%);width:100%;"></div>
+                            </div>
+                            <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+                            <script type="text/javascript">
+                                new TradingView.widget({
+                                    "autosize": true,
+                                    "symbol": "OANDA:XAUUSD",
+                                    "interval": "60",
+                                    "timezone": "Etc/UTC",
+                                    "theme": "dark",
+                                    "style": "1",
+                                    "locale": "en",
+                                    "enable_publishing": false,
+                                    "backgroundColor": "rgba(8, 8, 8, 1)",
+                                    "gridColor": "rgba(40, 34, 16, 0.25)",
+                                    "hide_top_toolbar": false,
+                                    "hide_legend": false,
+                                    "save_image": true,
+                                    "withdateranges": true,
+                                    "allow_symbol_change": true,
+                                    "studies": [
+                                        "RSI@tv-basicstudies",
+                                        "MASimple@tv-basicstudies",
+                                        "Volume@tv-basicstudies"
+                                    ],
+                                    "container_id": "tradingview_2b3c8",
+                                    "details": true,
+                                    "hotlist": true,
+                                    "calendar": true,
+                                    "news": [
+                                        "stocktwits",
+                                        "headlines"
+                                    ]
+                                });
+                            </script>
+                            <!-- TradingView Widget END -->
+                        </div>
+                        <!-- Drawer (meta row below) -->
+                        <div class="chart-frame-footer">
+                            <div class="cf-meta"><span>24h Open</span><strong>$2,121.60</strong></div>
+                            <div class="cf-meta"><span>24h High</span><strong class="up2">$2,153.10</strong></div>
+                            <div class="cf-meta"><span>24h Low</span><strong class="down2">$2,121.44</strong></div>
+                            <div class="cf-meta"><span>24h Volume</span><strong>18.2M oz</strong></div>
+                            <div class="cf-meta"><span>52 Week High</span><strong class="up2">$2,431.80</strong></div>
+                            <div class="cf-meta"><span>52 Week Low</span><strong class="down2">$1,809.50</strong></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- RIGHT column: order book + metals performance + economic calendar -->
+                <div class="col-lg-4">
+
+                    <!-- Metals performance table (7d / 30d / YTD bars) -->
+                    <div class="market-panel mb-4">
+                        <div class="mp-head">
+                            <h6>Metals Performance</h6>
+                            <a href="#" class="mp-more">7D · 30D · YTD →</a>
+                        </div>
+                        <table class="mp-table">
+                            <thead>
+                                <tr>
+                                    <th>Asset</th>
+                                    <th>Price</th>
+                                    <th>7D</th>
+                                    <th>30D</th>
+                                    <th>YTD</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td><span class="mpd gold"><i class="bi bi-gem"></i></span> Gold</td>
+                                    <td><strong>$2,147.82</strong></td>
+                                    <td><span class="pct up">+2.6%</span><div class="bar-wrap"><div class="bar up" style="width:68%"></div></div></td>
+                                    <td><span class="pct up">+4.1%</span><div class="bar-wrap"><div class="bar up" style="width:82%"></div></div></td>
+                                    <td><span class="pct up">+18.4%</span><div class="bar-wrap"><div class="bar up" style="width:94%"></div></div></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="mpd silver"><i class="bi bi-circle-fill"></i></span> Silver</td>
+                                    <td><strong>$29.84</strong></td>
+                                    <td><span class="pct up">+1.8%</span><div class="bar-wrap"><div class="bar up" style="width:52%"></div></div></td>
+                                    <td><span class="pct up">+3.3%</span><div class="bar-wrap"><div class="bar up" style="width:68%"></div></div></td>
+                                    <td><span class="pct up">+12.7%</span><div class="bar-wrap"><div class="bar up" style="width:74%"></div></div></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="mpd platinum"><i class="bi bi-hexagon-fill"></i></span> Platinum</td>
+                                    <td><strong>$942.11</strong></td>
+                                    <td><span class="pct down">-0.4%</span><div class="bar-wrap"><div class="bar down" style="width:18%"></div></div></td>
+                                    <td><span class="pct up">+1.2%</span><div class="bar-wrap"><div class="bar up" style="width:34%"></div></div></td>
+                                    <td><span class="pct down">-3.2%</span><div class="bar-wrap"><div class="bar down" style="width:42%"></div></div></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="mpd palladium"><i class="bi bi-diamond-fill"></i></span> Palladium</td>
+                                    <td><strong>$1,208.64</strong></td>
+                                    <td><span class="pct up">+2.1%</span><div class="bar-wrap"><div class="bar up" style="width:60%"></div></div></td>
+                                    <td><span class="pct up">+6.9%</span><div class="bar-wrap"><div class="bar up" style="width:88%"></div></div></td>
+                                    <td><span class="pct up">+9.8%</span><div class="bar-wrap"><div class="bar up" style="width:70%"></div></div></td>
+                                </tr>
+                                <tr>
+                                    <td><span class="mpd copper"><i class="bi bi-square-fill"></i></span> Copper</td>
+                                    <td><strong>$4.52/lb</strong></td>
+                                    <td><span class="pct down">-1.1%</span><div class="bar-wrap"><div class="bar down" style="width:36%"></div></div></td>
+                                    <td><span class="pct up">+2.4%</span><div class="bar-wrap"><div class="bar up" style="width:52%"></div></div></td>
+                                    <td><span class="pct up">+6.1%</span><div class="bar-wrap"><div class="bar up" style="width:58%"></div></div></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Economic calendar mini widget -->
+                    <div class="market-panel">
+                        <div class="mp-head">
+                            <h6>Today · Key Economic Events</h6>
+                            <span class="live-pill"><i></i> LIVE</span>
+                        </div>
+                        <ul class="event-list">
+                            <li>
+                                <span class="ev-time">08:30</span>
+                                <div class="ev-body">
+                                    <span class="ev-impact high"></span>
+                                    <strong>US Core CPI m/m</strong>
+                                    <small>Expect: 0.3% · Prior: 0.2%</small>
+                                </div>
+                                <span class="ev-country">🇺🇸</span>
+                            </li>
+                            <li>
+                                <span class="ev-time">10:00</span>
+                                <div class="ev-body">
+                                    <span class="ev-impact med"></span>
+                                    <strong>FOMC Member Speech</strong>
+                                    <small>Chair Powell · Jackson Hole</small>
+                                </div>
+                                <span class="ev-country">🇺🇸</span>
+                            </li>
+                            <li>
+                                <span class="ev-time">14:00</span>
+                                <div class="ev-body">
+                                    <span class="ev-impact high"></span>
+                                    <strong>ECB Interest Rate Decision</strong>
+                                    <small>Expect: 4.25%</small>
+                                </div>
+                                <span class="ev-country">🇪🇺</span>
+                            </li>
+                            <li>
+                                <span class="ev-time">19:30</span>
+                                <div class="ev-body">
+                                    <span class="ev-impact low"></span>
+                                    <strong>AU Employment Change</strong>
+                                    <small>Expect: +28.4K</small>
+                                </div>
+                                <span class="ev-country">🇦🇺</span>
+                            </li>
+                            <li>
+                                <span class="ev-time">21:00</span>
+                                <div class="ev-body">
+                                    <span class="ev-impact med"></span>
+                                    <strong>UK GDP Prelim q/q</strong>
+                                    <small>Expect: 0.1%</small>
+                                </div>
+                                <span class="ev-country">🇬🇧</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         CONTACT
+         ========================================================= -->
+    <section id="contact" class="section-pad">
+        <div class="container-xl">
+            <div class="contact-wrap">
+                <div class="row g-0">
+                    <div class="col-lg-6 contact-left">
+                        <div class="section-eyebrow"><span class="eyebrow-dot" style="background:#fff;box-shadow:0 0 12px #fff;"></span>GET IN TOUCH</div>
+                        <h2 class="section-title text-white">
+                            Start Your Gold Journey.<br>
+                            <em style="color:#F4D98B;font-style:italic;">Speak With An Advisor.</em>
+                        </h2>
+                        <p class="text-white-50 mb-5 pe-lg-4">
+                            Have questions about custody, insurance, or enterprise onboarding? Our gold
+                            specialists are available 24/7 for a zero-obligation strategy call.
+                        </p>
+
+                        <div class="contact-mini">
+                            <i class="bi bi-telephone-inbound-fill"></i>
+                            <div>
+                                <span>24/7 Trading Desk</span>
+                                <strong>+44 20 3290 1040</strong>
+                            </div>
+                        </div>
+                        <div class="contact-mini">
+                            <i class="bi bi-envelope-fill"></i>
+                            <div>
+                                <span>Client Relations</span>
+                                <strong>support@nexgold.exchange</strong>
+                            </div>
+                        </div>
+                        <div class="contact-mini">
+                            <i class="bi bi-pin-map-fill"></i>
+                            <div>
+                                <span>HQ · London Vault</span>
+                                <strong>16 Leadenhall St · EC3V 4QT · UK</strong>
+                            </div>
+                        </div>
+
+                        <div class="contact-socials">
+                            <a href="#" aria-label="Twitter"><i class="bi bi-twitter-x"></i></a>
+                            <a href="#" aria-label="LinkedIn"><i class="bi bi-linkedin"></i></a>
+                            <a href="#" aria-label="Telegram"><i class="bi bi-telegram"></i></a>
+                            <a href="#" aria-label="Discord"><i class="bi bi-discord"></i></a>
+                            <a href="#" aria-label="YouTube"><i class="bi bi-youtube"></i></a>
+                        </div>
+                    </div>
+                    <div class="col-lg-6 contact-right">
+                        <div class="contact-form-wrap">
+                            <h5>Send Us A Message</h5>
+                            <p class="text-muted mb-4">Response within 1 business hour.</p>
+                            <form onsubmit="event.preventDefault(); showToast('Thank you! Our team will contact you within 1 business hour.','success');">
+                                <div class="row g-3">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Full Name</label>
+                                        <input type="text" required class="form-control form-control-lg" placeholder="John Doe">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Email Address</label>
+                                        <input type="email" required class="form-control form-control-lg" placeholder="john@company.com">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Phone / WhatsApp</label>
+                                        <input type="tel" class="form-control form-control-lg" placeholder="+44 …">
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Subject</label>
+                                        <select class="form-select form-select-lg">
+                                            <option>Investment Enquiry</option>
+                                            <option>Vault Custody</option>
+                                            <option>Institutional / OTC</option>
+                                            <option>Technical Support</option>
+                                            <option>Partnership</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label">Message</label>
+                                        <textarea rows="5" required class="form-control form-control-lg" placeholder="How can we help?"></textarea>
+                                    </div>
+                                    <div class="col-12">
+                                        <button type="submit" class="btn-hero-gold w-100 justify-content-center mt-2">
+                                            <i class="bi bi-send-fill"></i>
+                                            SEND MESSAGE
+                                        </button>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- =========================================================
+         FOOTER
+         ========================================================= -->
+    <footer class="footer-nex">
+        <div class="container-xl">
+            <div class="row g-5">
+                <div class="col-lg-4">
+                    <a href="index.html" class="navbar-brand-home mb-4 d-inline-flex">
+                        <div class="ng-monogram">
+                            <svg viewBox="0 0 64 64" width="38" height="38" aria-label="NG">
+                                <defs>
+                                    <linearGradient id="ngGoldF" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%"  stop-color="#F4D98B"/>
+                                        <stop offset="55%" stop-color="#D4AF37"/>
+                                        <stop offset="100%" stop-color="#8A6A12"/>
+                                    </linearGradient>
+                                </defs>
+                                <path d="M14 10 L14 54 L24 30 L14 30 M24 10 L36 34 L26 54 L32 54 L46 30 L32 10 Z M46 10 L46 54" fill="none" stroke="url(#ngGoldF)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                        </div>
+                        <div class="ng-wordmark"><h6>NEXGOLD</h6><span>Digital Gold Exchange</span></div>
+                    </a>
+                    <p class="text-muted" style="max-width:360px;">
+                        A globally-trusted digital gold platform. LBMA-certified 999.9 bars, Brink's vaulting,
+                        Lloyd's insured custody, 24/7 trading.
+                    </p>
+                    <div class="trust-logos">
+                        <div class="tl-item"><i class="bi bi-shield-lock-fill"></i><span>LBMA</span></div>
+                        <div class="tl-item"><i class="bi bi-bank2"></i><span>BRINKS</span></div>
+                        <div class="tl-item"><i class="bi bi-umbrella-fill"></i><span>LLOYDS</span></div>
+                        <div class="tl-item"><i class="bi bi-file-earmark-check-fill"></i><span>ISO 27001</span></div>
+                    </div>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="foot-title">Company</h6>
+                    <a href="#about" class="foot-link">About Us</a>
+                    <a href="#services" class="foot-link">Services</a>
+                    <a href="#market" class="foot-link">Market Insights</a>
+                    <a href="#invest" class="foot-link">Invest Now</a>
+                    <a href="#contact" class="foot-link">Contact</a>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="foot-title">Products</h6>
+                    <a href="#invest" class="foot-link">Spot Gold / XAU</a>
+                    <a href="#invest" class="foot-link">Savings Vault</a>
+                    <a href="#services" class="foot-link">Physical Delivery</a>
+                    <a href="#services" class="foot-link">Institutional OTC</a>
+                    <a href="#" class="foot-link">API Documentation</a>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="foot-title">Resources</h6>
+                    <a href="#" class="foot-link">Help Center</a>
+                    <a href="#" class="foot-link">Audit Reports</a>
+                    <a href="#" class="foot-link">Vault Locations</a>
+                    <a href="#" class="foot-link">Insurance Cert.</a>
+                    <a href="#" class="foot-link">Fees & Limits</a>
+                </div>
+                <div class="col-lg-2 col-6">
+                    <h6 class="foot-title">Legal</h6>
+                    <a href="#" class="foot-link">Terms of Service</a>
+                    <a href="#" class="foot-link">Privacy Policy</a>
+                    <a href="#" class="foot-link">AML/KYC Policy</a>
+                    <a href="#" class="foot-link">Risk Disclosure</a>
+                    <a href="#" class="foot-link">Cookies</a>
+                </div>
+            </div>
+            <div class="foot-bottom">
+                <div>© <span id="yr"></span> NEXGOLD EXCHANGE Ltd. Registered in England & Wales No. 15882041. All rights reserved.</div>
+                <div class="foot-disclaimer">
+                    Trading precious metals involves risk. Past performance is not indicative of future results.
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Live toast container -->
+    <div id="toastContainer" class="toast-container toast-container-nex" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- =========================================================
+         SCRIPTS
+         ========================================================= -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="app.js"></script>
+    <script src="home.js"></script>
+    <script>
+        document.getElementById('yr').textContent = new Date().getFullYear();
+    </script>
+</body>
 </html>
