@@ -1,1 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEXGOLD Exchange — Admin Control Panel.">
+    <title>NEXGOLD EXCHANGE | Admin Panel</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css?v=1.4">
+</head>
+<body data-page="admin" class="bg-pattern">
+
+    <!-- ADMIN LOGIN SCREEN -->
+    <div id="adminLoginScreen" style="display:none;min-height:100vh;align-items:center;justify-content:center;padding:40px 20px;background:radial-gradient(ellipse at 30% 20%, rgba(212,175,55,0.12) 0%, transparent 55%),radial-gradient(ellipse at 80% 80%, rgba(139,92,246,0.08) 0%, transparent 55%),#000;">
+        <div class="hero-bg-glow" style="top:15%;left:-5%;width:420px;height:420px;background:radial-gradient(circle, rgba(212,175,55,0.30) 0%, transparent 70%);filter:blur(100px);opacity:0.45;pointer-events:none;position:absolute;border-radius:50%;"></div>
+        <div class="hero-bg-glow" style="bottom:10%;right:-5%;width:380px;height:380px;background:radial-gradient(circle, rgba(139,92,246,0.22) 0%, transparent 70%);filter:blur(100px);opacity:0.4;pointer-events:none;position:absolute;border-radius:50%;"></div>
+
+        <div class="auth-card" style="max-width:440px;width:100%;position:relative;z-index:3;">
+            <div class="auth-logo">
+                <div class="ng-monogram mx-auto mb-3" style="filter:drop-shadow(0 4px 12px rgba(212,175,55,0.3));">
+                    <svg viewBox="0 0 64 64" width="64" height="64" aria-label="NG">
+                        <defs>
+                            <linearGradient id="ngGoldAdmin" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%"  stop-color="#F4D98B"/>
+                                <stop offset="55%" stop-color="#D4AF37"/>
+                                <stop offset="100%" stop-color="#8A6A12"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M14 10 L14 54 L24 30 L14 30 M24 10 L36 34 L26 54 L32 54 L46 30 L32 10 Z M46 10 L46 54" fill="none" stroke="url(#ngGoldAdmin)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="3" y="3" width="58" height="58" rx="12" ry="12" fill="none" stroke="url(#ngGoldAdmin)" stroke-width="1.4" opacity="0.55"/>
+                    </svg>
+                </div>
+                <h1 style="font-size:30px;">ADMIN PORTAL</h1>
+                <span style="display:block;color:#8a8a8a;font-size:11px;letter-spacing:2.2px;text-transform:uppercase;margin-top:4px;">NEXGOLD Exchange · Restricted Access</span>
+            </div>
+
+            <div style="padding:14px 18px;background:linear-gradient(135deg, rgba(139,92,246,0.08), rgba(0,0,0,0.2));border:1px solid rgba(139,92,246,0.2);border-radius:14px;color:#c4b5fd;font-size:12.5px;line-height:1.6;margin-bottom:24px;display:flex;align-items:flex-start;gap:10px;">
+                <i class="bi bi-shield-lock-fill" style="font-size:18px;color:#a78bfa;flex-shrink:0;margin-top:1px;"></i>
+                <div>
+                    <strong style="color:#ddd6fe;">Administrator Only</strong><br>
+                    Unauthorized access is prohibited and may be subject to legal action.
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label fw-600" for="adminPassword"><i class="bi bi-key me-1"></i> Admin Password</label>
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-shield-lock-fill"></i></span>
+                    <input type="password" id="adminPassword" class="form-control form-control-lg" placeholder="Enter administrator password" autocomplete="current-password" required>
+                    <button type="button" class="input-group-text" onclick="toggleAdminPwd(this)" style="cursor:pointer;border-left:0;">
+                        <i class="bi bi-eye"></i>
+                    </button>
+                </div>
+                <div style="margin-top:10px;font-size:11.5px;color:#7a7a7a;">
+                    <i class="bi bi-lightbulb me-1" style="color:#D4AF37;"></i> Default: <code style="background:rgba(0,0,0,0.5);border:1px solid rgba(212,175,55,0.2);color:#F4D98B;padding:2px 8px;border-radius:6px;">admin123</code>
+                </div>
+            </div>
+
+            <button id="adminLoginBtn" class="btn-hero-gold w-100 justify-content-center">
+                <i class="bi bi-box-arrow-in-right"></i>
+                ENTER ADMIN PANEL
+            </button>
+
+            <div class="auth-foot-note">
+                <a href="index.html" style="color:#D4AF37;text-decoration:none;"><i class="bi bi-arrow-left me-1"></i>Back to Homepage</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- ADMIN MAIN SCREEN -->
+    <div id="adminMainScreen" style="display:none;">
+
+        <!-- Premium Admin Navbar -->
+        <nav class="navbar-nexgold-premium">
+            <div class="nav-inner">
+                <div class="nav-left">
+                    <a href="index.html" class="nav-logo-pill">
+                        <div class="nav-logo-square" style="background:linear-gradient(145deg,#a78bfa,#7c3aed 60%,#5b21b6);"><span>A</span></div>
+                        <div class="nav-logo-text">
+                            <h6 style="background:linear-gradient(90deg,#c4b5fd,#8b5cf6,#6d28d9);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">NEXGOLD ADMIN</h6>
+                            <span>Control Panel v2.4</span>
+                        </div>
+                    </a>
+                </div>
+                <div class="nav-center">
+                    <div class="nav-search">
+                        <i class="bi bi-search"></i>
+                        <input type="text" placeholder="Search users, transactions, certificates…">
+                    </div>
+                </div>
+                <div class="nav-right">
+                    <a href="index.html#market" class="nav-chip-price">
+                        <span class="pulse-dot" style="background:#8b5cf6;"></span>
+                        <span class="chip-text"><small>SYSTEM</small><strong>ONLINE</strong></span>
+                        <span class="chip-trend up"><i class="bi bi-check2-all"></i></span>
+                    </a>
+                    <button class="nav-icon-btn" title="Audit Log"><i class="bi bi-journal-text"></i><span class="nav-badge">12</span></button>
+                    <button class="nav-icon-btn" title="System Alerts"><i class="bi bi-bell"></i><span class="nav-badge blue">3</span></button>
+                    <div class="nav-divider"></div>
+                    <div class="dropdown">
+                        <button class="nav-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <div class="avatar-ring" style="background:linear-gradient(135deg,#8b5cf6,#5b21b6);">
+                                <div class="avatar-inner" style="color:#c4b5fd;">A</div>
+                            </div>
+                            <div class="profile-meta">
+                                <div class="profile-name">System Admin</div>
+                                <div class="profile-role"><span class="status-dot" style="background:#8b5cf6;box-shadow:0 0 8px #8b5cf6;"></span> Super Admin</div>
+                            </div>
+                            <i class="bi bi-chevron-down chev"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end profile-menu" style="--bs-dropdown-link-hover-bg:rgba(139,92,246,0.08);">
+                            <div class="pm-header" style="background:linear-gradient(135deg, rgba(139,92,246,0.10), rgba(0,0,0,0));">
+                                <div class="pm-avatar" style="background:linear-gradient(135deg,#8b5cf6,#5b21b6);" data-letter="A"></div>
+                                <div>
+                                    <div class="pm-name">Administrator</div>
+                                    <div class="pm-email">admin@nexgold.exchange</div>
+                                    <div class="pm-tier" style="background:rgba(139,92,246,0.1);border-color:rgba(139,92,246,0.3);color:#c4b5fd;"><i class="bi bi-shield-fill-check"></i> SUPER ADMIN</div>
+                                </div>
+                            </div>
+                            <li><a class="dropdown-item" href="#"><i class="bi bi-gear"></i> System Settings</a></li>
+                            <li><a class="dropdown-item" href="admin.html"><i class="bi bi-arrow-clockwise"></i> Refresh Panel</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="index.html"><i class="bi bi-house-door"></i> View Live Site</a></li>
+                            <li><button class="dropdown-item danger" onclick="Auth.logout()"><i class="bi bi-box-arrow-right"></i> Sign Out</button></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <div class="dashboard-wrapper" style="padding-top:110px;">
+            <div class="container-fluid" style="max-width:1920px;padding:0 28px 80px;margin:0 auto;">
+
+                <!-- Page Header -->
+                <div class="row mb-5 align-items-end g-4">
+                    <div class="col-md-8">
+                        <div class="section-eyebrow" style="color:#8b5cf6;"><span class="eyebrow-dot" style="background:#8b5cf6;box-shadow:0 0 12px #8b5cf6;"></span>ADMINISTRATION CONSOLE</div>
+                        <h2 style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,3.4vw,48px);font-weight:700;line-height:1.1;margin:0;">
+                            System <em class="gold-word">Overview</em>
+                        </h2>
+                        <p style="color:#8a8a8a;margin-top:8px;">Manage users, platform settings, payment methods, and view analytics.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end d-flex justify-content-md-end gap-2 flex-wrap">
+                        <button class="btn-home-outline" onclick="refreshUsers()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
+                        <a href="index.html" class="btn-home-square-gold" style="background:linear-gradient(135deg,#c4b5fd,#8b5cf6 55%,#5b21b6 100%);box-shadow:0 10px 24px rgba(139,92,246,0.25);"><i class="bi bi-eye"></i> View Site</a>
+                    </div>
+                </div>
+
+                <!-- 4 STATS -->
+                <div class="row g-4 mb-5">
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card stat-gold">
+                            <div class="stat-label">Total Users</div>
+                            <div class="stat-value" id="statUsers">0</div>
+                            <div class="stat-icon"><i class="bi bi-people-fill"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card stat-blue">
+                            <div class="stat-label">Total Transactions</div>
+                            <div class="stat-value" id="statTransactions">0</div>
+                            <div class="stat-icon"><i class="bi bi-journal-text"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card stat-green">
+                            <div class="stat-label">Gold Sold (Total)</div>
+                            <div class="stat-value" id="statGold">0.00 g</div>
+                            <div class="stat-icon"><i class="bi bi-gem"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card stat-purple">
+                            <div class="stat-label">Trading Volume</div>
+                            <div class="stat-value" id="statVolume">$0.00 USD</div>
+                            <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHARTS ROW -->
+                <div class="row g-4 mb-5">
+                    <div class="col-xl-8">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h4 class="mb-0"><i class="bi bi-bar-chart-fill" style="color:#8b5cf6;margin-right:8px;"></i>Daily Trading Volume (Last 7 Days)</h4>
+                                <div class="market-switcher">
+                                    <button class="active">7D</button><button>1M</button><button>3M</button><button>1Y</button>
+                                </div>
+                            </div>
+                            <div class="card-body" style="padding:24px;">
+                                <div style="height:340px;"><canvas id="analyticsChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-xl-4">
+                        <div class="card h-100">
+                            <div class="card-header"><h4 class="mb-0"><i class="bi bi-pie-chart-fill text-gold me-2"></i>Transaction Mix</h4></div>
+                            <div class="card-body d-flex align-items-center justify-content-center" style="padding:28px;">
+                                <div style="width:100%;max-width:340px;"><canvas id="pieChart"></canvas></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- USERS TABLE -->
+                <div class="card mb-5">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-3">
+                        <div>
+                            <h4 class="mb-0"><i class="bi bi-people-fill text-gold me-2"></i>User Management</h4>
+                            <small style="color:#7a7a7a;">Credit or debit grams to user wallets (Main, Vault, Bonus)</small>
+                        </div>
+                        <button class="btn-sm-gold" onclick="refreshUsers()"><i class="bi bi-arrow-clockwise"></i> Refresh Table</button>
+                    </div>
+                    <div class="table-card" style="border:0;border-radius:0;box-shadow:none;">
+                        <div style="overflow-x:auto;">
+                            <table class="table table-nexgold align-middle mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>ID</th>
+                                        <th>User</th>
+                                        <th>Country</th>
+                                        <th>Main</th>
+                                        <th>Vault</th>
+                                        <th>Bonus</th>
+                                        <th>CREDIT +</th>
+                                        <th>DEBIT −</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="usersTableBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SETTINGS + PAYMENTS -->
+                <div class="row g-4 mb-5">
+                    <div class="col-lg-7">
+                        <div class="card h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                <h4 class="mb-0"><i class="bi bi-sliders" style="color:#8b5cf6;margin-right:8px;"></i>Platform Settings</h4>
+                                <button class="btn-sm-blue" onclick="resetSettings()"><i class="bi bi-arrow-counterclockwise"></i> Reset Defaults</button>
+                            </div>
+                            <div class="card-body" style="padding:28px;">
+                                <div class="row g-4">
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-600"><i class="bi bi-tag-fill me-1 text-gold"></i> Base Price (USD / Gram · 24K)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text">$</span>
+                                            <input type="number" id="setBasePrice" min="0" step="0.01" class="form-control form-control-lg">
+                                            <span class="input-group-text">USD/g</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-600"><i class="bi bi-percent me-1" style="color:#10b981;"></i> Weekly %</label>
+                                        <div class="input-group">
+                                            <input type="number" id="setWeekly" min="0" step="0.1" class="form-control form-control-lg">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label fw-600"><i class="bi bi-percent me-1" style="color:#3b82f6;"></i> Monthly %</label>
+                                        <div class="input-group">
+                                            <input type="number" id="setMonthly" min="0" step="0.1" class="form-control form-control-lg">
+                                            <span class="input-group-text">%</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-600"><i class="bi bi-percent me-1" style="color:#D4AF37;"></i> Yearly %</label>
+                                        <div class="input-group">
+                                            <input type="number" id="setYearly" min="0" step="1" class="form-control form-control-lg">
+                                            <span class="input-group-text">% / year</span>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label fw-600"><i class="bi bi-arrow-left-right me-1" style="color:#ef4444;"></i> Bonus → Main Transfer Limit (grams)</label>
+                                        <div class="input-group">
+                                            <input type="number" id="setBonusLimit" min="0" step="1" class="form-control form-control-lg">
+                                            <span class="input-group-text">g / tx</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-5 pt-4" style="border-top:1px solid #1a1a1a;">
+                                    <button id="saveSettingsBtn" class="btn-hero-gold" style="height:52px;">
+                                        <i class="bi bi-check2-circle"></i> SAVE PLATFORM SETTINGS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="card h-100">
+                            <div class="card-header">
+                                <h4 class="mb-0"><i class="bi bi-credit-card-2-back-fill text-gold me-2"></i>Payment Methods (User-Facing)</h4>
+                            </div>
+                            <div class="card-body" style="padding:24px;">
+                                <div class="mb-4">
+                                    <label class="form-label fw-600"><i class="bi bi-currency-exchange me-1" style="color:#26a269;"></i> USDT Wallet Address (TRC20 / ERC20)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-currency-exchange"></i></span>
+                                        <input type="text" id="payUSDT" class="form-control form-control-lg" placeholder="TRC20 address…">
+                                    </div>
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-600"><i class="bi bi-currency-bitcoin me-1" style="color:#f7931a;"></i> Bitcoin (BTC) Wallet</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text"><i class="bi bi-currency-bitcoin"></i></span>
+                                        <input type="text" id="payBTC" class="form-control form-control-lg" placeholder="BTC address…">
+                                    </div>
+                                </div>
+                                <hr style="border-color:#1a1a1a;">
+                                <h6 style="font-weight:800;letter-spacing:0.4px;color:#fff;margin:8px 0 14px;"><i class="bi bi-bank me-1" style="color:#60a5fa;"></i> Bank Wire Details</h6>
+                                <div class="row g-3 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label fw-600" style="font-size:12px;">Bank Name</label>
+                                        <input type="text" id="payBankName" class="form-control" placeholder="e.g. JPMorgan Chase">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-600" style="font-size:12px;">Account Name</label>
+                                        <input type="text" id="payAccountName" class="form-control" placeholder="Beneficiary">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-600" style="font-size:12px;">Account / IBAN</label>
+                                        <input type="text" id="payAccountNumber" class="form-control" placeholder="Account No / IBAN">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label fw-600" style="font-size:12px;">SWIFT / BIC</label>
+                                        <input type="text" id="paySwift" class="form-control" placeholder="SWIFT code">
+                                    </div>
+                                </div>
+                                <div class="pt-3" style="border-top:1px solid #1a1a1a;">
+                                    <button id="savePaymentsBtn" class="btn-hero-gold w-100 justify-content-center" style="height:48px;font-size:13px !important;">
+                                        <i class="bi bi-sd-card-fill"></i> SAVE PAYMENT METHODS
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SYSTEM TRANSACTIONS TABLE -->
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                        <h4 class="mb-0"><i class="bi bi-journal-text text-gold me-2"></i>Recent System Transactions</h4>
+                        <span class="badge" style="padding:8px 14px;font-size:12px;">Last 20 records</span>
+                    </div>
+                    <div id="adminTxnsTable"></div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="app.js"></script>
+    <script src="admin.js"></script>
+</body>
 </html>

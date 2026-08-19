@@ -1,1 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEXGOLD Exchange — Your personal gold investment dashboard.">
+    <title>NEXGOLD EXCHANGE | Dashboard</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css?v=1.4">
+</head>
+<body data-page="dashboard" class="bg-pattern">
+
+    <!-- PREMIUM FINTECH NAVBAR -->
+    <nav class="navbar-nexgold-premium">
+        <div class="nav-inner">
+
+            <div class="nav-left">
+                <div class="nav-hamburger" id="mobileMenuToggle">
+                    <span></span><span></span><span></span>
+                </div>
+                <a href="index.html" class="nav-logo-pill">
+                    <div class="nav-logo-square"><span>NG</span></div>
+                    <div class="nav-logo-text">
+                        <h6>NEXGOLD</h6>
+                        <span>Digital Gold Exchange</span>
+                    </div>
+                </a>
+            </div>
+
+            <div class="nav-center">
+                <div class="nav-search">
+                    <i class="bi bi-search"></i>
+                    <input type="text" placeholder="Search assets, transactions, certificates…">
+                    <kbd>⌘K</kbd>
+                </div>
+            </div>
+
+            <div class="nav-right">
+                <a href="index.html#invest" class="nav-chip-price">
+                    <span class="pulse-dot"></span>
+                    <span class="chip-text">
+                        <small>Live · XAU/USD</small>
+                        <strong class="live-price">$65.00/g</strong>
+                    </span>
+                    <span class="chip-trend up"><i class="bi bi-arrow-up-short"></i>1.24%</span>
+                </a>
+                <button class="nav-icon-btn" title="Notifications">
+                    <i class="bi bi-bell"></i>
+                    <span class="nav-badge blue">3</span>
+                </button>
+                <button class="nav-icon-btn" title="Messages">
+                    <i class="bi bi-chat-dots"></i>
+                </button>
+                <div class="nav-divider"></div>
+
+                <div class="dropdown">
+                    <button class="nav-profile-btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                        <div class="avatar-ring">
+                            <div class="avatar-inner" id="userAvatar">I</div>
+                        </div>
+                        <div class="profile-meta">
+                            <div class="profile-name" id="welcomeNameBig">Investor</div>
+                            <div class="profile-role">
+                                <span class="status-dot"></span>
+                                <span id="userEmail">—</span>
+                            </div>
+                        </div>
+                        <i class="bi bi-chevron-down chev"></i>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end profile-menu">
+                        <div class="pm-header">
+                            <div class="pm-avatar" id="userAvatarBig" data-letter="I"></div>
+                            <div>
+                                <div class="pm-name" id="welcomeName">Investor</div>
+                                <div class="pm-email" id="userEmailCopy">—</div>
+                                <div class="pm-tier"><i class="bi bi-patch-check-fill"></i> Gold Member</div>
+                            </div>
+                        </div>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-person-circle"></i> Profile Settings</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-shield-lock"></i> Security & 2FA</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-credit-card"></i> Payment Methods</a></li>
+                        <li><a class="dropdown-item" href="#"><i class="bi bi-gift"></i> Referral Program</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="index.html"><i class="bi bi-house-door"></i> Back to Homepage</a></li>
+                        <li><button class="dropdown-item danger" onclick="Auth.logout()"><i class="bi bi-box-arrow-right"></i> Sign Out</button></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-wrapper" style="padding-top:110px;">
+        <div class="container-fluid" style="max-width:1920px;padding:0 28px 60px;margin:0 auto;">
+            <div class="row g-4">
+
+                <!-- SIDEBAR -->
+                <aside class="col-xl-2 col-lg-3">
+                    <div class="sidebar" id="sidebar" style="position:static;width:100%;min-height:auto;padding:18px 14px;background:#0a0a0a;border:1px solid #161616;border-radius:18px;">
+
+                        <div class="sidebar-header">
+                            <div class="sh-brand">
+                                <div class="sh-icon"><i class="bi bi-speedometer2"></i></div>
+                                <div>
+                                    <h6>Client Portal</h6>
+                                    <span>Dashboard v2.4</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <a href="#" class="sidebar-link active" data-target="overview">
+                            <i class="bi bi-grid-fill"></i> Overview
+                        </a>
+                        <a href="#" class="sidebar-link" data-target="buy">
+                            <i class="bi bi-cart-plus-fill"></i> Buy Gold
+                        </a>
+                        <a href="#" class="sidebar-link" data-target="sell">
+                            <i class="bi bi-cart-dash-fill"></i> Sell Gold
+                        </a>
+                        <a href="#" class="sidebar-link" data-target="invest">
+                            <i class="bi bi-graph-up-arrow"></i> Savings Vault
+                        </a>
+                        <a href="#" class="sidebar-link" data-target="transfer">
+                            <i class="bi bi-arrow-left-right"></i> Transfer Bonus
+                        </a>
+                        <a href="#" class="sidebar-link" data-target="transactions">
+                            <i class="bi bi-journal-text"></i> Transactions
+                        </a>
+                        <a href="#" class="sidebar-link" data-target="certificates">
+                            <i class="bi bi-file-earmark-check"></i> Certificates
+                        </a>
+                        <hr style="border-color:#1a1a1a;margin:14px 8px;">
+                        <a href="#" class="sidebar-link"><i class="bi bi-question-circle"></i> Support Center</a>
+                        <a href="#" class="sidebar-link"><i class="bi bi-gear"></i> Settings</a>
+                        <button class="sidebar-link" style="width:100%;text-align:left;border:0;background:transparent;" onclick="Auth.logout()">
+                            <i class="bi bi-box-arrow-right"></i> Sign Out
+                        </button>
+                    </div>
+                </aside>
+
+                <!-- MAIN DASHBOARD CONTENT -->
+                <main class="col-xl-10 col-lg-9">
+
+                    <!-- OVERVIEW SECTION -->
+                    <section class="dashboard-section" id="overview">
+
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>DASHBOARD OVERVIEW</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(28px,3.2vw,44px);font-weight:700;line-height:1.1;">
+                                    Welcome back, <em class="gold-word" id="welcomeHeader">Investor</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Here's your gold portfolio performance for today.</p>
+                            </div>
+                            <div class="col-md-4 text-md-end d-flex justify-content-md-end gap-2 flex-wrap">
+                                <a href="#" class="btn-home-outline"><i class="bi bi-download"></i> Statement</a>
+                                <a href="#" data-target="buy" class="btn-home-square-gold switchToBuy"><i class="bi bi-gem"></i> Buy More Gold</a>
+                            </div>
+                        </div>
+
+                        <!-- WALLET CARDS -->
+                        <div class="row g-4 mb-5">
+                            <div class="col-xl-4 col-md-6" id="mainWalletCard">
+                                <div class="wallet-card main">
+                                    <div class="wallet-header">
+                                        <div>
+                                            <div class="wallet-label">Main Wallet</div>
+                                            <div class="wallet-balance-grams">0.0000</div>
+                                            <div class="wallet-balance-usd">≈ <span class="amount">$0.00 USD</span></div>
+                                        </div>
+                                        <div class="wallet-icon"><i class="bi bi-wallet2"></i></div>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                                        <a href="#" class="btn-sm-gold switchToBuy" data-target="buy"><i class="bi bi-plus"></i> Add Gold</a>
+                                        <a href="#" class="btn-sm-blue switchToSell" data-target="sell"><i class="bi bi-dash"></i> Sell</a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-4 col-md-6" id="vaultWalletCard">
+                                <div class="wallet-card vault">
+                                    <div class="wallet-header">
+                                        <div>
+                                            <div class="wallet-label">Savings Vault</div>
+                                            <div class="wallet-balance-grams">0.0000</div>
+                                            <div class="wallet-balance-usd">≈ <span class="amount">$0.00 USD</span></div>
+                                        </div>
+                                        <div class="wallet-icon"><i class="bi bi-bank2"></i></div>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                                        <a href="#" class="btn-sm-blue switchToInvest" data-target="invest"><i class="bi bi-graph-up"></i> View Plan</a>
+                                        <span class="badge" style="font-size:11px;padding:6px 10px;">APY 8–100%</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-4 col-md-6" id="bonusWalletCard">
+                                <div class="wallet-card bonus">
+                                    <div class="wallet-header">
+                                        <div>
+                                            <div class="wallet-label">Bonus Rewards</div>
+                                            <div class="wallet-balance-grams">0.0000</div>
+                                            <div class="wallet-balance-usd">≈ <span class="amount">$0.00 USD</span></div>
+                                        </div>
+                                        <div class="wallet-icon"><i class="bi bi-gift-fill"></i></div>
+                                    </div>
+                                    <div class="d-flex gap-2 mt-3 flex-wrap">
+                                        <a href="#" class="btn-sm-gold switchToTransfer" data-target="transfer"><i class="bi bi-arrow-left-right"></i> Move to Main</a>
+                                        <span class="badge bg-success-subtle text-success" style="font-size:11px;padding:6px 10px;">Reinvestable</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- PORTFOLIO CHART + RECENT -->
+                        <div class="row g-4 mb-5">
+                            <div class="col-xl-8">
+                                <div class="card">
+                                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <h4 class="mb-0"><i class="bi bi-bar-chart-line-fill text-gold me-2"></i>Portfolio Value</h4>
+                                        <div class="market-switcher">
+                                            <button class="active">1W</button>
+                                            <button>1M</button>
+                                            <button>3M</button>
+                                            <button>1Y</button>
+                                            <button>ALL</button>
+                                        </div>
+                                    </div>
+                                    <div class="card-body" style="padding:24px;">
+                                        <div style="height:320px;"><canvas id="portfolioChart"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-xl-4">
+                                <div class="card h-100">
+                                    <div class="card-header"><h4 class="mb-0"><i class="bi bi-clock-history text-gold me-2"></i>Recent Activity</h4></div>
+                                    <div style="padding:0;" id="recentActivityList"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- 4-STATS ROW -->
+                        <div class="row g-4 mb-5">
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card stat-gold">
+                                    <div class="stat-label">Total Certificates</div>
+                                    <div class="stat-value" id="certCount">0</div>
+                                    <div class="stat-icon"><i class="bi bi-file-earmark-check"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card stat-blue">
+                                    <div class="stat-label">Certified Gold</div>
+                                    <div class="stat-value" id="certGold">0.00g</div>
+                                    <div class="stat-icon"><i class="bi bi-gem"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card stat-green">
+                                    <div class="stat-label">Insurance Coverage</div>
+                                    <div class="stat-value" id="certCoverage">$0</div>
+                                    <div class="stat-icon"><i class="bi bi-shield-check"></i></div>
+                                </div>
+                            </div>
+                            <div class="col-md-3 col-sm-6">
+                                <div class="stat-card stat-purple">
+                                    <div class="stat-label">Live Gold Price</div>
+                                    <div class="stat-value live-price">$65.00</div>
+                                    <div class="stat-icon"><i class="bi bi-currency-dollar"></i></div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- BUY SECTION -->
+                    <section class="dashboard-section" id="buy" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>SPOT BUY</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Purchase <em class="gold-word">Physical Gold</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Instant settlement · LBMA-certified · Lloyd's insured.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-7">
+                                <div class="calc-wrap">
+                                    <div class="calc-header">
+                                        <div><div class="calc-tab-dot"></div><h5>Gold Purchase Order</h5></div>
+                                        <div class="calc-base-price">
+                                            <small>Base · 24K / Gram</small>
+                                            <strong class="live-price">$65.00 USD</strong>
+                                        </div>
+                                    </div>
+                                    <div class="calc-body">
+                                        <div class="row g-4">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-600">Karat Purity</label>
+                                                <select id="buykarat" class="form-select form-select-lg">
+                                                    <option value="24K">24K Gold · 999.9 Pure (100%)</option>
+                                                    <option value="22K">22K Gold · 916 (91.6%)</option>
+                                                    <option value="18K">18K Gold · 750 (75%)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-600">Weight Unit</label>
+                                                <select id="buyunit" class="form-select form-select-lg">
+                                                    <option value="Gram">Gram (g)</option>
+                                                    <option value="Ounce">Troy Ounce (oz · 31.1g)</option>
+                                                    <option value="Kilo">Kilogram (kg · 1,000g)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600">Quantity</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                                                    <input type="number" id="buyquantity" min="0.01" step="0.01" value="10" class="form-control form-control-lg">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-breakdown mt-4">
+                                            <div class="cb-row"><span>Grams of Pure Gold</span><strong id="buybreakdownGrams">0.0000 g</strong></div>
+                                            <div class="cb-row"><span>Price / Gram</span><strong id="buybreakdownPPG">$0.00 USD</strong></div>
+                                            <div class="cb-row"><span>Spread (0.3%)</span><strong>— included</strong></div>
+                                            <div class="cb-row cb-total"><span>TOTAL DUE</span><strong id="buytotalPrice">$0.00 USD</strong></div>
+                                            <div class="cb-row cb-sub2"><span>Total: <span id="buyDisplayTotal">$0.00 USD</span> · Insurance certificate issued instantly</span></div>
+                                        </div>
+                                        <div class="calc-actions">
+                                            <button id="buySubmitBtn" class="btn-hero-gold w-100 justify-content-center">
+                                                <i class="bi bi-gem"></i> CONFIRM & BUY · <span id="buyDisplayTotal2">$0.00</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-5">
+                                <div class="card mb-4">
+                                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-lightning-charge-fill text-gold me-2"></i>Instant Purchase Benefits</h5></div>
+                                    <div class="card-body">
+                                        <div class="calc-perks" style="margin:0;">
+                                            <li><i class="bi bi-check-circle-fill"></i> LBMA 999.9 certified gold bars</li>
+                                            <li><i class="bi bi-check-circle-fill"></i> Lloyd's all-risk insurance certificate (PDF)</li>
+                                            <li><i class="bi bi-check-circle-fill"></i> Brink's vault custody · Switzerland</li>
+                                            <li><i class="bi bi-check-circle-fill"></i> 0.3% all-in spread, no hidden fees</li>
+                                            <li><i class="bi bi-check-circle-fill"></i> Redeem cash or physical — 24/7</li>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="card">
+                                    <div class="card-header"><h5 class="mb-0"><i class="bi bi-credit-card-2-front-fill text-gold me-2"></i>Payment Methods</h5></div>
+                                    <div class="card-body" style="padding:0;">
+                                        <div style="padding:16px 20px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+                                            <div><i class="bi bi-bank me-2" style="color:#60a5fa;"></i><strong>Bank Wire</strong><br><small style="color:#8a8a8a;">SWIFT / SEPA · 0% fee</small></div><i class="bi bi-check-circle-fill text-success"></i>
+                                        </div>
+                                        <div style="padding:16px 20px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+                                            <div><i class="bi bi-currency-exchange me-2" style="color:#26a269;"></i><strong>USDT (TRC20/ERC20)</strong><br><small style="color:#8a8a8a;">Stablecoin · 0 confirmations</small></div><i class="bi bi-check-circle-fill text-success"></i>
+                                        </div>
+                                        <div style="padding:16px 20px;border-bottom:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;">
+                                            <div><i class="bi bi-currency-bitcoin me-2" style="color:#f7931a;"></i><strong>Bitcoin BTC</strong><br><small style="color:#8a8a8a;">On-chain · 1 confirmation</small></div><i class="bi bi-check-circle-fill text-success"></i>
+                                        </div>
+                                        <div style="padding:16px 20px;display:flex;justify-content:space-between;align-items:center;">
+                                            <div><i class="bi bi-credit-card me-2" style="color:#a78bfa;"></i><strong>Visa / Mastercard</strong><br><small style="color:#8a8a8a;">Card · +1.5% processing</small></div><i class="bi bi-check-circle-fill text-success"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SELL SECTION -->
+                    <section class="dashboard-section" id="sell" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#ef4444;"><span class="eyebrow-dot" style="background:#ef4444;box-shadow:0 0 12px #ef4444;"></span>SPOT SELL</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Sell Gold for <em style="color:#ef4444;font-style:italic;">Instant Cash</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Available balance: <strong style="color:#fff;" id="sellAvailable">0.0000 g</strong></p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-7">
+                                <div class="calc-wrap">
+                                    <div class="calc-header">
+                                        <div><div class="calc-tab-dot" style="background:#ef4444;box-shadow:0 0 12px #ef4444;"></div><h5>Sell Gold Order</h5></div>
+                                        <div class="calc-base-price">
+                                            <small>Buyback · 24K / Gram</small>
+                                            <strong class="live-price">$65.00 USD</strong>
+                                        </div>
+                                    </div>
+                                    <div class="calc-body">
+                                        <div class="row g-4">
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-600">Karat Purity</label>
+                                                <select id="sellkarat" class="form-select form-select-lg">
+                                                    <option value="24K">24K Gold · 999.9 Pure (100%)</option>
+                                                    <option value="22K">22K Gold · 916 (91.6%)</option>
+                                                    <option value="18K">18K Gold · 750 (75%)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-600">Weight Unit</label>
+                                                <select id="sellunit" class="form-select form-select-lg">
+                                                    <option value="Gram">Gram (g)</option>
+                                                    <option value="Ounce">Troy Ounce (oz · 31.1g)</option>
+                                                    <option value="Kilo">Kilogram (kg · 1,000g)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600">Quantity to Sell</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+                                                    <input type="number" id="sellquantity" min="0.01" step="0.01" value="1" class="form-control form-control-lg">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="calc-breakdown mt-4">
+                                            <div class="cb-row"><span>Grams of Pure Gold</span><strong id="sellbreakdownGrams">0.0000 g</strong></div>
+                                            <div class="cb-row"><span>Buyback Price / g</span><strong id="sellbreakdownPPG">$0.00 USD</strong></div>
+                                            <div class="cb-row cb-total"><span>YOU RECEIVE</span><strong id="selltotalPrice">$0.00 USD</strong></div>
+                                            <div class="cb-row cb-sub2"><span>Total payout: <span id="sellDisplayTotal">$0.00 USD</span> · Wire / USDT in &lt;24h</span></div>
+                                        </div>
+                                        <div class="calc-actions">
+                                            <button id="sellSubmitBtn" class="btn-hero-gold w-100 justify-content-center" style="background:linear-gradient(135deg,#f87171,#dc2626 55%,#991b1b 100%);box-shadow:0 14px 34px rgba(239,68,68,0.3),inset 0 1px 0 rgba(255,255,255,0.35);">
+                                                <i class="bi bi-cash-stack"></i> CONFIRM SELL · <span id="sellDisplayTotal2">$0.00</span>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SAVINGS VAULT / INVEST SECTION -->
+                    <section class="dashboard-section" id="invest" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#3b82f6;"><span class="eyebrow-dot" style="background:#3b82f6;box-shadow:0 0 12px #3b82f6;"></span>SAVINGS VAULT PLAN</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Yield Compounding <em class="gold-word">Projection</em>
+                                </h2>
+                            </div>
+                            <div class="col-md-4 text-md-end d-flex justify-content-md-end gap-2 flex-wrap">
+                                <span class="badge" style="padding:8px 14px;font-size:12px;">Weekly <strong id="rateWeekly">2%</strong></span>
+                                <span class="badge" style="padding:8px 14px;font-size:12px;">Monthly <strong id="rateMonthly">8%</strong></span>
+                                <span class="badge" style="padding:8px 14px;font-size:12px;">Yearly <strong id="rateYearly">100%</strong></span>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="calc-wrap">
+                                    <div class="calc-header">
+                                        <div><div class="calc-tab-dot" style="background:#3b82f6;box-shadow:0 0 12px #3b82f6;"></div><h5>Investment Calculator</h5></div>
+                                    </div>
+                                    <div class="calc-body">
+                                        <div class="row g-4">
+                                            <div class="col-12">
+                                                <label class="form-label fw-600">Initial Amount (USD)</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-currency-dollar"></i></span>
+                                                    <input type="number" id="invAmount" min="0" step="50" value="5000" class="form-control form-control-lg">
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-600">Compounding Period</label>
+                                                <select id="invPeriodType" class="form-select form-select-lg">
+                                                    <option>Weekly</option>
+                                                    <option selected>Monthly</option>
+                                                    <option>Yearly</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <label class="form-label fw-600">Number of Periods</label>
+                                                <div class="input-group">
+                                                    <span class="input-group-text"><i class="bi bi-calendar3"></i></span>
+                                                    <input type="number" id="invPeriods" min="1" step="1" value="12" class="form-control form-control-lg">
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row g-3 mt-4">
+                                            <div class="col-md-6">
+                                                <div class="projection-card">
+                                                    <div class="projection-label">Projected Value</div>
+                                                    <div class="projection-value" id="invProjection">$0.00</div>
+                                                    <div class="projection-growth" id="invGrowth">+$0.00 (0.00%)</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6 d-flex align-items-center">
+                                                <div style="width:100%;">
+                                                    <div style="padding:16px 18px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;">
+                                                        <div style="font-size:11px;color:#8a8a8a;text-transform:uppercase;letter-spacing:1.2px;margin-bottom:4px;">Applied Rate</div>
+                                                        <div style="font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:800;color:#fff;" id="invRate">8% Monthly</div>
+                                                    </div>
+                                                    <button id="invCalculateBtn" class="btn-hero-gold w-100 justify-content-center mt-3" style="height:52px;">
+                                                        <i class="bi bi-calculator"></i> RECALCULATE
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card h-100">
+                                    <div class="card-header"><h4 class="mb-0"><i class="bi bi-graph-up-arrow text-gold me-2"></i>Growth Curve</h4></div>
+                                    <div class="card-body" style="padding:24px;">
+                                        <div style="height:360px;"><canvas id="investmentChart"></canvas></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- TRANSFER BONUS -->
+                    <section class="dashboard-section" id="transfer" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#10b981;"><span class="eyebrow-dot" style="background:#10b981;box-shadow:0 0 12px #10b981;"></span>BONUS → MAIN TRANSFER</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Move Bonus Rewards to <em style="color:#10b981;font-style:italic;">Main Wallet</em>
+                                </h2>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-7">
+                                <div class="calc-wrap">
+                                    <div class="calc-header">
+                                        <div><div class="calc-tab-dot" style="background:#10b981;"></div><h5>Transfer Request</h5></div>
+                                    </div>
+                                    <div class="calc-body">
+                                        <div class="row g-3 mb-4">
+                                            <div class="col-md-6">
+                                                <div style="padding:18px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;">
+                                                    <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#8a8a8a;">Bonus Balance Available</div>
+                                                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:800;color:#10b981;margin-top:4px;" id="transferBonusBal">0.0000 g</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div style="padding:18px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:14px;">
+                                                    <div style="font-size:11px;letter-spacing:1.2px;text-transform:uppercase;color:#8a8a8a;">Max / Transfer</div>
+                                                    <div style="font-family:'Playfair Display',Georgia,serif;font-size:28px;font-weight:800;color:#D4AF37;margin-top:4px;" id="transferLimit">100 g</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <label class="form-label fw-600">Amount (grams) to move → Main Wallet</label>
+                                        <div class="input-group mb-3">
+                                            <span class="input-group-text"><i class="bi bi-gem"></i></span>
+                                            <input type="number" id="transferAmount" min="0.001" step="0.001" value="0.1" class="form-control form-control-lg">
+                                            <span class="input-group-text">grams</span>
+                                        </div>
+                                        <button id="transferBonusBtn" class="btn-hero-gold w-100 justify-content-center" style="background:linear-gradient(135deg,#34d399,#059669 55%,#047857 100%);">
+                                            <i class="bi bi-arrow-left-right"></i> TRANSFER TO MAIN WALLET
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- FULL TRANSACTION HISTORY -->
+                    <section class="dashboard-section" id="transactions" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>FULL TRANSACTION HISTORY</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    All Your <em class="gold-word">Activity</em>
+                                </h2>
+                            </div>
+                        </div>
+                        <div id="fullTransactionHistory">
+                            <div id="transactionHistory"></div>
+                        </div>
+                    </section>
+
+                    <!-- CERTIFICATES -->
+                    <section class="dashboard-section" id="certificates" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>CUSTODY & INSURANCE</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Your Certificates of <em class="gold-word">Ownership</em>
+                                </h2>
+                            </div>
+                        </div>
+                        <div id="certificatesList"></div>
+                    </section>
+
+                </main>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.querySelectorAll('[data-target]').forEach(el => {
+            el.addEventListener('click', function(e){
+                const tgt = this.dataset.target;
+                if (!tgt) return;
+                e.preventDefault();
+                document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                document.querySelectorAll(`.sidebar-link[data-target="${tgt}"]`).forEach(l => l.classList.add('active'));
+                document.querySelectorAll('.dashboard-section').forEach(s => s.style.display = 'none');
+                const section = document.getElementById(tgt);
+                if (section) { section.style.display = 'block'; window.scrollTo({top:0,behavior:'smooth'}); }
+                document.getElementById('sidebar')?.classList.remove('open');
+            });
+        });
+        document.querySelectorAll('#userEmailCopy').forEach(el => {
+            const observer = new MutationObserver(() => {
+                const real = document.getElementById('userEmail');
+                if (real) el.textContent = real.textContent;
+            });
+            observer.observe(document.body, { subtree: true, characterData: true, childList: true });
+        });
+        setInterval(() => {
+            const t1 = document.getElementById('buyDisplayTotal');
+            const t2 = document.getElementById('buyDisplayTotal2');
+            const t3 = document.getElementById('buytotalPrice');
+            if (t1 && t2 && t3 && t2.textContent !== t3.value) { t2.textContent = t3.value; t1.textContent = t3.value; }
+            const s1 = document.getElementById('sellDisplayTotal');
+            const s2 = document.getElementById('sellDisplayTotal2');
+            const s3 = document.getElementById('selltotalPrice');
+            if (s1 && s2 && s3 && s2.textContent !== s3.value) { s2.textContent = s3.value; s1.textContent = s3.value; }
+        }, 120);
+    </script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="app.js"></script>
+    <script src="dashboard.js"></script>
+</body>
 </html>

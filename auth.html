@@ -1,1 +1,383 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="NEXGOLD Exchange — Login or Register to start investing in digital gold.">
+    <title>NEXGOLD EXCHANGE | Login & Register</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="style.css?v=1.4">
+</head>
+<body data-page="auth" class="bg-pattern">
+
+    <nav class="navbar navbar-expand-lg navbar-nexgold-home" id="homeNavbar">
+        <div class="container-fluid" style="padding:0 40px;max-width:1920px;margin:0 auto;">
+            <a class="navbar-brand-home" href="index.html">
+                <div class="ng-monogram">
+                    <svg viewBox="0 0 64 64" width="44" height="44" aria-label="NG">
+                        <defs>
+                            <linearGradient id="ngGoldAuth" x1="0%" y1="0%" x2="100%" y2="100%">
+                                <stop offset="0%"  stop-color="#F4D98B"/>
+                                <stop offset="55%" stop-color="#D4AF37"/>
+                                <stop offset="100%" stop-color="#8A6A12"/>
+                            </linearGradient>
+                        </defs>
+                        <path d="M14 10 L14 54 L24 30 L14 30 M24 10 L36 34 L26 54 L32 54 L46 30 L32 10 Z M46 10 L46 54" fill="none" stroke="url(#ngGoldAuth)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <rect x="3" y="3" width="58" height="58" rx="12" ry="12" fill="none" stroke="url(#ngGoldAuth)" stroke-width="1.4" opacity="0.55"/>
+                    </svg>
+                </div>
+                <div class="ng-wordmark">
+                    <h6>NEXGOLD</h6>
+                    <span>Digital Gold Exchange</span>
+                </div>
+            </a>
+
+            <button class="navbar-toggler navbar-toggler-nexgold" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav" aria-controls="mainNav" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list text-gold"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="mainNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2 nav-links-home">
+                    <li class="nav-item"><a class="nav-link-home" href="index.html#home">HOME</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="index.html#about">ABOUT US</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="index.html#invest">INVEST</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="index.html#services">SERVICES</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="index.html#market">MARKET INSIGHTS</a></li>
+                    <li class="nav-item"><a class="nav-link-home" href="index.html#contact">CONTACT</a></li>
+                    <li class="nav-item ms-lg-4 mt-3 mt-lg-0">
+                        <a href="auth.html?tab=login" class="btn-home-outline me-2 mb-2 mb-lg-0 d-inline-block"><i class="bi bi-person-check"></i> LOGIN</a>
+                        <a href="auth.html?tab=register" class="btn-home-square-gold d-inline-block">GET STARTED</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="auth-wrapper">
+        <div class="hero-bg-glow" style="top:10%;left:-10%;width:500px;height:500px;background:radial-gradient(circle, rgba(212,175,55,0.30) 0%, transparent 70%);filter:blur(100px);opacity:0.4;pointer-events:none;position:absolute;border-radius:50%;"></div>
+        <div class="hero-bg-glow" style="bottom:10%;right:-10%;width:440px;height:440px;background:radial-gradient(circle, rgba(196,139,22,0.22) 0%, transparent 70%);filter:blur(100px);opacity:0.4;pointer-events:none;position:absolute;border-radius:50%;"></div>
+
+        <div class="container" style="position:relative;z-index:3;">
+            <div class="row justify-content-center g-4 align-items-center">
+
+                <div class="col-lg-5 d-none d-lg-block">
+                    <div class="auth-left-copy">
+                        <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>WELCOME TO NEXGOLD</div>
+                        <h2 class="section-title text-start" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(36px,4.2vw,56px);line-height:1.08;">
+                            Own Physical Gold.<br>
+                            <em class="gold-word">Digitally.</em>
+                        </h2>
+                        <p style="color:#a9a9a9;font-size:16px;line-height:1.7;max-width:460px;margin:20px 0 36px;">
+                            Join 250,000+ investors worldwide who trust NEXGOLD Exchange for LBMA-certified
+                            gold bullion, fully insured by Lloyd's of London and custodied in Brink's vaults.
+                        </p>
+
+                        <div class="auth-perks">
+                            <div class="auth-perk-item">
+                                <div class="auth-perk-icon"><i class="bi bi-shield-check"></i></div>
+                                <div>
+                                    <h6>Lloyd's Insured</h6>
+                                    <p>All-risk coverage up to $500M</p>
+                                </div>
+                            </div>
+                            <div class="auth-perk-item">
+                                <div class="auth-perk-icon"><i class="bi bi-bank"></i></div>
+                                <div>
+                                    <h6>Brink's Vaulting</h6>
+                                    <p>Switzerland & Singapore vaults</p>
+                                </div>
+                            </div>
+                            <div class="auth-perk-item">
+                                <div class="auth-perk-icon"><i class="bi bi-arrow-repeat"></i></div>
+                                <div>
+                                    <h6>Instant Redemption</h6>
+                                    <p>Cash or delivery in 140+ countries</p>
+                                </div>
+                            </div>
+                            <div class="auth-perk-item">
+                                <div class="auth-perk-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                                <div>
+                                    <h6>Live Spot Trading</h6>
+                                    <p>0.3% spread, 24/7 market access</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="auth-demo-tip mt-5">
+                            <i class="bi bi-lightbulb"></i>
+                            <div>
+                                <strong>Demo login available:</strong>
+                                <code>demo@nexgold.exchange</code> / <code>Demo@123</code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6 col-xl-5">
+                    <div class="auth-card">
+
+                        <div class="auth-logo">
+                            <div class="ng-monogram mx-auto mb-3" style="filter:drop-shadow(0 4px 12px rgba(212,175,55,0.3));">
+                                <svg viewBox="0 0 64 64" width="58" height="58" aria-label="NG">
+                                    <defs>
+                                        <linearGradient id="ngGoldAuth2" x1="0%" y1="0%" x2="100%" y2="100%">
+                                            <stop offset="0%"  stop-color="#F4D98B"/>
+                                            <stop offset="55%" stop-color="#D4AF37"/>
+                                            <stop offset="100%" stop-color="#8A6A12"/>
+                                        </linearGradient>
+                                    </defs>
+                                    <path d="M14 10 L14 54 L24 30 L14 30 M24 10 L36 34 L26 54 L32 54 L46 30 L32 10 Z M46 10 L46 54" fill="none" stroke="url(#ngGoldAuth2)" stroke-width="5.2" stroke-linecap="round" stroke-linejoin="round"/>
+                                    <rect x="3" y="3" width="58" height="58" rx="12" ry="12" fill="none" stroke="url(#ngGoldAuth2)" stroke-width="1.4" opacity="0.55"/>
+                                </svg>
+                            </div>
+                            <h1>NEXGOLD</h1>
+                            <span style="display:block;color:#8a8a8a;font-size:11px;letter-spacing:2.2px;text-transform:uppercase;margin-top:4px;">Secure Access</span>
+                        </div>
+
+                        <div class="auth-tabs">
+                            <div class="auth-tab active" data-tab="login">
+                                <i class="bi bi-person-check me-2"></i>LOGIN
+                            </div>
+                            <div class="auth-tab" data-tab="register">
+                                <i class="bi bi-person-plus me-2"></i>REGISTER
+                            </div>
+                        </div>
+
+                        <form id="loginForm">
+                            <div class="mb-4">
+                                <label class="form-label fw-600" for="loginEmail"><i class="bi bi-envelope me-1"></i> Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                    <input type="email" id="loginEmail" class="form-control form-control-lg" placeholder="you@example.com" autocomplete="email" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-600" for="loginPassword"><i class="bi bi-lock me-1"></i> Password</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                    <input type="password" id="loginPassword" class="form-control form-control-lg" placeholder="••••••••" autocomplete="current-password" required>
+                                    <button type="button" class="input-group-text" onclick="togglePwd('loginPassword', this)" style="cursor:pointer;border-left:0;">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="rememberMe">
+                                    <label class="form-check-label" for="rememberMe" style="font-size:13px;">Remember me</label>
+                                </div>
+                                <a href="#" class="auth-forgot-link" style="font-size:13px;color:#D4AF37;text-decoration:none;">
+                                    <i class="bi bi-question-circle"></i> Forgot password?
+                                </a>
+                            </div>
+
+                            <button type="submit" class="btn-hero-gold w-100 justify-content-center">
+                                <i class="bi bi-box-arrow-in-right"></i>
+                                SIGN IN
+                            </button>
+
+                            <div class="auth-or-divider"><span>OR</span></div>
+
+                            <button type="button" class="btn-demo-login" onclick="(async () => { try { const r = await Auth.login('demo@nexgold.exchange','Demo@123'); if(r && r.success){ showToast(r.message,'success'); setTimeout(()=>window.location.href='dashboard.html',800); } else { await createDemoUser(); } } catch(e){ showToast(e.message||'Demo login failed','error');} })()">
+                                <i class="bi bi-magic"></i> QUICK DEMO LOGIN
+                            </button>
+                        </form>
+
+                        <form id="registerForm" style="display:none;">
+                            <div class="mb-3">
+                                <label class="form-label fw-600" for="regName"><i class="bi bi-person me-1"></i> Full Name</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-person-fill"></i></span>
+                                    <input type="text" id="regName" class="form-control form-control-lg" placeholder="John Smith" autocomplete="name" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-600" for="regEmail"><i class="bi bi-envelope me-1"></i> Email Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-envelope-fill"></i></span>
+                                    <input type="email" id="regEmail" class="form-control form-control-lg" placeholder="you@example.com" autocomplete="email" required>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-600" for="regPassword"><i class="bi bi-lock me-1"></i> Password (min. 6 chars)</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-lock-fill"></i></span>
+                                    <input type="password" id="regPassword" class="form-control form-control-lg" placeholder="Create a strong password" autocomplete="new-password" minlength="6" required>
+                                    <button type="button" class="input-group-text" onclick="togglePwd('regPassword', this)" style="cursor:pointer;border-left:0;">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label fw-600" for="regCountry"><i class="bi bi-geo-alt me-1"></i> Country of Residence</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-geo-alt-fill"></i></span>
+                                    <select id="regCountry" class="form-select form-select-lg" required>
+                                        <option value="" selected disabled>— Select country —</option>
+                                        <option>United States</option>
+                                        <option>United Kingdom</option>
+                                        <option>Canada</option>
+                                        <option>Australia</option>
+                                        <option>Germany</option>
+                                        <option>France</option>
+                                        <option>Switzerland</option>
+                                        <option>Singapore</option>
+                                        <option>United Arab Emirates</option>
+                                        <option>South Africa</option>
+                                        <option>Nigeria</option>
+                                        <option>Kenya</option>
+                                        <option>Ghana</option>
+                                        <option>India</option>
+                                        <option>China</option>
+                                        <option>Japan</option>
+                                        <option>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label class="form-label fw-600" for="regAddress"><i class="bi bi-house me-1"></i> Full Address</label>
+                                <div class="input-group">
+                                    <span class="input-group-text"><i class="bi bi-house-fill"></i></span>
+                                    <textarea id="regAddress" class="form-control" rows="2" placeholder="Street, city, postal code" style="min-height:54px;resize:vertical;" required></textarea>
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" id="agreeTerms" required>
+                                    <label class="form-check-label" for="agreeTerms" style="font-size:12.5px;line-height:1.5;color:#9a9a9a;">
+                                        I agree to the <a href="#" style="color:#D4AF37;text-decoration:none;">Terms of Service</a> and
+                                        <a href="#" style="color:#D4AF37;text-decoration:none;">Privacy Policy</a>, and confirm I am 18+ years old.
+                                    </label>
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn-hero-gold w-100 justify-content-center">
+                                <i class="bi bi-person-plus-fill"></i>
+                                CREATE ACCOUNT
+                            </button>
+                        </form>
+
+                        <div class="auth-foot-note">
+                            <i class="bi bi-shield-lock-fill text-gold"></i>
+                            Protected with enterprise-grade 256-bit TLS encryption
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </section>
+
+    <style>
+        .auth-left-copy .auth-perks { display: flex; flex-direction: column; gap: 18px; max-width: 480px; }
+        .auth-perk-item { display: flex; align-items: center; gap: 16px; }
+        .auth-perk-icon {
+            width: 48px; height: 48px; flex-shrink: 0;
+            border-radius: 14px;
+            background: linear-gradient(135deg, rgba(212,175,55,0.18), rgba(212,175,55,0.03));
+            border: 1px solid rgba(212,175,55,0.22);
+            display: flex; align-items: center; justify-content: center;
+            color: #D4AF37; font-size: 20px;
+        }
+        .auth-perk-item h6 { margin: 0; font-size: 15px; font-weight: 700; color: #fff; }
+        .auth-perk-item p { margin: 3px 0 0; font-size: 12.5px; color: #8a8a8a; }
+        .auth-demo-tip {
+            display: flex; align-items: flex-start; gap: 12px;
+            padding: 14px 18px;
+            background: linear-gradient(135deg, rgba(212,175,55,0.08), rgba(0,0,0,0.2));
+            border: 1px solid rgba(212,175,55,0.18);
+            border-radius: 14px;
+            color: #c8b57a;
+            font-size: 12.5px;
+            line-height: 1.6;
+        }
+        .auth-demo-tip i { font-size: 18px; color: #D4AF37; flex-shrink: 0; margin-top: 1px; }
+        .auth-demo-tip code {
+            background: rgba(0,0,0,0.5);
+            border: 1px solid rgba(212,175,55,0.2);
+            color: #F4D98B;
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-size: 11.5px;
+            margin: 0 1px;
+        }
+        .auth-card { position: relative; z-index: 2; }
+        .auth-or-divider {
+            display: flex; align-items: center;
+            gap: 12px;
+            margin: 22px 0 18px;
+            color: #6c757d;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+        .auth-or-divider::before, .auth-or-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+        }
+        .btn-demo-login {
+            width: 100%;
+            display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+            height: 52px;
+            padding: 0 28px;
+            background: rgba(212,175,55,0.06);
+            color: #F4CF57;
+            border: 1.4px dashed rgba(212,175,55,0.35);
+            border-radius: 12px;
+            font-weight: 700;
+            font-size: 13px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all .25s ease;
+        }
+        .btn-demo-login:hover {
+            background: rgba(212,175,55,0.12);
+            border-color: #D4AF37;
+            transform: translateY(-1px);
+        }
+        .auth-foot-note {
+            margin-top: 28px;
+            padding-top: 22px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+            text-align: center;
+            font-size: 11.5px;
+            color: #7a7a7a;
+            letter-spacing: 0.3px;
+        }
+        .auth-foot-note i { margin-right: 6px; }
+        .fw-600 { font-weight: 600 !important; }
+
+        @media (max-width: 991px) {
+            .auth-wrapper { padding: 120px 20px 40px; }
+            .auth-card { padding: 36px 28px; }
+        }
+        @media (max-width: 575px) {
+            .auth-card { padding: 28px 20px; border-radius: 16px; }
+            .auth-logo h1 { font-size: 28px; }
+            .btn-hero-gold { height: 54px; font-size: 12.5px !important; }
+        }
+    </style>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="firebase-init.js"></script>
+    <script src="app.js"></script>
+    <script src="auth.js"></script>
+</body>
 </html>

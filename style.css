@@ -2401,6 +2401,55 @@ textarea {
 }
 .btn-home-outline:hover { border-color: #D4AF37; color: #D4AF37 !important; }
 
+/* ---------- Mobile navbar: solid bg when collapse menu opens ---------- */
+@media (max-width: 991px) {
+    .navbar-nexgold-home {
+        position: fixed;
+        background: rgba(0, 0, 0, 0.96) !important;
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-bottom: 1px solid rgba(212,175,55,0.18);
+    }
+    .navbar-nexgold-home .navbar-collapse {
+        position: absolute;
+        top: 84px;
+        left: 0;
+        right: 0;
+        background: rgba(3, 3, 3, 0.98);
+        backdrop-filter: blur(18px);
+        -webkit-backdrop-filter: blur(18px);
+        border-bottom: 1px solid rgba(212,175,55,0.18);
+        padding: 20px 24px 28px;
+        z-index: 1029;
+        box-shadow: 0 18px 40px rgba(0,0,0,0.6);
+    }
+    .navbar-nexgold-home .navbar-collapse .nav-links-home {
+        align-items: flex-start !important;
+        gap: 0 !important;
+    }
+    .navbar-nexgold-home .navbar-collapse .nav-item {
+        width: 100%;
+    }
+    .navbar-nexgold-home .navbar-collapse .nav-link-home {
+        display: block;
+        padding: 14px 4px !important;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+        font-size: 13px;
+    }
+    .navbar-nexgold-home .navbar-collapse .nav-link-home.active::after { display: none; }
+    .navbar-nexgold-home .navbar-collapse .nav-item:last-child {
+        margin-top: 18px !important;
+        padding-top: 14px;
+        border-top: 1px solid rgba(255,255,255,0.06);
+    }
+    .navbar-nexgold-home .navbar-collapse .nav-item:last-child .btn-home-outline,
+    .navbar-nexgold-home .navbar-collapse .nav-item:last-child .btn-home-square-gold {
+        width: 100%;
+        margin-bottom: 10px !important;
+        margin-right: 0 !important;
+    }
+}
+
 /* ---------- Hero v2 (EXACT reference image) ---------- */
 .hero-v2 {
     position: relative;
@@ -3426,23 +3475,17 @@ textarea {
    HERO DIRECT IMAGE MODE (assest/nexagoldhero.jpg as sole visual)
    ================================================================ */
 
-/* Visual wrapper expanded to full-height bleed */
+/* Visual wrapper expanded to full-height bleed — NO box/frame/border */
 .hero-visual-wrap {
     position: relative;
     height: 100%;
     min-height: 640px;
-    overflow: hidden;
-    border-radius: 28px;
+    overflow: visible;
+    border-radius: 0;
     padding: 0;
-    /* Gold 2px gradient border (luxury card, like the reference image outer frame) */
-    background:
-        linear-gradient(#000, #000) padding-box,
-        linear-gradient(135deg, rgba(244,217,139,0.75), rgba(212,175,55,0.45) 45%, rgba(138,106,18,0.6) 100%) border-box;
-    border: 1.5px solid transparent;
-    box-shadow:
-        0 30px 80px rgba(0,0,0,0.7),
-        0 0 80px rgba(212,175,55,0.10),
-        inset 0 1px 0 rgba(255,255,255,0.05);
+    background: transparent;
+    border: none;
+    box-shadow: none;
 }
 
 /* The actual nexagoldhero.jpg image  fills the entire box directly, no masking */
@@ -3502,11 +3545,11 @@ textarea {
     .float-verified-card.float-bl { left: 14px; bottom: 14px; padding: 10px 14px 10px 10px; }
 }
 @media (max-width: 991px) {
-    .hero-visual-wrap { min-height: 520px; margin-top: 0; border-radius: 22px; }
+    .hero-visual-wrap { min-height: 520px; margin-top: 0; border-radius: 0; overflow: visible; }
     .hero-direct-image { object-position: center center; }
 }
 @media (max-width: 575px) {
-    .hero-visual-wrap { min-height: 420px; border-radius: 18px; }
+    .hero-visual-wrap { min-height: 420px; border-radius: 0; overflow: visible; }
     .float-price-card.float-tr { width: 230px; right: 10px; top: 10px; padding: 12px; }
     .float-price-card.float-tr .fpc-foot span:first-child { display: none; }
     .float-verified-card.float-bl { left: 10px; bottom: 10px; padding: 8px 12px 8px 8px; }
