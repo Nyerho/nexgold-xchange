@@ -17,7 +17,7 @@ function initializeAdmin() {
         mainScreen.style.display  = 'none';
 
         document.getElementById('adminLoginBtn')?.addEventListener('click', function () {
-            const pw = document.getElementById('adminPassword').value;
+            const pw = document.getElementById('adminPassword').value.trim();
             const result = Auth.adminLogin(pw);
             if (result.success) {
                 showToast('Admin access granted', 'success');
@@ -25,6 +25,9 @@ function initializeAdmin() {
             } else {
                 showToast(result.message, 'error');
             }
+        });
+        document.getElementById('adminPassword')?.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { document.getElementById('adminLoginBtn')?.click(); }
         });
         return;
     }

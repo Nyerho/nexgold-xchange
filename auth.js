@@ -39,7 +39,7 @@ function handleAuthPage() {
     if (loginForm) {
         loginForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            const email    = document.getElementById('loginEmail').value;
+            const email    = document.getElementById('loginEmail').value.trim().toLowerCase();
             const password = document.getElementById('loginPassword').value;
             const submit   = loginForm.querySelector('button[type="submit"]');
             let originalHTML = '';
@@ -66,11 +66,11 @@ function handleAuthPage() {
     if (registerForm) {
         registerForm.addEventListener('submit', async function (e) {
             e.preventDefault();
-            const name     = document.getElementById('regName').value;
-            const email    = document.getElementById('regEmail').value;
+            const name     = document.getElementById('regName').value.trim();
+            const email    = document.getElementById('regEmail').value.trim().toLowerCase();
             const password = document.getElementById('regPassword').value;
-            const country  = document.getElementById('regCountry').value;
-            const address  = document.getElementById('regAddress').value;
+            const country  = document.getElementById('regCountry').value.trim();
+            const address  = document.getElementById('regAddress').value.trim();
             const submit   = registerForm.querySelector('button[type="submit"]');
             let originalHTML = '';
             if (submit) { submit.disabled = true; originalHTML = submit.innerHTML; submit.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>CREATING ACCOUNT...'; }

@@ -180,10 +180,11 @@ const Auth = {
     },
     register(name, email, password, country, address) {
         const users = getFromStorage('users', []);
-        if (users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+        const tEmail = String(email).trim().toLowerCase();
+        if (users.find(u => u.email.toLowerCase() === tEmail)) {
             return { success: false, message: 'Email already registered' };
         }
-        const newUser = { id: Date.now(), name, email, password, country, address };
+        const newUser = { id: Date.now(), name: String(name).trim(), email: tEmail, password, country: String(country || '').trim(), address: String(address || '').trim() };
         //TODO: Connect real API here - hash passwords on backend
         users.push(newUser);
         saveToStorage('users', users);
@@ -196,7 +197,8 @@ const Auth = {
     },
     login(email, password) {
         const users = getFromStorage('users', []);
-        const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
+        const tEmail = String(email).trim().toLowerCase();
+        const user = users.find(u => u.email.toLowerCase() === tEmail && u.password === password);
         if (!user) return { success: false, message: 'Invalid email or password' };
         localStorage.setItem('currentUserId', user.id);
         return { success: true, user, message: 'Login successful!' };
@@ -207,7 +209,8 @@ const Auth = {
         window.location.href = 'index.html';
     },
     adminLogin(password) {
-        if (password === ADMIN_PASSWORD) {
+        const tPwd = String(password).trim();
+        if (tPwd === ADMIN_PASSWORD) {
             localStorage.setItem('adminLoggedIn', 'true');
             return { success: true };
         }
@@ -764,16 +767,20 @@ document.addEventListener('DOMContentLoaded', () => {
         const _localLogout   = Auth.logout.bind(Auth);
 
         Auth.register = async function (name, email, password, country, address) {
+            const trimmedEmail = String(email).trim().toLowerCase();
+            const trimmedName = String(name).trim();
+            const trimmedCountry = String(country || '').trim();
+            const trimmedAddress = String(address || '').trim();
             try {
-                const uc = await auth.createUserWithEmailAndPassword(email, password);
+                const uc = await auth.createUserWithEmailAndPassword(trimmedEmail, password);
                 const fbUid = uc.user.uid;
-                const local = _localRegister(name, email, password, country, address);
+                const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
                 if (!local.success) {
                     try { await uc.user.delete(); } catch (_) {}
                     return local;
                 }
                 try {
-                    const fbProfile = { name, email, country, address, localUserId: local.user.id, role: 'user', createdAt: new Date().toISOString() };
+                    const fbProfile = { name: trimmedName, email: trimmedEmail, country: trimmedCountry, address: trimmedAddress, localUserId: local.user.id, role: 'user', createdAt: new Date().toISOString() };
                     await db.collection('users').doc(fbUid).set(fbProfile);
                     await db.collection('wallets').doc(fbUid).set({ userId: local.user.id, main: 0, vault: 0, bonus: 0, updatedAt: new Date().toISOString() });
                     if (analytics) analytics.logEvent('sign_up', { method: 'email' });
@@ -783,37 +790,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 return local;
             } catch (e) {
                 if (e.code === 'auth/email-already-in-use') {
-                    return { success: false, message: 'Email already registered with Firebase' };
+                    const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
+                    if (local.success || (local.message && local.message.includes('already registered'))) {
+                        return local;
+                    }
+                    return { success: false, message: 'Email already registered' };
                 }
                 if (e.code && String(e.code).startsWith('auth/')) {
-                    return { success: false, message: 'Firebase Auth: ' + e.message };
+                    const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
+                    if (local.success) return local;
+                    return { success: false, message: local.message || 'Registration failed' };
                 }
-                return _localRegister(name, email, password, country, address);
+                return _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
             }
         };
 
         Auth.login = async function (email, password) {
+            const trimmedEmail = String(email).trim().toLowerCase();
+            const trimmedPassword = String(password);
             try {
-                const uc = await auth.signInWithEmailAndPassword(email, password);
+                const uc = await auth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword);
                 const fbUid = uc.user.uid;
-                let local = _localLogin(email, password);
+                let local = _localLogin(trimmedEmail, trimmedPassword);
                 if (!local.success) {
                     try {
                         const snap = await db.collection('users').doc(fbUid).get();
                         const doc = snap.data() || {};
-                        local = _localRegister(doc.name || email.split('@')[0], email, password, doc.country || '', doc.address || '');
-                        if (local.success) local = _localLogin(email, password);
+                        local = _localRegister(doc.name || trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, doc.country || '', doc.address || '');
+                        if (local.success) local = _localLogin(trimmedEmail, trimmedPassword);
                     } catch (_) {}
                 }
+                if (!local.success) {
+                    localStorage.setItem('currentUserId', fbUid);
+                    local = { success: true, user: { id: fbUid, email: trimmedEmail, name: trimmedEmail.split('@')[0] }, message: 'Firebase login successful!' };
+                }
                 if (local.success && analytics) analytics.logEvent('login', { method: 'email' });
-                return local.success
-                    ? local
-                    : { success: true, user: { id: fbUid, email, name: email.split('@')[0] }, message: 'Firebase login successful!' };
+                return local;
             } catch (e) {
                 if (e.code && String(e.code).startsWith('auth/')) {
-                    return { success: false, message: 'Firebase Auth: ' + e.message };
+                    const local = _localLogin(trimmedEmail, trimmedPassword);
+                    if (local.success) return local;
+                    return { success: false, message: 'Invalid email or password' };
                 }
-                return _localLogin(email, password);
+                return _localLogin(trimmedEmail, trimmedPassword);
             }
         };
 
