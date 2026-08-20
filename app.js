@@ -169,10 +169,18 @@ const Auth = {
         const userId = localStorage.getItem('currentUserId');
         if (!userId) return null;
         const users = getFromStorage('users', []);
-        return users.find(u => u.id == userId) || null;
+        let u = users.find(x => x.id == userId);
+        if (!u) u = users.find(x => String(x.id) === String(userId));
+        return u || null;
     },
     getCurrentUserId() {
-        return parseInt(localStorage.getItem('currentUserId')) || null;
+        const raw = localStorage.getItem('currentUserId');
+        if (!raw) return null;
+        const n = parseInt(raw);
+        if (Number.isFinite(n) && String(n) === String(raw).trim()) return n;
+        const users = getFromStorage('users', []);
+        const match = users.find(x => String(x.id) === String(raw) || x.id == raw);
+        return match ? match.id : (Number.isFinite(n) ? n : null);
     },
     checkSession(redirect = true) {
         const user = this.getCurrentUser();
@@ -197,6 +205,7 @@ const Auth = {
         return { success: true, user: newUser, message: 'Registration successful!' };
     },
     login(email, password) {
+        if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
         const users = getFromStorage('users', []);
         const tEmail = String(email).trim().toLowerCase();
         const user = users.find(u => u.email.toLowerCase() === tEmail && u.password === password);
@@ -229,11 +238,15 @@ const Auth = {
 // WALLET & TRANSACTION HELPERS
 // ========================================
 function getUserWallet(userId) {
-    return getFromStorage('wallets', []).find(w => w.userId === userId);
+    const wallets = getFromStorage('wallets', []);
+    let w = wallets.find(x => x.userId === userId);
+    if (!w) w = wallets.find(x => String(x.userId) === String(userId));
+    if (!w) w = wallets.find(x => x.id == userId);
+    return w || null;
 }
 function saveWallet(wallet) {
     const wallets = getFromStorage('wallets', []);
-    const idx = wallets.findIndex(w => w.userId === wallet.userId);
+    const idx = wallets.findIndex(w => String(w.userId) === String(wallet.userId) || w.userId === wallet.userId);
     idx >= 0 ? (wallets[idx] = wallet) : wallets.push(wallet);
     saveToStorage('wallets', wallets);
 }
@@ -808,6 +821,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         Auth.login = async function (email, password) {
+            if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
             const trimmedEmail = String(email).trim().toLowerCase();
             const trimmedPassword = String(password);
             try {
@@ -823,10 +837,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     } catch (_) {}
                 }
                 if (!local.success) {
-                    localStorage.setItem('currentUserId', fbUid);
-                    local = { success: true, user: { id: fbUid, email: trimmedEmail, name: trimmedEmail.split('@')[0] }, message: 'Firebase login successful!' };
+                    const users = getFromStorage('users', []);
+                    const existingByEmail = users.find(u => String(u.email).trim().toLowerCase() === trimmedEmail);
+                    if (existingByEmail) {
+                        localStorage.setItem('currentUserId', existingByEmail.id);
+                        local = { success: true, user: existingByEmail, message: 'Login successful!' };
+                    } else {
+                        const fallback = _localRegister(trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, '', '');
+                        if (fallback.success) local = _localLogin(trimmedEmail, trimmedPassword);
+                    }
                 }
-                if (local.success && analytics) analytics.logEvent('login', { method: 'email' });
+                if (!local.success) {
+                    return { success: false, message: 'User profile incomplete — please re-register' };
+                }
+                if (analytics) analytics.logEvent('login', { method: 'email' });
                 return local;
             } catch (e) {
                 if (e.code && String(e.code).startsWith('auth/')) {
@@ -845,7 +869,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         auth.onAuthStateChanged(user => {
             if (!user) {
-                if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
+                const localId = localStorage.getItem('currentUserId');
+                const users = getFromStorage('users', []);
+                if (localId && !users.find(u => String(u.id) === String(localId))) {
+                    localStorage.removeItem('currentUserId');
+                }
             }
         });
 

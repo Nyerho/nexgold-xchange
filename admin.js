@@ -47,6 +47,19 @@ function initializeAdmin() {
     loadSettingsIntoForm();
     loadPaymentMethodsIntoForm();
 
+    const usersTbody = document.getElementById('usersTableBody');
+    if (usersTbody && !usersTbody.dataset.delegatedBound) {
+        usersTbody.dataset.delegatedBound = '1';
+        usersTbody.addEventListener('click', function (e) {
+            const btn = e.target.closest('button[data-admin-action]');
+            if (!btn) return;
+            const action     = btn.dataset.adminAction;
+            const walletType = btn.dataset.adminWallet;
+            const userIdRaw  = btn.dataset.adminUserid;
+            window.adminAction(action, walletType, userIdRaw);
+        });
+    }
+
     // ---------------------------------------------------------------
     // 3. Settings save button
     // ---------------------------------------------------------------
@@ -110,24 +123,24 @@ function renderUsersTable() {
     }
 
     tbody.innerHTML = users.map(u => {
-        const uid = JSON.stringify(String(u.id));
+        const uid = u.id;
         return `
         <tr>
-            <td><strong>#${String(u.id).slice(-5)}</strong></td>
+            <td><strong>#${String(uid).slice(-5)}</strong></td>
             <td>${u.name}<br><small class="text-muted">${u.email}</small></td>
             <td>${u.country || '-'}</td>
             <td><strong class="text-gold">${formatNumber(u.wallet.main, 4)}g</strong></td>
             <td><strong style="color:#60a5fa;">${formatNumber(u.wallet.vault, 4)}g</strong></td>
             <td><strong style="color:#34d399;">${formatNumber(u.wallet.bonus, 4)}g</strong></td>
             <td>
-                <button class="btn-sm-gold me-1 mb-1"   onclick="adminAction('credit','main',${uid})"><i class="bi bi-plus"></i> Main</button>
-                <button class="btn-sm-gold me-1 mb-1"   onclick="adminAction('credit','vault',${uid})"><i class="bi bi-plus"></i> Vault</button>
-                <button class="btn-sm-gold me-1 mb-1"   onclick="adminAction('credit','bonus',${uid})"><i class="bi bi-plus"></i> Bonus</button>
+                <button class="btn-sm-gold me-1 mb-1"   data-admin-action="credit" data-admin-wallet="main"  data-admin-userid="${uid}"><i class="bi bi-plus"></i> Main</button>
+                <button class="btn-sm-gold me-1 mb-1"   data-admin-action="credit" data-admin-wallet="vault" data-admin-userid="${uid}"><i class="bi bi-plus"></i> Vault</button>
+                <button class="btn-sm-gold me-1 mb-1"   data-admin-action="credit" data-admin-wallet="bonus" data-admin-userid="${uid}"><i class="bi bi-plus"></i> Bonus</button>
             </td>
             <td>
-                <button class="btn-sm-danger me-1 mb-1" onclick="adminAction('debit','main',${uid})"><i class="bi bi-dash"></i> Main</button>
-                <button class="btn-sm-danger me-1 mb-1" onclick="adminAction('debit','vault',${uid})"><i class="bi bi-dash"></i> Vault</button>
-                <button class="btn-sm-danger mb-1"      onclick="adminAction('debit','bonus',${uid})"><i class="bi bi-dash"></i> Bonus</button>
+                <button class="btn-sm-danger me-1 mb-1" data-admin-action="debit"  data-admin-wallet="main"  data-admin-userid="${uid}"><i class="bi bi-dash"></i> Main</button>
+                <button class="btn-sm-danger me-1 mb-1" data-admin-action="debit"  data-admin-wallet="vault" data-admin-userid="${uid}"><i class="bi bi-dash"></i> Vault</button>
+                <button class="btn-sm-danger mb-1"      data-admin-action="debit"  data-admin-wallet="bonus" data-admin-userid="${uid}"><i class="bi bi-dash"></i> Bonus</button>
             </td>
         </tr>`; }).join('');
 }
