@@ -9,6 +9,7 @@ function handleAuthPage() {
     const initialTab   = params.get('tab') || 'login';
     const loginForm    = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
+    const adminForm    = document.getElementById('adminForm');
 
     // ---------------------------------------------------------------
     // 1. Set initial tab
@@ -19,6 +20,7 @@ function handleAuthPage() {
     });
     if (loginForm)    loginForm.style.display    = initialTab === 'login'    ? 'block' : 'none';
     if (registerForm) registerForm.style.display = initialTab === 'register' ? 'block' : 'none';
+    if (adminForm)    adminForm.style.display    = initialTab === 'admin'    ? 'block' : 'none';
 
     // ---------------------------------------------------------------
     // 2. Tab switching
@@ -30,6 +32,7 @@ function handleAuthPage() {
             this.classList.add('active');
             if (loginForm)    loginForm.style.display    = tabName === 'login'    ? 'block' : 'none';
             if (registerForm) registerForm.style.display = tabName === 'register' ? 'block' : 'none';
+            if (adminForm)    adminForm.style.display    = tabName === 'admin'    ? 'block' : 'none';
         });
     });
 
@@ -86,6 +89,33 @@ function handleAuthPage() {
                 }
             } catch (err) {
                 showToast(err.message || 'Registration failed', 'error');
+                if (submit) { submit.disabled = false; submit.innerHTML = originalHTML; }
+            }
+        });
+    }
+
+    // ---------------------------------------------------------------
+    // 5. Admin login form submit
+    // ---------------------------------------------------------------
+    if (adminForm) {
+        adminForm.addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const email    = document.getElementById('adminEmail').value;
+            const password = document.getElementById('adminLoginPassword').value.trim();
+            const submit   = adminForm.querySelector('button[type="submit"]');
+            let originalHTML = '';
+            if (submit) { submit.disabled = true; originalHTML = submit.innerHTML; submit.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>AUTHORIZING...'; }
+            try {
+                const result = await Promise.resolve(Auth.adminLogin(email, password));
+                if (result && result.success) {
+                    showToast(result.message || 'Admin access granted', 'success');
+                    setTimeout(() => window.location.href = 'admin.html', 700);
+                } else {
+                    showToast((result && result.message) || 'Invalid admin credentials', 'error');
+                    if (submit) { submit.disabled = false; submit.innerHTML = originalHTML; }
+                }
+            } catch (err) {
+                showToast(err.message || 'Admin login failed', 'error');
                 if (submit) { submit.disabled = false; submit.innerHTML = originalHTML; }
             }
         });

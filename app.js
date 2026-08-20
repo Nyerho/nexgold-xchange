@@ -9,6 +9,7 @@
 const KARAT_MULTIPLIERS = { '24K': 1, '22K': 0.916, '18K': 0.75 };
 const UNIT_MULTIPLIERS  = { 'Gram': 1, 'Ounce': 31.103, 'Kilo': 1000 };
 const ADMIN_PASSWORD = 'admin123';
+const ADMIN_EMAIL = 'admin@nexgold.exchange';
 
 // ========================================
 // STORAGE HELPERS
@@ -208,13 +209,14 @@ const Auth = {
         localStorage.removeItem('adminLoggedIn');
         window.location.href = 'index.html';
     },
-    adminLogin(password) {
+    adminLogin(email, password) {
+        const tEmail = String(email).trim().toLowerCase();
         const tPwd = String(password).trim();
-        if (tPwd === ADMIN_PASSWORD) {
+        if (tEmail === ADMIN_EMAIL.toLowerCase() && tPwd === ADMIN_PASSWORD) {
             localStorage.setItem('adminLoggedIn', 'true');
             return { success: true };
         }
-        return { success: false, message: 'Invalid admin password' };
+        return { success: false, message: 'Invalid admin email or password' };
     },
     checkAdminSession(redirect = true) {
         const isAdmin = localStorage.getItem('adminLoggedIn') === 'true';

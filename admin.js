@@ -17,8 +17,9 @@ function initializeAdmin() {
         mainScreen.style.display  = 'none';
 
         document.getElementById('adminLoginBtn')?.addEventListener('click', function () {
+            const email = document.getElementById('adminEmailAdmin').value;
             const pw = document.getElementById('adminPassword').value.trim();
-            const result = Auth.adminLogin(pw);
+            const result = Auth.adminLogin(email, pw);
             if (result.success) {
                 showToast('Admin access granted', 'success');
                 setTimeout(() => location.reload(), 500);
@@ -27,6 +28,9 @@ function initializeAdmin() {
             }
         });
         document.getElementById('adminPassword')?.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { document.getElementById('adminLoginBtn')?.click(); }
+        });
+        document.getElementById('adminEmailAdmin')?.addEventListener('keydown', function (e) {
             if (e.key === 'Enter') { document.getElementById('adminLoginBtn')?.click(); }
         });
         return;
