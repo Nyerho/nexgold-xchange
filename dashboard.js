@@ -38,6 +38,9 @@ function initializeDashboard() {
     });
     const emailEl = document.getElementById('userEmail');
     if (emailEl && user) emailEl.textContent = user.email;
+    document.querySelectorAll('#userEmailCopy').forEach(el => {
+        if (user) el.textContent = user.email;
+    });
 
     // Live sell-available balance
     updateTransferAndSellBalances();
@@ -52,13 +55,15 @@ function initializeDashboard() {
     setInterval(() => {
         const buyTotal    = document.getElementById('buytotalPrice');
         const buyDisplay  = document.getElementById('buyDisplayTotal');
-        if (buyTotal && buyDisplay && buyDisplay.textContent !== buyTotal.value) {
-            buyDisplay.textContent = buyTotal.value;
+        const buyVal = buyTotal ? (buyTotal.value || buyTotal.textContent) : '';
+        if (buyTotal && buyDisplay && buyDisplay.textContent !== buyVal) {
+            buyDisplay.textContent = buyVal;
         }
         const sellTotal   = document.getElementById('selltotalPrice');
         const sellDisplay = document.getElementById('sellDisplayTotal');
-        if (sellTotal && sellDisplay && sellDisplay.textContent !== sellTotal.value) {
-            sellDisplay.textContent = sellTotal.value;
+        const sellVal = sellTotal ? (sellTotal.value || sellTotal.textContent) : '';
+        if (sellTotal && sellDisplay && sellDisplay.textContent !== sellVal) {
+            sellDisplay.textContent = sellVal;
         }
     }, 100);
 
@@ -113,12 +118,12 @@ function initializeDashboard() {
     }, 200);
 
     // Full tx history (lower section)
-    const histFullInterval = setInterval(() => {
+    setTimeout(() => {
         const full = document.getElementById('fullTransactionHistory');
         const brief = document.getElementById('transactionHistory');
-        if (!full || !brief || !brief.innerHTML) return;
-        clearInterval(histFullInterval);
-        full.innerHTML = brief.innerHTML.replace('Last 10 transactions', '');
+        if (full && brief && brief.innerHTML && full.querySelector('#transactionHistory')) {
+            brief.style.display = '';
+        }
     }, 300);
 
     // ---------------------------------------------------------------

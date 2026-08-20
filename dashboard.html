@@ -607,22 +607,27 @@
                 document.getElementById('sidebar')?.classList.remove('open');
             });
         });
-        document.querySelectorAll('#userEmailCopy').forEach(el => {
-            const observer = new MutationObserver(() => {
-                const real = document.getElementById('userEmail');
-                if (real) el.textContent = real.textContent;
-            });
-            observer.observe(document.body, { subtree: true, characterData: true, childList: true });
-        });
+        function syncUserEmailCopy() {
+            const real = document.getElementById('userEmail');
+            if (real) {
+                document.querySelectorAll('#userEmailCopy').forEach(el => {
+                    el.textContent = real.textContent;
+                });
+            }
+        }
+        syncUserEmailCopy();
+        setInterval(syncUserEmailCopy, 500);
         setInterval(() => {
             const t1 = document.getElementById('buyDisplayTotal');
             const t2 = document.getElementById('buyDisplayTotal2');
             const t3 = document.getElementById('buytotalPrice');
-            if (t1 && t2 && t3 && t2.textContent !== t3.value) { t2.textContent = t3.value; t1.textContent = t3.value; }
+            const t3Val = t3 ? (t3.value || t3.textContent) : '';
+            if (t1 && t2 && t3 && t2.textContent !== t3Val) { t2.textContent = t3Val; t1.textContent = t3Val; }
             const s1 = document.getElementById('sellDisplayTotal');
             const s2 = document.getElementById('sellDisplayTotal2');
             const s3 = document.getElementById('selltotalPrice');
-            if (s1 && s2 && s3 && s2.textContent !== s3.value) { s2.textContent = s3.value; s1.textContent = s3.value; }
+            const s3Val = s3 ? (s3.value || s3.textContent) : '';
+            if (s1 && s2 && s3 && s2.textContent !== s3Val) { s2.textContent = s3Val; s1.textContent = s3Val; }
         }, 120);
     </script>
 

@@ -21,9 +21,56 @@ function saveToStorage(key, value) {
     localStorage.setItem(key, JSON.stringify(value));
 }
 
+function setElementValue(el, value) {
+    if (!el) return;
+    const tag = (el.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+        el.value = value;
+    } else {
+        el.textContent = value;
+    }
+}
+function getElementValue(el) {
+    if (!el) return '';
+    const tag = (el.tagName || '').toUpperCase();
+    if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') {
+        return el.value;
+    }
+    return el.textContent || '';
+}
+
 // ========================================
 // DATA INITIALIZATION (runs everywhere)
 // ========================================
+function createDemoUser(autoLogin = false) {
+    const email    = 'demo@nexgold.exchange';
+    const password = 'Demo@123';
+    const users    = getFromStorage('users', []);
+    if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
+        const reg = Auth.register('Demo Investor', email, password, 'United States', '1 Demo Way, New York, NY 10001');
+        if (reg && reg.success && reg.user) {
+            const wallet = getUserWallet(reg.user.id);
+            if (wallet) {
+                wallet.main  = 10.5;
+                wallet.vault = 5.25;
+                wallet.bonus = 2.1;
+                saveWallet(wallet);
+                const txns = [
+                    { id: Date.now() - 86400000 * 6, userId: reg.user.id, type: 'BUY',  karat: '24K', grams: 5.0,  price: 5 * getSettings().basePrice,        date: new Date(Date.now() - 86400000 * 6).toISOString() },
+                    { id: Date.now() - 86400000 * 3, userId: reg.user.id, type: 'BUY',  karat: '22K', grams: 5.5,  price: 5.5 * getSettings().basePrice * 0.916, date: new Date(Date.now() - 86400000 * 3).toISOString() },
+                    { id: Date.now() - 86400000 * 1, userId: reg.user.id, type: 'SELL', karat: '24K', grams: 0.25, price: 0.25 * getSettings().basePrice,      date: new Date(Date.now() - 86400000 * 1).toISOString() }
+                ];
+                txns.forEach(saveTransaction);
+                if (autoLogin) Auth.login(email, password);
+                return { success: true, message: 'Demo account created' };
+            }
+        }
+    } else if (autoLogin) {
+        Auth.login(email, password);
+    }
+    return { success: false, message: 'Demo user exists' };
+}
+
 (function initializeData() {
     if (!localStorage.getItem('users'))          saveToStorage('users', []);
     if (!localStorage.getItem('wallets'))        saveToStorage('wallets', []);
@@ -39,6 +86,8 @@ function saveToStorage(key, value) {
             bonusTransferLimit: 100
         });
     }
+    const users = getFromStorage('users', []);
+    if (users.length === 0) createDemoUser(false);
 })();
 
 // ========================================
@@ -91,12 +140,12 @@ function setupCalculator(prefix = '') {
         const unit  = unitEl.value;
         const qty   = parseFloat(qtyEl.value) || 0;
         if (qty <= 0) {
-            if (totalEl) totalEl.value = formatCurrency(0);
+            if (totalEl) setElementValue(totalEl, formatCurrency(0));
             updateBreakdown(prefix, { totalGrams: 0, pricePerGram: 0, totalPrice: 0 });
             return;
         }
         const result = calculatePrice(karat, unit, qty);
-        if (totalEl) totalEl.value = formatCurrency(result.totalPrice);
+        if (totalEl) setElementValue(totalEl, formatCurrency(result.totalPrice));
         updateBreakdown(prefix, result);
     };
     karatEl.addEventListener('change', update);
