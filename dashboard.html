@@ -94,7 +94,7 @@
         </div>
     </nav>
 
-    <div class="dashboard-wrapper" style="padding-top:110px;">
+    <div class="dashboard-wrapper">
         <div class="container-fluid" style="max-width:1920px;padding:0 28px 60px;margin:0 auto;">
             <div class="row g-4">
 
@@ -320,17 +320,34 @@
                                                     <input type="number" id="buyquantity" min="0.01" step="0.01" value="10" class="form-control form-control-lg">
                                                 </div>
                                             </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600"><i class="bi bi-credit-card-2-front me-1 text-gold"></i> Payment Method</label>
+                                                <select id="buyPaymentMethod" class="form-select form-select-lg">
+                                                    <option value="Bank Wire">Bank Wire / SWIFT Transfer</option>
+                                                    <option value="USDT">USDT (TRC20 / ERC20)</option>
+                                                    <option value="BTC">Bitcoin (BTC)</option>
+                                                    <option value="Card">Visa / Mastercard (+1.5%)</option>
+                                                </select>
+                                                <div id="buyPaymentDetails" style="margin-top:12px;padding:16px 18px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.2);border-radius:12px;font-size:13px;">
+                                                    <div style="font-weight:700;color:#D4AF37;margin-bottom:6px;"><i class="bi bi-info-circle me-1"></i> Admin Payment Instructions</div>
+                                                    <div id="buyPaymentInfo" style="color:#b0b0b0;line-height:1.6;">Select a payment method to see account details.</div>
+                                                </div>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600"><i class="bi bi-chat-square-text me-1" style="color:#60a5fa;"></i> Payment Reference / Notes (optional)</label>
+                                                <input type="text" id="buyPaymentRef" class="form-control form-control-lg" placeholder="Enter your payment reference or transaction ID">
+                                            </div>
                                         </div>
                                         <div class="calc-breakdown mt-4">
                                             <div class="cb-row"><span>Grams of Pure Gold</span><strong id="buybreakdownGrams">0.0000 g</strong></div>
                                             <div class="cb-row"><span>Price / Gram</span><strong id="buybreakdownPPG">$0.00 USD</strong></div>
                                             <div class="cb-row"><span>Spread (0.3%)</span><strong>— included</strong></div>
                                             <div class="cb-row cb-total"><span>TOTAL DUE</span><strong id="buytotalPrice">$0.00 USD</strong></div>
-                                            <div class="cb-row cb-sub2"><span>Total: <span id="buyDisplayTotal">$0.00 USD</span> · Insurance certificate issued instantly</span></div>
+                                            <div class="cb-row cb-sub2"><span>Total: <span id="buyDisplayTotal">$0.00 USD</span> · Certificate & gold credited <strong>after admin approval</strong></span></div>
                                         </div>
                                         <div class="calc-actions">
                                             <button id="buySubmitBtn" class="btn-hero-gold w-100 justify-content-center">
-                                                <i class="bi bi-gem"></i> CONFIRM & BUY · <span id="buyDisplayTotal2">$0.00</span>
+                                                <i class="bi bi-send-check"></i> SUBMIT ORDER FOR APPROVAL · <span id="buyDisplayTotal2">$0.00</span>
                                             </button>
                                         </div>
                                     </div>
@@ -416,16 +433,33 @@
                                                     <input type="number" id="sellquantity" min="0.01" step="0.01" value="1" class="form-control form-control-lg">
                                                 </div>
                                             </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600"><i class="bi bi-cash-stack me-1" style="color:#ef4444;"></i> Payout Method (Where to send your funds)</label>
+                                                <select id="sellPayoutMethod" class="form-select form-select-lg">
+                                                    <option value="Bank Wire">Bank Wire / SWIFT Transfer</option>
+                                                    <option value="USDT">USDT (TRC20 / ERC20)</option>
+                                                    <option value="BTC">Bitcoin (BTC)</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600"><i class="bi bi-wallet2 me-1" style="color:#22c55e;"></i> Payout Account / Wallet Address</label>
+                                                <input type="text" id="sellPayoutDetails" class="form-control form-control-lg" placeholder="Enter your bank account info, USDT address, or BTC wallet">
+                                            </div>
+                                            <div class="col-12">
+                                                <label class="form-label fw-600"><i class="bi bi-truck me-1" style="color:#3b82f6;"></i> Gold Delivery / Vault Withdrawal Address</label>
+                                                <textarea id="sellDeliveryAddress" class="form-control" rows="2" style="min-height:70px;resize:vertical;" placeholder="Enter the delivery address for physical gold withdrawal, or leave blank for vault-to-vault transfer"></textarea>
+                                                <div style="margin-top:8px;font-size:12px;color:#8a8a8a;"><i class="bi bi-info-circle me-1"></i> <strong>Note:</strong> Gold will be debited from your wallet ONLY after admin verifies and approves the sell order.</div>
+                                            </div>
                                         </div>
                                         <div class="calc-breakdown mt-4">
                                             <div class="cb-row"><span>Grams of Pure Gold</span><strong id="sellbreakdownGrams">0.0000 g</strong></div>
                                             <div class="cb-row"><span>Buyback Price / g</span><strong id="sellbreakdownPPG">$0.00 USD</strong></div>
                                             <div class="cb-row cb-total"><span>YOU RECEIVE</span><strong id="selltotalPrice">$0.00 USD</strong></div>
-                                            <div class="cb-row cb-sub2"><span>Total payout: <span id="sellDisplayTotal">$0.00 USD</span> · Wire / USDT in &lt;24h</span></div>
+                                            <div class="cb-row cb-sub2"><span>Total payout: <span id="sellDisplayTotal">$0.00 USD</span> · Processed <strong>after admin approval</strong> (24–48h)</span></div>
                                         </div>
                                         <div class="calc-actions">
                                             <button id="sellSubmitBtn" class="btn-hero-gold w-100 justify-content-center" style="background:linear-gradient(135deg,#f87171,#dc2626 55%,#991b1b 100%);box-shadow:0 14px 34px rgba(239,68,68,0.3),inset 0 1px 0 rgba(255,255,255,0.35);">
-                                                <i class="bi bi-cash-stack"></i> CONFIRM SELL · <span id="sellDisplayTotal2">$0.00</span>
+                                                <i class="bi bi-send-exclamation"></i> SUBMIT SELL FOR APPROVAL · <span id="sellDisplayTotal2">$0.00</span>
                                             </button>
                                         </div>
                                     </div>

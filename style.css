@@ -452,7 +452,7 @@ body {
    DASHBOARD STYLES
    ======================================== */
 .dashboard-wrapper {
-    padding-top: 100px;
+    padding-top: 96px;
     min-height: 100vh;
     background: var(--bg-primary);
 }
@@ -460,10 +460,10 @@ body {
 .sidebar {
     background: var(--bg-card);
     border-right: 1px solid var(--border-color);
-    min-height: calc(100vh - 100px);
+    min-height: calc(100vh - 96px);
     position: fixed;
     left: 0;
-    top: 100px;
+    top: 80px;
     width: 260px;
     padding: 30px 20px;
     overflow-y: auto;

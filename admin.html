@@ -144,7 +144,7 @@
             </div>
         </nav>
 
-        <div class="dashboard-wrapper" style="padding-top:110px;">
+        <div class="dashboard-wrapper">
             <div class="container-fluid" style="max-width:1920px;padding:0 28px 80px;margin:0 auto;">
 
                 <!-- Page Header -->
@@ -190,6 +190,13 @@
                             <div class="stat-label">Trading Volume</div>
                             <div class="stat-value" id="statVolume">$0.00 USD</div>
                             <div class="stat-icon"><i class="bi bi-graph-up-arrow"></i></div>
+                        </div>
+                    </div>
+                    <div class="col-xl-3 col-md-6">
+                        <div class="stat-card" style="background:linear-gradient(135deg,#fff7ed,#ffedd5 50%,#fed7aa);border-color:rgba(249,115,22,0.25);">
+                            <div class="stat-label" style="color:#9a3412;">Pending Approvals</div>
+                            <div class="stat-value" id="statPending" style="color:#c2410c;">0</div>
+                            <div class="stat-icon" style="background:rgba(249,115,22,0.2);color:#ea580c;"><i class="bi bi-clock-history"></i></div>
                         </div>
                     </div>
                 </div>
@@ -352,6 +359,15 @@
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- PENDING TRANSACTIONS APPROVALS -->
+                <div class="card mb-5" id="pendingTxnsCard" style="border:2px solid rgba(245,158,11,0.35);box-shadow:0 12px 36px rgba(245,158,11,0.15);">
+                    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2" style="background:linear-gradient(135deg,#78350f,#92400e);">
+                        <h4 class="mb-0" style="color:#fde68a;"><i class="bi bi-hourglass-split me-2"></i> Pending Transactions · Awaiting Approval</h4>
+                        <button class="btn-sm-gold" style="background:#fde68a;color:#78350f;" onclick="renderPendingApprovals()"><i class="bi bi-arrow-clockwise"></i> Refresh Pending</button>
+                    </div>
+                    <div id="pendingApprovalsTable"></div>
                 </div>
 
                 <!-- SYSTEM TRANSACTIONS TABLE -->

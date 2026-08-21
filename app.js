@@ -10,16 +10,30 @@ const KARAT_MULTIPLIERS = { '24K': 1, '22K': 0.916, '18K': 0.75 };
 const UNIT_MULTIPLIERS  = { 'Gram': 1, 'Ounce': 31.103, 'Kilo': 1000 };
 const ADMIN_PASSWORD = 'admin123';
 const ADMIN_EMAIL = 'admin@nexgold.exchange';
+const TX_STATUS_PENDING  = 'PENDING';
+const TX_STATUS_APPROVED = 'APPROVED';
+const TX_STATUS_REJECTED = 'REJECTED';
 
 // ========================================
 // STORAGE HELPERS
 // ========================================
 function getFromStorage(key, defaultValue) {
-    const data = localStorage.getItem(key);
-    return data ? JSON.parse(data) : defaultValue;
+    try {
+        const data = localStorage.getItem(key);
+        return data ? JSON.parse(data) : defaultValue;
+    } catch (e) {
+        console.warn('[Storage] read failed for', key, '-> using default');
+        return defaultValue;
+    }
 }
 function saveToStorage(key, value) {
-    localStorage.setItem(key, JSON.stringify(value));
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (e) {
+        console.error('[Storage] write failed for', key);
+        return false;
+    }
 }
 
 function setElementValue(el, value) {
@@ -43,31 +57,34 @@ function getElementValue(el) {
 // ========================================
 // DATA INITIALIZATION (runs everywhere)
 // ========================================
-function createDemoUser(autoLogin = false) {
+function createDemoUserLocal() {
     const email    = 'demo@nexgold.exchange';
     const password = 'Demo@123';
     const users    = getFromStorage('users', []);
     if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-        const reg = Auth.register('Demo Investor', email, password, 'United States', '1 Demo Way, New York, NY 10001');
-        if (reg && reg.success && reg.user) {
-            const wallet = getUserWallet(reg.user.id);
-            if (wallet) {
-                wallet.main  = 10.5;
-                wallet.vault = 5.25;
-                wallet.bonus = 2.1;
-                saveWallet(wallet);
-                const txns = [
-                    { id: Date.now() - 86400000 * 6, userId: reg.user.id, type: 'BUY',  karat: '24K', grams: 5.0,  price: 5 * getSettings().basePrice,        date: new Date(Date.now() - 86400000 * 6).toISOString() },
-                    { id: Date.now() - 86400000 * 3, userId: reg.user.id, type: 'BUY',  karat: '22K', grams: 5.5,  price: 5.5 * getSettings().basePrice * 0.916, date: new Date(Date.now() - 86400000 * 3).toISOString() },
-                    { id: Date.now() - 86400000 * 1, userId: reg.user.id, type: 'SELL', karat: '24K', grams: 0.25, price: 0.25 * getSettings().basePrice,      date: new Date(Date.now() - 86400000 * 1).toISOString() }
-                ];
-                txns.forEach(saveTransaction);
-                if (autoLogin) Auth.login(email, password);
-                return { success: true, message: 'Demo account created' };
-            }
-        }
-    } else if (autoLogin) {
-        Auth.login(email, password);
+        const newUser = {
+            id: Date.now() - 86400000 * 7,
+            name: 'Demo Investor',
+            email: email,
+            password: password,
+            country: 'United States',
+            address: '1 Demo Way, New York, NY 10001'
+        };
+        users.push(newUser);
+        saveToStorage('users', users);
+
+        const wallets = getFromStorage('wallets', []);
+        const wallet = { userId: newUser.id, main: 10.5, vault: 5.25, bonus: 2.1 };
+        wallets.push(wallet);
+        saveToStorage('wallets', wallets);
+
+        const txns = [
+            { id: Date.now() - 86400000 * 6, userId: newUser.id, type: 'BUY',  karat: '24K', grams: 5.0,  price: 5 * 65, date: new Date(Date.now() - 86400000 * 6).toISOString(), status: TX_STATUS_APPROVED },
+            { id: Date.now() - 86400000 * 3, userId: newUser.id, type: 'BUY',  karat: '22K', grams: 5.5,  price: 5.5 * 65 * 0.916, date: new Date(Date.now() - 86400000 * 3).toISOString(), status: TX_STATUS_APPROVED },
+            { id: Date.now() - 86400000 * 1, userId: newUser.id, type: 'SELL', karat: '24K', grams: 0.25, price: 0.25 * 65, date: new Date(Date.now() - 86400000 * 1).toISOString(), status: TX_STATUS_APPROVED }
+        ];
+        txns.forEach(saveTransaction);
+        return { success: true, message: 'Demo account created locally', user: newUser };
     }
     return { success: false, message: 'Demo user exists' };
 }
@@ -87,18 +104,25 @@ function createDemoUser(autoLogin = false) {
             bonusTransferLimit: 100
         });
     }
+    const txns = getFromStorage('transactions', []);
+    let needsSave = false;
+    txns.forEach(t => {
+        if (!t.status) { t.status = TX_STATUS_APPROVED; needsSave = true; }
+    });
+    if (needsSave) saveToStorage('transactions', txns);
     const users = getFromStorage('users', []);
-    if (users.length === 0) createDemoUser(false);
+    if (users.length === 0) createDemoUserLocal();
 })();
 
 // ========================================
 // FORMATTING HELPERS
 // ========================================
 function formatCurrency(amount) {
-    return '$' + parseFloat(amount).toFixed(2) + ' USD';
+    return '$' + parseFloat(amount || 0).toFixed(2) + ' USD';
 }
 function formatNumber(num, decimals = 4) {
-    return parseFloat(num).toLocaleString('en-US', {
+    const n = parseFloat(num || 0);
+    return n.toLocaleString('en-US', {
         minimumFractionDigits: decimals,
         maximumFractionDigits: decimals
     });
@@ -122,13 +146,12 @@ function calculatePrice(karat, unit, quantity) {
     const karatMultiplier = KARAT_MULTIPLIERS[karat] || 1;
     const unitMultiplier  = UNIT_MULTIPLIERS[unit]  || 1;
     const basePrice       = settings.basePrice;
-    const totalGrams      = parseFloat(quantity) * unitMultiplier;
+    const totalGrams      = parseFloat(quantity || 0) * unitMultiplier;
     const pricePerGram    = basePrice * karatMultiplier;
     const totalPrice      = totalGrams * pricePerGram;
     return { basePrice, karatMultiplier, unitMultiplier, totalGrams, pricePerGram, totalPrice };
 }
 
-// Reusable calculator setup (can be called from any page)
 function setupCalculator(prefix = '') {
     const karatEl = document.getElementById(prefix + 'karat');
     const unitEl  = document.getElementById(prefix + 'unit');
@@ -164,83 +187,110 @@ function updateBreakdown(prefix, result) {
 // ========================================
 // AUTHENTICATION MODULE (shared)
 // ========================================
-const Auth = {
-    getCurrentUser() {
-        const userId = localStorage.getItem('currentUserId');
-        if (!userId) return null;
-        const users = getFromStorage('users', []);
-        let u = users.find(x => x.id == userId);
-        if (!u) u = users.find(x => String(x.id) === String(userId));
-        return u || null;
-    },
-    getCurrentUserId() {
-        const raw = localStorage.getItem('currentUserId');
-        if (!raw) return null;
-        const n = parseInt(raw);
-        if (Number.isFinite(n) && String(n) === String(raw).trim()) return n;
-        const users = getFromStorage('users', []);
-        const match = users.find(x => String(x.id) === String(raw) || x.id == raw);
-        return match ? match.id : (Number.isFinite(n) ? n : null);
-    },
-    checkSession(redirect = true) {
-        const user = this.getCurrentUser();
-        if (!user && redirect) window.location.href = 'auth.html';
-        return user;
-    },
-    register(name, email, password, country, address) {
+const Auth = (function () {
+    const _registerLocal = function (name, email, password, country, address) {
         const users = getFromStorage('users', []);
         const tEmail = String(email).trim().toLowerCase();
         if (users.find(u => u.email.toLowerCase() === tEmail)) {
             return { success: false, message: 'Email already registered' };
         }
-        const newUser = { id: Date.now(), name: String(name).trim(), email: tEmail, password, country: String(country || '').trim(), address: String(address || '').trim() };
-        //TODO: Connect real API here - hash passwords on backend
+        const newUser = {
+            id: Date.now(),
+            name: String(name).trim(),
+            email: tEmail,
+            password: String(password),
+            country: String(country || '').trim(),
+            address: String(address || '').trim()
+        };
         users.push(newUser);
         saveToStorage('users', users);
 
         const wallets = getFromStorage('wallets', []);
-        wallets.push({ userId: newUser.id, main: 0, vault: 0, bonus: 0 });
-        saveToStorage('wallets', wallets);
-
-        return { success: true, user: newUser, message: 'Registration successful!' };
-    },
-    login(email, password) {
-        if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
-        const users = getFromStorage('users', []);
-        const tEmail = String(email).trim().toLowerCase();
-        const user = users.find(u => u.email.toLowerCase() === tEmail && u.password === password);
-        if (!user) return { success: false, message: 'Invalid email or password' };
-        localStorage.setItem('currentUserId', user.id);
-        return { success: true, user, message: 'Login successful!' };
-    },
-    logout() {
-        localStorage.removeItem('currentUserId');
-        localStorage.removeItem('adminLoggedIn');
-        window.location.href = 'index.html';
-    },
-    adminLogin(email, password) {
-        const tEmail = String(email).trim().toLowerCase();
-        const tPwd = String(password).trim();
-        if (tEmail === ADMIN_EMAIL.toLowerCase() && tPwd === ADMIN_PASSWORD) {
-            localStorage.setItem('adminLoggedIn', 'true');
-            return { success: true };
+        if (!wallets.find(w => String(w.userId) === String(newUser.id))) {
+            wallets.push({ userId: newUser.id, main: 0, vault: 0, bonus: 0 });
+            saveToStorage('wallets', wallets);
         }
-        return { success: false, message: 'Invalid admin email or password' };
-    },
-    checkAdminSession(redirect = true) {
-        const isAdmin = localStorage.getItem('adminLoggedIn') === 'true';
-        if (!isAdmin && redirect) window.location.href = 'admin.html';
-        return isAdmin;
-    }
-};
+        return { success: true, user: newUser, message: 'Registration successful!' };
+    };
+
+    const _loginLocal = function (email, password) {
+        try {
+            if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
+        } catch (_) {}
+        const users = getFromStorage('users', []);
+        const tEmail = String(email || '').trim().toLowerCase();
+        const tPwd   = String(password || '');
+        const user = users.find(u => String(u.email).toLowerCase() === tEmail && String(u.password) === tPwd);
+        if (!user) return { success: false, message: 'Invalid email or password' };
+        try { localStorage.setItem('currentUserId', user.id); } catch (_) {}
+        return { success: true, user, message: 'Login successful!' };
+    };
+
+    const module = {
+        _localRegister: _registerLocal,
+        _localLogin: _loginLocal,
+        getCurrentUser() {
+            const userId = localStorage.getItem('currentUserId');
+            if (!userId) return null;
+            const users = getFromStorage('users', []);
+            let u = users.find(x => String(x.id) === String(userId));
+            if (!u) u = users.find(x => x.id == userId);
+            return u || null;
+        },
+        getCurrentUserId() {
+            const raw = localStorage.getItem('currentUserId');
+            if (!raw) return null;
+            const n = parseInt(raw);
+            if (Number.isFinite(n) && String(n) === String(raw).trim()) return n;
+            const users = getFromStorage('users', []);
+            const match = users.find(x => String(x.id) === String(raw) || x.id == raw);
+            return match ? match.id : (Number.isFinite(n) ? n : null);
+        },
+        checkSession(redirect = true) {
+            const user = this.getCurrentUser();
+            if (!user && redirect) {
+                try { window.location.href = 'auth.html'; } catch (_) {}
+            }
+            return user;
+        },
+        register(name, email, password, country, address) {
+            return _registerLocal(name, email, password, country, address);
+        },
+        login(email, password) {
+            return _loginLocal(email, password);
+        },
+        logout() {
+            try { localStorage.removeItem('currentUserId'); } catch (_) {}
+            try { localStorage.removeItem('adminLoggedIn'); } catch (_) {}
+            try { window.location.href = 'index.html'; } catch (_) {}
+        },
+        adminLogin(email, password) {
+            const tEmail = String(email || '').trim().toLowerCase();
+            const tPwd = String(password || '').trim();
+            if (tEmail === String(ADMIN_EMAIL).toLowerCase() && tPwd === String(ADMIN_PASSWORD)) {
+                try { localStorage.setItem('adminLoggedIn', 'true'); } catch (_) {}
+                return { success: true, message: 'Admin access granted' };
+            }
+            return { success: false, message: 'Invalid admin email or password' };
+        },
+        checkAdminSession(redirect = true) {
+            const isAdmin = localStorage.getItem('adminLoggedIn') === 'true';
+            if (!isAdmin && redirect) {
+                try { window.location.href = 'admin.html'; } catch (_) {}
+            }
+            return isAdmin;
+        }
+    };
+    return module;
+})();
 
 // ========================================
 // WALLET & TRANSACTION HELPERS
 // ========================================
 function getUserWallet(userId) {
     const wallets = getFromStorage('wallets', []);
-    let w = wallets.find(x => x.userId === userId);
-    if (!w) w = wallets.find(x => String(x.userId) === String(userId));
+    let w = wallets.find(x => String(x.userId) === String(userId));
+    if (!w) w = wallets.find(x => x.userId === userId);
     if (!w) w = wallets.find(x => x.id == userId);
     return w || null;
 }
@@ -252,11 +302,32 @@ function saveWallet(wallet) {
 }
 function saveTransaction(tx) {
     const transactions = getFromStorage('transactions', []);
+    if (!tx.status) tx.status = TX_STATUS_APPROVED;
     transactions.unshift(tx);
     saveToStorage('transactions', transactions);
 }
+function updateTransaction(txId, updates) {
+    const transactions = getFromStorage('transactions', []);
+    const idx = transactions.findIndex(t => String(t.id) === String(txId));
+    if (idx >= 0) {
+        transactions[idx] = { ...transactions[idx], ...updates };
+        saveToStorage('transactions', transactions);
+        return transactions[idx];
+    }
+    return null;
+}
+function getTransactionById(txId) {
+    const transactions = getFromStorage('transactions', []);
+    return transactions.find(t => String(t.id) === String(txId)) || null;
+}
+function getAllTransactions() {
+    return getFromStorage('transactions', []);
+}
+function getPendingTransactions() {
+    return getAllTransactions().filter(t => t.status === TX_STATUS_PENDING);
+}
 
-function buyGold(karat, unit, quantity) {
+function buyGold(karat, unit, quantity, paymentMethod = '', paymentDetails = '') {
     const userId = Auth.getCurrentUserId();
     if (!userId) return { success: false, message: 'Please login first', requiresAuth: true };
 
@@ -265,24 +336,33 @@ function buyGold(karat, unit, quantity) {
 
     const calc   = calculatePrice(karat, unit, quantity);
     const user   = Auth.getCurrentUser();
-    const wallet = getUserWallet(userId);
-    if (!wallet) return { success: false, message: 'Wallet not found' };
-
-    wallet.main += calc.totalGrams;
-    saveWallet(wallet);
+    if (!user)   return { success: false, message: 'User not found' };
 
     const transaction = {
-        id: Date.now(), userId, type: 'BUY', karat,
-        grams: calc.totalGrams, price: calc.totalPrice, date: new Date().toISOString()
+        id: Date.now(),
+        userId,
+        type: 'BUY',
+        karat,
+        unit,
+        grams: calc.totalGrams,
+        price: calc.totalPrice,
+        date: new Date().toISOString(),
+        status: TX_STATUS_PENDING,
+        paymentMethod: paymentMethod || 'Not specified',
+        paymentDetails: paymentDetails || '',
+        note: 'Awaiting admin approval'
     };
     saveTransaction(transaction);
 
-    const certificate = generateCertificateData(user, transaction, calc);
-    //TODO: Connect real API here - process actual payment
-    return { success: true, message: 'Purchase successful!', transaction, certificate, wallet };
+    return {
+        success: true,
+        message: 'Purchase order submitted! Awaiting admin approval before completion.',
+        transaction,
+        pending: true
+    };
 }
 
-function sellGold(karat, unit, quantity) {
+function sellGold(karat, unit, quantity, payoutMethod = '', deliveryAddress = '', payoutDetails = '') {
     const userId = Auth.getCurrentUserId();
     if (!userId) return { success: false, message: 'Please login first', requiresAuth: true };
 
@@ -294,16 +374,30 @@ function sellGold(karat, unit, quantity) {
     if (!wallet || wallet.main < calc.totalGrams) {
         return { success: false, message: 'Insufficient gold balance in Main wallet' };
     }
-    wallet.main -= calc.totalGrams;
-    saveWallet(wallet);
 
     const transaction = {
-        id: Date.now(), userId, type: 'SELL', karat,
-        grams: calc.totalGrams, price: calc.totalPrice, date: new Date().toISOString()
+        id: Date.now(),
+        userId,
+        type: 'SELL',
+        karat,
+        unit,
+        grams: calc.totalGrams,
+        price: calc.totalPrice,
+        date: new Date().toISOString(),
+        status: TX_STATUS_PENDING,
+        payoutMethod: payoutMethod || 'Not specified',
+        payoutDetails: payoutDetails || '',
+        deliveryAddress: deliveryAddress || '',
+        note: 'Awaiting admin approval before completion'
     };
     saveTransaction(transaction);
-    //TODO: Connect real API here - process actual payout
-    return { success: true, message: 'Sell order placed successfully!', transaction };
+
+    return {
+        success: true,
+        message: 'Sell order submitted! Awaiting admin approval before completion.',
+        transaction,
+        pending: true
+    };
 }
 
 function transferBonusToMain(grams) {
@@ -320,13 +414,14 @@ function transferBonusToMain(grams) {
     if (wallet.bonus < transferGrams) {
         return { success: false, message: 'Insufficient Bonus balance' };
     }
-    wallet.bonus -= transferGrams;
-    wallet.main  += transferGrams;
+    wallet.bonus = parseFloat((wallet.bonus - transferGrams).toFixed(6));
+    wallet.main  = parseFloat((wallet.main  + transferGrams).toFixed(6));
     saveWallet(wallet);
 
     saveTransaction({
         id: Date.now(), userId, type: 'TRANSFER', karat: '24K',
-        grams: transferGrams, price: 0, date: new Date().toISOString(), note: 'Bonus → Main'
+        grams: transferGrams, price: 0, date: new Date().toISOString(),
+        note: 'Bonus → Main', status: TX_STATUS_APPROVED
     });
     return { success: true, message: 'Transfer completed!' };
 }
@@ -339,7 +434,7 @@ function generatePolicyNumber() {
     const random = Math.floor(100000 + Math.random() * 900000);
     return `GLD-INS-${year}-${random}`;
 }
-function generateCertificateData(user, transaction) {
+function generateCertificateData(user, transaction, calc) {
     const certificates = getFromStorage('certificates', []);
     const cert = {
         id: transaction.id,
@@ -363,114 +458,119 @@ function getUserCertificates(userId) {
     return getFromStorage('certificates', []).filter(c => c.userId === userId);
 }
 function downloadCertificate(certId) {
-    const cert = getFromStorage('certificates', []).find(c => c.id === certId);
+    const cert = getFromStorage('certificates', []).find(c => String(c.id) === String(certId));
     if (cert) generateCertificatePDF(cert);
 }
 function generateCertificatePDF(cert) {
-    //TODO: Connect real API here - generate PDF on backend
-    const { jsPDF } = window.jspdf;
-    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
-    const pageWidth  = doc.internal.pageSize.getWidth();
-    const pageHeight = doc.internal.pageSize.getHeight();
-    const margin = 20;
+    try {
+        const { jsPDF } = window.jspdf || {};
+        if (!jsPDF) { showToast('PDF library not loaded', 'error'); return cert; }
+        const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+        const pageWidth  = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
 
-    doc.setFillColor(250, 248, 240);
-    doc.rect(0, 0, pageWidth, pageHeight, 'F');
+        doc.setFillColor(250, 248, 240);
+        doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(1.5);
-    doc.rect(margin - 5, margin - 5, pageWidth - 2 * (margin - 5), pageHeight - 2 * (margin - 5));
-    doc.setLineWidth(0.5);
-    doc.rect(margin - 2, margin - 2, pageWidth - 2 * (margin - 2), pageHeight - 2 * (margin - 2));
+        doc.setDrawColor(212, 175, 55);
+        doc.setLineWidth(1.5);
+        doc.rect(margin - 5, margin - 5, pageWidth - 2 * (margin - 5), pageHeight - 2 * (margin - 5));
+        doc.setLineWidth(0.5);
+        doc.rect(margin - 2, margin - 2, pageWidth - 2 * (margin - 2), pageHeight - 2 * (margin - 2));
 
-    doc.setFillColor(212, 175, 55);
-    doc.rect(margin - 5, margin - 5, pageWidth - 2 * (margin - 5), 25, 'F');
+        doc.setFillColor(212, 175, 55);
+        doc.rect(margin - 5, margin - 5, pageWidth - 2 * (margin - 5), 25, 'F');
 
-    doc.setTextColor(0, 0, 0);
-    doc.setFont('helvetica', 'bold');
-    doc.setFontSize(18);
-    doc.text('NEXGOLD EXCHANGE', pageWidth / 2, margin + 10, { align: 'center' });
-
-    doc.setFontSize(15);
-    doc.setTextColor(212, 175, 55);
-    doc.text(cert.title, pageWidth / 2, margin + 45, { align: 'center' });
-
-    doc.setFontSize(11);
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'normal');
-    doc.text(`POLICY NUMBER: ${cert.policyNumber}`, pageWidth / 2, margin + 55, { align: 'center' });
-
-    const certDate = new Date(cert.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-    doc.text(`Date of Issue: ${certDate}`, pageWidth / 2, margin + 62, { align: 'center' });
-
-    doc.setDrawColor(212, 175, 55);
-    doc.setLineWidth(0.8);
-    doc.line(margin, margin + 72, pageWidth - margin, margin + 72);
-
-    let currentY = margin + 85;
-    doc.setFontSize(11);
-    doc.setTextColor(30, 30, 30);
-    const sections = [
-        { label: 'Account Holder:', value: cert.userName },
-        { label: 'Email:', value: cert.userEmail },
-        { label: 'Asset:', value: `${cert.karat} Gold, ${formatNumber(cert.grams, 4)} Grams` },
-        { label: 'Insured Value:', value: `$${formatNumber(cert.value, 2)} USD` },
-        { label: 'Custodian:', value: cert.custodian },
-        { label: 'Underwriter:', value: cert.underwriter }
-    ];
-    sections.forEach(sec => {
+        doc.setTextColor(0, 0, 0);
         doc.setFont('helvetica', 'bold');
-        doc.text(sec.label, margin, currentY);
+        doc.setFontSize(18);
+        doc.text('NEXGOLD EXCHANGE', pageWidth / 2, margin + 10, { align: 'center' });
+
+        doc.setFontSize(15);
+        doc.setTextColor(212, 175, 55);
+        doc.text(cert.title, pageWidth / 2, margin + 45, { align: 'center' });
+
+        doc.setFontSize(11);
+        doc.setTextColor(60, 60, 60);
         doc.setFont('helvetica', 'normal');
-        doc.text(sec.value, margin + 55, currentY);
+        doc.text(`POLICY NUMBER: ${cert.policyNumber}`, pageWidth / 2, margin + 55, { align: 'center' });
+
+        const certDate = new Date(cert.date).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+        doc.text(`Date of Issue: ${certDate}`, pageWidth / 2, margin + 62, { align: 'center' });
+
+        doc.setDrawColor(212, 175, 55);
+        doc.setLineWidth(0.8);
+        doc.line(margin, margin + 72, pageWidth - margin, margin + 72);
+
+        let currentY = margin + 85;
+        doc.setFontSize(11);
+        doc.setTextColor(30, 30, 30);
+        const sections = [
+            { label: 'Account Holder:', value: cert.userName },
+            { label: 'Email:', value: cert.userEmail },
+            { label: 'Asset:', value: `${cert.karat} Gold, ${formatNumber(cert.grams, 4)} Grams` },
+            { label: 'Insured Value:', value: `$${formatNumber(cert.value, 2)} USD` },
+            { label: 'Custodian:', value: cert.custodian },
+            { label: 'Underwriter:', value: cert.underwriter }
+        ];
+        sections.forEach(sec => {
+            doc.setFont('helvetica', 'bold');
+            doc.text(sec.label, margin, currentY);
+            doc.setFont('helvetica', 'normal');
+            doc.text(sec.value, margin + 55, currentY);
+            currentY += 10;
+        });
+
         currentY += 10;
-    });
+        doc.setFontSize(10);
+        doc.setTextColor(80, 80, 80);
+        const coverageText = 'This certificate confirms that the above-named account holder holds the specified gold asset in secure custody. The asset is fully insured against theft, loss, and damage under the terms of the master policy held by NEXGOLD EXCHANGE.';
+        doc.text(doc.splitTextToSize(coverageText, pageWidth - 2 * margin), margin, currentY);
+        currentY += 35;
 
-    currentY += 10;
-    doc.setFontSize(10);
-    doc.setTextColor(80, 80, 80);
-    const coverageText = 'This certificate confirms that the above-named account holder holds the specified gold asset in secure custody. The asset is fully insured against theft, loss, and damage under the terms of the master policy held by NEXGOLD EXCHANGE.';
-    doc.text(doc.splitTextToSize(coverageText, pageWidth - 2 * margin), margin, currentY);
-    currentY += 35;
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.3);
+        const qrSize = 35;
+        const qrX = pageWidth - margin - qrSize;
+        doc.rect(qrX, currentY, qrSize, qrSize);
+        doc.setFontSize(8);
+        doc.setTextColor(140, 140, 140);
+        doc.text('QR Code', qrX + qrSize / 2, currentY + qrSize / 2 + 2, { align: 'center' });
+        doc.text('Verify',   qrX + qrSize / 2, currentY + qrSize / 2 + 8, { align: 'center' });
 
-    doc.setDrawColor(200, 200, 200);
-    doc.setLineWidth(0.3);
-    const qrSize = 35;
-    const qrX = pageWidth - margin - qrSize;
-    doc.rect(qrX, currentY, qrSize, qrSize);
-    doc.setFontSize(8);
-    doc.setTextColor(140, 140, 140);
-    doc.text('QR Code', qrX + qrSize / 2, currentY + qrSize / 2 + 2, { align: 'center' });
-    doc.text('Verify',   qrX + qrSize / 2, currentY + qrSize / 2 + 8, { align: 'center' });
+        doc.setFontSize(10);
+        doc.setTextColor(60, 60, 60);
+        doc.setFont('helvetica', 'bold');
+        doc.text('Coverage Details:', margin, currentY);
+        currentY += 6;
+        doc.setFont('helvetica', 'normal');
+        doc.text(`Storage: Fully Segregated, Audited Monthly`, margin, currentY); currentY += 5;
+        doc.text(`Insurance: All-risk, Full Replacement Value`, margin, currentY); currentY += 5;
+        doc.text(`Audit: Quarterly Independent Third-Party`, margin, currentY); currentY += 5;
+        doc.text(`Redemption: Physical Delivery Available`, margin, currentY);
 
-    doc.setFontSize(10);
-    doc.setTextColor(60, 60, 60);
-    doc.setFont('helvetica', 'bold');
-    doc.text('Coverage Details:', margin, currentY);
-    currentY += 6;
-    doc.setFont('helvetica', 'normal');
-    doc.text(`• Storage: Fully Segregated, Audited Monthly`, margin, currentY); currentY += 5;
-    doc.text(`• Insurance: All-risk, Full Replacement Value`, margin, currentY); currentY += 5;
-    doc.text(`• Audit: Quarterly Independent Third-Party`, margin, currentY); currentY += 5;
-    doc.text(`• Redemption: Physical Delivery Available`, margin, currentY);
+        currentY = pageHeight - margin - 35;
+        doc.setDrawColor(60, 60, 60);
+        doc.setLineWidth(0.5);
+        doc.line(margin, currentY, margin + 60, currentY);
+        doc.line(pageWidth - margin - 60, currentY, pageWidth - margin, currentY);
+        doc.setFontSize(9);
+        doc.setTextColor(60, 60, 60);
+        doc.text('Authorized Signature', margin, currentY + 6);
+        doc.text('Account Holder Acknowledgment', pageWidth - margin - 60, currentY + 6, { align: 'left' });
+        doc.text('NEXGOLD EXCHANGE', margin, currentY + 15);
+        doc.text(cert.userName, pageWidth - margin - 60, currentY + 15);
 
-    currentY = pageHeight - margin - 35;
-    doc.setDrawColor(60, 60, 60);
-    doc.setLineWidth(0.5);
-    doc.line(margin, currentY, margin + 60, currentY);
-    doc.line(pageWidth - margin - 60, currentY, pageWidth - margin, currentY);
-    doc.setFontSize(9);
-    doc.setTextColor(60, 60, 60);
-    doc.text('Authorized Signature', margin, currentY + 6);
-    doc.text('Account Holder Acknowledgment', pageWidth - margin - 60, currentY + 6, { align: 'left' });
-    doc.text('NEXGOLD EXCHANGE', margin, currentY + 15);
-    doc.text(cert.userName, pageWidth - margin - 60, currentY + 15);
+        doc.setFontSize(8);
+        doc.setTextColor(140, 140, 140);
+        doc.text(`Certificate ID: ${cert.id} | This is a system-generated document.`, pageWidth / 2, pageHeight - 8, { align: 'center' });
 
-    doc.setFontSize(8);
-    doc.setTextColor(140, 140, 140);
-    doc.text(`Certificate ID: ${cert.id} | This is a system-generated document.`, pageWidth / 2, pageHeight - 8, { align: 'center' });
-
-    doc.save(`NEXGOLD-Certificate-${cert.policyNumber}.pdf`);
+        doc.save(`NEXGOLD-Certificate-${cert.policyNumber}.pdf`);
+    } catch (e) {
+        console.warn('PDF generation failed:', e);
+        showToast('Certificate saved (PDF unavailable in this environment)', 'info');
+    }
     return cert;
 }
 
@@ -478,7 +578,17 @@ function generateCertificatePDF(cert) {
 // DASHBOARD HELPERS (shared rendering functions)
 // ========================================
 function getUserTransactions(userId, limit = 10) {
-    return getFromStorage('transactions', []).filter(t => t.userId === userId).slice(0, limit);
+    return getFromStorage('transactions', []).filter(t => String(t.userId) === String(userId)).slice(0, limit);
+}
+
+function statusBadgeClass(status) {
+    switch (status) {
+        case TX_STATUS_APPROVED: return 'background: rgba(34, 197, 94, 0.15); color: #22c55e;';
+        case TX_STATUS_REJECTED: return 'background: rgba(239, 68, 68, 0.15); color: #ef4444;';
+        case TX_STATUS_PENDING:
+        default:
+            return 'background: rgba(245, 158, 11, 0.15); color: #f59e0b;';
+    }
 }
 
 function renderTransactionHistory(userId, containerId, limit = 10) {
@@ -497,13 +607,16 @@ function renderTransactionHistory(userId, containerId, limit = 10) {
     }
     container.innerHTML = `
         <table class="table table-nexgold align-middle">
-            <thead><tr><th>Type</th><th>Asset</th><th>Grams</th><th>Value</th><th>Date</th></tr></thead>
+            <thead><tr><th>Type</th><th>Asset</th><th>Grams</th><th>Value</th><th>Status</th><th>Date</th></tr></thead>
             <tbody>${transactions.map(t => `
                 <tr>
                     <td><span class="badge-${t.type.toLowerCase() === 'buy' ? 'buy' : t.type.toLowerCase() === 'sell' ? 'sell' : 'buy'}">${t.type}</span></td>
                     <td>${t.karat} Gold</td>
                     <td>${formatNumber(t.grams, 4)} g</td>
                     <td>${t.type === 'TRANSFER' ? '-' : formatCurrency(t.price)}</td>
+                    <td><span style="padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 700; letter-spacing: 0.5px; ${statusBadgeClass(t.status)}">${t.status || TX_STATUS_APPROVED}</span>
+                    ${t.status === TX_STATUS_PENDING ? '<div style="font-size:10px;color:#f59e0b;margin-top:2px;">Awaiting admin</div>' : ''}
+                    </td>
                     <td>${new Date(t.date).toLocaleString()}</td>
                 </tr>`).join('')}
             </tbody>
@@ -520,7 +633,7 @@ function renderCertificatesList(userId, containerId) {
             <div class="empty-state">
                 <i class="bi bi-file-earmark-text"></i>
                 <h5>No Certificates Yet</h5>
-                <p>Purchase gold to receive your insurance & custody certificates.</p>
+                <p>Purchase gold & have your order approved by admin to receive your insurance & custody certificates.</p>
             </div>`;
         return;
     }
@@ -553,16 +666,22 @@ function renderWalletCards(userId) {
     const bonusCard = document.getElementById('bonusWalletCard');
 
     if (mainCard) {
-        mainCard.querySelector('.wallet-balance-grams').textContent      = formatNumber(wallet.main, 4);
-        mainCard.querySelector('.wallet-balance-usd .amount').textContent = formatCurrency(mainUSD);
+        const gramsEl = mainCard.querySelector('.wallet-balance-grams');
+        const usdEl   = mainCard.querySelector('.wallet-balance-usd .amount');
+        if (gramsEl) gramsEl.textContent = formatNumber(wallet.main, 4);
+        if (usdEl)   usdEl.textContent   = formatCurrency(mainUSD);
     }
     if (vaultCard) {
-        vaultCard.querySelector('.wallet-balance-grams').textContent      = formatNumber(wallet.vault, 4);
-        vaultCard.querySelector('.wallet-balance-usd .amount').textContent = formatCurrency(vaultUSD);
+        const gramsEl = vaultCard.querySelector('.wallet-balance-grams');
+        const usdEl   = vaultCard.querySelector('.wallet-balance-usd .amount');
+        if (gramsEl) gramsEl.textContent = formatNumber(wallet.vault, 4);
+        if (usdEl)   usdEl.textContent   = formatCurrency(vaultUSD);
     }
     if (bonusCard) {
-        bonusCard.querySelector('.wallet-balance-grams').textContent      = formatNumber(wallet.bonus, 4);
-        bonusCard.querySelector('.wallet-balance-usd .amount').textContent = formatCurrency(bonusUSD);
+        const gramsEl = bonusCard.querySelector('.wallet-balance-grams');
+        const usdEl   = bonusCard.querySelector('.wallet-balance-usd .amount');
+        if (gramsEl) gramsEl.textContent = formatNumber(wallet.bonus, 4);
+        if (usdEl)   usdEl.textContent   = formatCurrency(bonusUSD);
     }
     const welcomeEl = document.getElementById('welcomeName');
     if (welcomeEl) welcomeEl.textContent = user.name;
@@ -644,14 +763,15 @@ const Admin = {
     getStats() {
         const users        = getFromStorage('users', []);
         const transactions = getFromStorage('transactions', []);
-        const buys         = transactions.filter(t => t.type === 'BUY');
+        const approvedBuys = transactions.filter(t => t.type === 'BUY' && t.status === TX_STATUS_APPROVED);
         const wallets      = getFromStorage('wallets', []);
         return {
             totalUsers:        users.length,
             totalTransactions: transactions.length,
-            totalGoldSold:     buys.reduce((sum, t) => sum + t.grams, 0),
-            totalVolume:       buys.reduce((sum, t) => sum + t.price, 0),
-            totalGoldHeld:     wallets.reduce((sum, w) => sum + w.main + w.vault + w.bonus, 0)
+            totalGoldSold:     approvedBuys.reduce((sum, t) => sum + (t.grams || 0), 0),
+            totalVolume:       approvedBuys.reduce((sum, t) => sum + (t.price || 0), 0),
+            totalGoldHeld:     wallets.reduce((sum, w) => sum + (w.main || 0) + (w.vault || 0) + (w.bonus || 0), 0),
+            pendingCount:      transactions.filter(t => t.status === TX_STATUS_PENDING).length
         };
     },
     getAllUsersWithWallets() {
@@ -659,18 +779,17 @@ const Admin = {
         const wallets = getFromStorage('wallets', []);
         return users.map(u => ({
             ...u,
-            wallet: wallets.find(w => w.userId === u.id) || { main: 0, vault: 0, bonus: 0 }
+            wallet: wallets.find(w => String(w.userId) === String(u.id)) || { main: 0, vault: 0, bonus: 0 }
         }));
     },
     creditWallet(userId, walletType, grams) {
-        // Accept numeric local userId OR Firebase string UID (find by email/uid)
         let wallet = getUserWallet(userId);
         if (!wallet) {
             const wallets = getFromStorage('wallets', []);
             const users   = getFromStorage('users', []);
             const uByUid  = users.find(u => String(u.fbUid || '') === String(userId)) ||
                             users.find(u => String(u.id) === String(userId));
-            if (uByUid) wallet = wallets.find(w => w.userId === uByUid.id);
+            if (uByUid) wallet = wallets.find(w => String(w.userId) === String(uByUid.id));
         }
         if (!wallet) return { success: false, message: `Wallet not found for user "${userId}" — please have them login once first` };
         const g = parseFloat(grams);
@@ -686,7 +805,7 @@ const Admin = {
             const users   = getFromStorage('users', []);
             const uByUid  = users.find(u => String(u.fbUid || '') === String(userId)) ||
                             users.find(u => String(u.id) === String(userId));
-            if (uByUid) wallet = wallets.find(w => w.userId === uByUid.id);
+            if (uByUid) wallet = wallets.find(w => String(w.userId) === String(uByUid.id));
         }
         if (!wallet) return { success: false, message: `Wallet not found for user "${userId}" — please have them login once first` };
         const g = parseFloat(grams);
@@ -711,6 +830,80 @@ const Admin = {
     savePaymentMethods(methods) {
         saveToStorage('paymentMethods', methods);
         return { success: true };
+    },
+    approveTransaction(txId) {
+        const tx = getTransactionById(txId);
+        if (!tx) return { success: false, message: 'Transaction not found' };
+        if (tx.status === TX_STATUS_APPROVED) return { success: true, message: 'Already approved', transaction: tx };
+        if (tx.status === TX_STATUS_REJECTED) return { success: false, message: 'Cannot approve a rejected transaction' };
+
+        const users = getFromStorage('users', []);
+        const user = users.find(u => String(u.id) === String(tx.userId));
+        const wallet = getUserWallet(tx.userId);
+        if (!wallet) return { success: false, message: 'User wallet not found' };
+
+        if (tx.type === 'BUY') {
+            wallet.main = parseFloat((wallet.main + (tx.grams || 0)).toFixed(6));
+            saveWallet(wallet);
+
+            let cert = null;
+            if (user) {
+                const calc = calculatePrice(tx.karat, tx.unit || 'Gram', (tx.grams || 0) / (UNIT_MULTIPLIERS[tx.unit || 'Gram'] || 1));
+                cert = generateCertificateData(user, tx, calc);
+            }
+            const updated = updateTransaction(txId, {
+                status: TX_STATUS_APPROVED,
+                approvedAt: new Date().toISOString(),
+                approvedBy: ADMIN_EMAIL,
+                note: 'Approved by admin - gold credited to wallet'
+            });
+            return {
+                success: true,
+                message: `BUY approved: ${formatNumber(tx.grams, 4)}g credited & certificate issued`,
+                transaction: updated,
+                certificate: cert
+            };
+        } else if (tx.type === 'SELL') {
+            if (wallet.main < (tx.grams || 0)) {
+                return { success: false, message: 'User has insufficient balance - cannot approve this sell' };
+            }
+            wallet.main = parseFloat((wallet.main - (tx.grams || 0)).toFixed(6));
+            saveWallet(wallet);
+
+            const updated = updateTransaction(txId, {
+                status: TX_STATUS_APPROVED,
+                approvedAt: new Date().toISOString(),
+                approvedBy: ADMIN_EMAIL,
+                note: 'Approved by admin - gold debited & payout queued'
+            });
+            return {
+                success: true,
+                message: `SELL approved: ${formatNumber(tx.grams, 4)}g debited from wallet`,
+                transaction: updated
+            };
+        } else {
+            const updated = updateTransaction(txId, {
+                status: TX_STATUS_APPROVED,
+                approvedAt: new Date().toISOString(),
+                approvedBy: ADMIN_EMAIL
+            });
+            return { success: true, message: 'Transaction approved', transaction: updated };
+        }
+    },
+    rejectTransaction(txId, reason = '') {
+        const tx = getTransactionById(txId);
+        if (!tx) return { success: false, message: 'Transaction not found' };
+        if (tx.status === TX_STATUS_REJECTED) return { success: true, message: 'Already rejected', transaction: tx };
+        if (tx.status === TX_STATUS_APPROVED) return { success: false, message: 'Cannot reject an already-approved transaction' };
+
+        const updated = updateTransaction(txId, {
+            status: TX_STATUS_REJECTED,
+            rejectedAt: new Date().toISOString(),
+            rejectedBy: ADMIN_EMAIL,
+            rejectionReason: reason || 'Not specified',
+            note: 'Rejected by admin'
+        });
+        return { success: true, message: 'Transaction rejected', transaction: updated };
     }
 };
 
@@ -737,11 +930,11 @@ function showToast(message, type = 'success') {
     setTimeout(() => {
         toast.style.transform = 'translateX(120%)';
         setTimeout(() => toast.remove(), 500);
-    }, 3500);
+    }, 4500);
 }
 
 function showAuthModal(type = 'login') {
-    window.location.href = 'auth.html?tab=' + type;
+    try { window.location.href = 'auth.html?tab=' + type; } catch (_) {}
 }
 
 // ========================================
@@ -751,7 +944,9 @@ Object.assign(window, {
     Auth, Admin, calculatePrice, buyGold, sellGold, transferBonusToMain,
     generateCertificatePDF, downloadCertificate, calculateInvestment,
     formatCurrency, formatNumber, showToast,
-    setupCalculator, renderWalletCards, renderTransactionHistory, renderCertificatesList
+    setupCalculator, renderWalletCards, renderTransactionHistory, renderCertificatesList,
+    getTransactionById, getPendingTransactions, getAllTransactions,
+    TX_STATUS_PENDING, TX_STATUS_APPROVED, TX_STATUS_REJECTED
 });
 
 // ========================================
@@ -766,7 +961,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========================================
    FIREBASE INTEGRATION LAYER
-   (Non-blocking. Falls back to localStorage.)
+   (Non-blocking. Falls back to localStorage. Local auth always wins for reliability.)
    ======================================== */
 (function attachFirebaseLayer() {
     const onReady = () => {
@@ -774,13 +969,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!FB.enabled) return;
         const { auth, db, analytics } = FB;
 
-        // ========================================
-        // 1. Auth wrappers — use Firebase Auth + local record
-        // ========================================
-        const _localRegister = Auth.register.bind(Auth);
-        const _localLogin    = Auth.login.bind(Auth);
+        // KEEP local references for reliable fallback
+        const _localRegister = Auth._localRegister || Auth.register.bind(Auth);
+        const _localLogin    = Auth._localLogin    || Auth.login.bind(Auth);
         const _localLogout   = Auth.logout.bind(Auth);
 
+        // Auth wrappers: try Firebase, local ALWAYS wins/is source of truth
         Auth.register = async function (name, email, password, country, address) {
             const trimmedEmail = String(email).trim().toLowerCase();
             const trimmedName = String(name).trim();
@@ -790,75 +984,40 @@ document.addEventListener('DOMContentLoaded', () => {
                 const uc = await auth.createUserWithEmailAndPassword(trimmedEmail, password);
                 const fbUid = uc.user.uid;
                 const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
-                if (!local.success) {
-                    try { await uc.user.delete(); } catch (_) {}
-                    return local;
-                }
-                try {
-                    const fbProfile = { name: trimmedName, email: trimmedEmail, country: trimmedCountry, address: trimmedAddress, localUserId: local.user.id, role: 'user', createdAt: new Date().toISOString() };
-                    await db.collection('users').doc(fbUid).set(fbProfile);
-                    await db.collection('wallets').doc(fbUid).set({ userId: local.user.id, main: 0, vault: 0, bonus: 0, updatedAt: new Date().toISOString() });
-                    if (analytics) analytics.logEvent('sign_up', { method: 'email' });
-                } catch (e) {
-                    console.warn('[Firebase] write user failed (local OK):', e.message);
+                if (local.success) {
+                    try {
+                        const fbProfile = { name: trimmedName, email: trimmedEmail, country: trimmedCountry, address: trimmedAddress, localUserId: local.user.id, role: 'user', createdAt: new Date().toISOString() };
+                        await db.collection('users').doc(fbUid).set(fbProfile);
+                        await db.collection('wallets').doc(fbUid).set({ userId: local.user.id, main: 0, vault: 0, bonus: 0, updatedAt: new Date().toISOString() });
+                    } catch (e) { console.warn('[Firebase] write user failed (local OK):', e.message); }
                 }
                 return local;
             } catch (e) {
-                if (e.code === 'auth/email-already-in-use') {
-                    const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
-                    if (local.success || (local.message && local.message.includes('already registered'))) {
-                        return local;
-                    }
-                    return { success: false, message: 'Email already registered' };
-                }
-                if (e.code && String(e.code).startsWith('auth/')) {
-                    const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
-                    if (local.success) return local;
-                    return { success: false, message: local.message || 'Registration failed' };
-                }
                 return _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
             }
         };
 
         Auth.login = async function (email, password) {
-            if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
             const trimmedEmail = String(email).trim().toLowerCase();
             const trimmedPassword = String(password);
+            const local = _localLogin(trimmedEmail, trimmedPassword);
+            if (local.success) {
+                try {
+                    await auth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword).catch(() => {});
+                    if (analytics) analytics.logEvent('login', { method: 'email' });
+                } catch (_) {}
+                return local;
+            }
             try {
                 const uc = await auth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword);
                 const fbUid = uc.user.uid;
-                let local = _localLogin(trimmedEmail, trimmedPassword);
-                if (!local.success) {
-                    try {
-                        const snap = await db.collection('users').doc(fbUid).get();
-                        const doc = snap.data() || {};
-                        local = _localRegister(doc.name || trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, doc.country || '', doc.address || '');
-                        if (local.success) local = _localLogin(trimmedEmail, trimmedPassword);
-                    } catch (_) {}
-                }
-                if (!local.success) {
-                    const users = getFromStorage('users', []);
-                    const existingByEmail = users.find(u => String(u.email).trim().toLowerCase() === trimmedEmail);
-                    if (existingByEmail) {
-                        localStorage.setItem('currentUserId', existingByEmail.id);
-                        local = { success: true, user: existingByEmail, message: 'Login successful!' };
-                    } else {
-                        const fallback = _localRegister(trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, '', '');
-                        if (fallback.success) local = _localLogin(trimmedEmail, trimmedPassword);
-                    }
-                }
-                if (!local.success) {
-                    return { success: false, message: 'User profile incomplete — please re-register' };
-                }
-                if (analytics) analytics.logEvent('login', { method: 'email' });
-                return local;
+                const snap = await db.collection('users').doc(fbUid).get().catch(() => ({ exists: false, data: () => ({}) }));
+                const doc = snap.data ? snap.data() : {};
+                const reg = _localRegister(doc.name || trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, doc.country || '', doc.address || '');
+                if (reg.success) return _localLogin(trimmedEmail, trimmedPassword);
+                return { success: false, message: 'Invalid email or password' };
             } catch (e) {
-                if (e.code && String(e.code).startsWith('auth/')) {
-                    const local = _localLogin(trimmedEmail, trimmedPassword);
-                    if (local.success) return local;
-                    return { success: false, message: 'Invalid email or password' };
-                }
-                return _localLogin(trimmedEmail, trimmedPassword);
+                return local;
             }
         };
 
@@ -867,19 +1026,7 @@ document.addEventListener('DOMContentLoaded', () => {
             _localLogout();
         };
 
-        auth.onAuthStateChanged(user => {
-            if (!user) {
-                const localId = localStorage.getItem('currentUserId');
-                const users = getFromStorage('users', []);
-                if (localId && !users.find(u => String(u.id) === String(localId))) {
-                    localStorage.removeItem('currentUserId');
-                }
-            }
-        });
-
-        // ========================================
-        // 2. Firestore mirror of writes (best-effort)
-        // ========================================
+        // Firestore mirror of writes (best-effort)
         const mirrorToFirestore = async (col, docId, data) => {
             try {
                 const uid = auth.currentUser && auth.currentUser.uid;
@@ -921,7 +1068,6 @@ document.addEventListener('DOMContentLoaded', () => {
             };
         }
 
-        // Admin panel stats mirror
         const _credit = Admin.creditWallet.bind(Admin);
         Admin.creditWallet = async function (userId, walletType, grams) {
             const r = _credit(userId, walletType, grams);
@@ -929,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return r;
         };
 
-        console.info('[Firebase] Layer attached ✔');
+        console.info('[Firebase] Layer attached (local-auth-first mode)');
     };
 
     if (window.FB && window.FB.enabled) onReady();
@@ -938,8 +1084,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 /* ========================================
    DEMO USER SEEDER (console + auth page banner)
-   Credentials printed to browser console, plus helper:
-       createDemoUser() → seeded in localStorage + Firebase Auth
    ======================================== */
 const DEMO_USER = {
     name: 'Demo User',
@@ -951,19 +1095,17 @@ const DEMO_USER = {
 Object.assign(window, { DEMO_USER });
 
 window.createDemoUser = async function () {
-    // Try Firebase first, fall back to local
     try {
         const r = await Auth.register(DEMO_USER.name, DEMO_USER.email, DEMO_USER.password, DEMO_USER.country, DEMO_USER.address);
         if (!r.success && (r.message || '').includes('already registered')) {
             const l = await Auth.login(DEMO_USER.email, DEMO_USER.password);
-            console.log('[DEMO] Already existed → logged in.');
+            console.log('[DEMO] Already existed -> logged in.');
             return l;
         }
-        // Seed a small wallet balance + demo transactions for first-time demo
         if (r && r.success) {
             const uid = r.user.id;
             const wallets = getFromStorage('wallets', []);
-            const w = wallets.find(x => x.userId === uid);
+            const w = wallets.find(x => String(x.userId) === String(uid));
             if (w) {
                 w.main  = parseFloat((w.main + 1.5).toFixed(4));
                 w.bonus = parseFloat((w.bonus + 0.5).toFixed(4));
@@ -971,7 +1113,7 @@ window.createDemoUser = async function () {
                 saveTransaction({
                     id: Date.now() - 1000, userId: uid, type: 'BUY', karat: '24K',
                     grams: 1.5, price: 1.5 * getSettings().basePrice, date: new Date(Date.now() - 86400000).toISOString(),
-                    note: 'Demo seed'
+                    note: 'Demo seed', status: TX_STATUS_APPROVED
                 });
             }
         }
@@ -981,5 +1123,5 @@ window.createDemoUser = async function () {
         return { success: false, message: e.message };
     }
 };
-console.log('%c 🪙 NEXGOLD DEMO CREDENTIALS', 'background:#000;color:#D4AF37;font-size:16px;font-weight:900;padding:12px 18px;border:2px solid #D4AF37;border-radius:8px;');
+console.log('%c NEXGOLD DEMO CREDENTIALS', 'background:#000;color:#D4AF37;font-size:16px;font-weight:900;padding:12px 18px;border:2px solid #D4AF37;border-radius:8px;');
 console.log('%c Email:    demo@nexgold.exchange\n Password: Demo@123\n Admin PW: admin123\n Run `await createDemoUser()` in console to seed.', 'font-family:monospace;font-size:13px;color:#D4AF37;');

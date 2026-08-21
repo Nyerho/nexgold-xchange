@@ -9,9 +9,6 @@ function initializeAdmin() {
     const mainScreen  = document.getElementById('adminMainScreen');
     const isAdmin     = Auth.checkAdminSession(false);
 
-    // ---------------------------------------------------------------
-    // 1. Gate: not logged in → show login screen
-    // ---------------------------------------------------------------
     if (!isAdmin) {
         loginScreen.style.display = 'flex';
         mainScreen.style.display  = 'none';
@@ -36,13 +33,11 @@ function initializeAdmin() {
         return;
     }
 
-    // ---------------------------------------------------------------
-    // 2. Admin is logged in → show main admin panel
-    // ---------------------------------------------------------------
     loginScreen.style.display = 'none';
     mainScreen.style.display  = 'block';
 
     renderStats();
+    renderPendingApprovals();
     renderUsersTable();
     loadSettingsIntoForm();
     loadPaymentMethodsIntoForm();
@@ -60,9 +55,6 @@ function initializeAdmin() {
         });
     }
 
-    // ---------------------------------------------------------------
-    // 3. Settings save button
-    // ---------------------------------------------------------------
     document.getElementById('saveSettingsBtn')?.addEventListener('click', function () {
         const result = Admin.updateSettings({
             basePrice:          parseFloat(document.getElementById('setBasePrice').value),
@@ -77,9 +69,6 @@ function initializeAdmin() {
         }
     });
 
-    // ---------------------------------------------------------------
-    // 4. Payments save button
-    // ---------------------------------------------------------------
     document.getElementById('savePaymentsBtn')?.addEventListener('click', function () {
         Admin.savePaymentMethods({
             usdt: document.getElementById('payUSDT').value,
@@ -94,9 +83,6 @@ function initializeAdmin() {
         showToast('Payment methods saved', 'success');
     });
 
-    // ---------------------------------------------------------------
-    // 5. Analytics charts & tables (load after render)
-    // ---------------------------------------------------------------
     setTimeout(loadAnalyticsCharts, 500);
 }
 
@@ -110,7 +96,132 @@ function renderStats() {
     put('statTransactions', stats.totalTransactions.toLocaleString());
     put('statGold', formatNumber(stats.totalGoldSold, 2) + ' g');
     put('statVolume', formatCurrency(stats.totalVolume));
+    put('statPending', (stats.pendingCount || 0).toLocaleString());
+
+    const card = document.getElementById('pendingTxnsCard');
+    if (card) {
+        if ((stats.pendingCount || 0) === 0) {
+            card.style.opacity = '0.55';
+            card.style.filter = 'grayscale(0.5)';
+        } else {
+            card.style.opacity = '1';
+            card.style.filter = 'none';
+        }
+    }
 }
+
+window.renderPendingApprovals = function () {
+    const container = document.getElementById('pendingApprovalsTable');
+    if (!container) return;
+    const allUsers = getFromStorage('users', []);
+    const pending = getPendingTransactions();
+
+    if (pending.length === 0) {
+        container.innerHTML = `
+            <div style="padding:40px 20px;text-align:center;">
+                <i class="bi bi-check2-all" style="font-size:56px;color:#22c55e;opacity:0.5;margin-bottom:14px;"></i>
+                <h5 style="margin:0 0 6px 0;color:#22c55e;">All Caught Up!</h5>
+                <p style="color:#8a8a8a;font-size:14px;margin:0;">No pending transactions requiring approval.</p>
+            </div>`;
+        renderStats();
+        return;
+    }
+
+    const rows = pending.map(t => {
+        const u = allUsers.find(x => String(x.id) === String(t.userId));
+        const userDisplay = u
+            ? `<strong style="color:#fff;">${u.name}</strong><br><small class="text-muted">${u.email}</small>`
+            : `<strong>Unknown User</strong>`;
+        const badgeClass = t.type.toLowerCase() === 'buy' ? 'buy' : 'sell';
+        const typeClass = t.type === 'BUY' ? 'rgba(34,197,94,0.15)' : 'rgba(239,68,68,0.15)';
+        const typeColor = t.type === 'BUY' ? '#22c55e' : '#ef4444';
+
+        let payInfo = '';
+        if (t.type === 'BUY') {
+            payInfo = [
+                t.paymentMethod   ? `<div><i class="bi bi-credit-card me-1"></i> Method: <strong>${t.paymentMethod}</strong></div>` : '',
+                t.paymentDetails  ? `<div style="font-size:12px;color:#b0b0b0;margin-top:2px;">${t.paymentDetails}</div>` : ''
+            ].filter(Boolean).join('');
+        } else {
+            payInfo = [
+                t.payoutMethod   ? `<div><i class="bi bi-wallet2 me-1"></i> Payout: <strong>${t.payoutMethod}</strong></div>` : '',
+                t.payoutDetails  ? `<div style="font-size:12px;color:#b0b0b0;margin-top:2px;word-break:break-word;">${t.payoutDetails}</div>` : '',
+                t.deliveryAddress ? `<div style="font-size:12px;color:#93c5fd;margin-top:4px;"><i class="bi bi-truck me-1"></i> Delivery: ${t.deliveryAddress}</div>` : ''
+            ].filter(Boolean).join('');
+        }
+        if (!payInfo) payInfo = '<small class="text-muted">No details provided</small>';
+
+        return `
+        <tr>
+            <td>
+                <span class="badge-${badgeClass}">${t.type}</span>
+                <div style="font-size:10.5px;color:#f59e0b;margin-top:4px;"><i class="bi bi-hourglass-split"></i> PENDING</div>
+            </td>
+            <td>${userDisplay}</td>
+            <td>
+                <strong>${t.karat} · ${t.unit || 'Gram'}</strong><br>
+                <span style="color:#6c757d;font-size:12px;">${formatNumber(t.grams, 4)} g</span>
+            </td>
+            <td><strong style="color:${typeColor};">${formatCurrency(t.price)}</strong></td>
+            <td style="font-size:12.5px;line-height:1.55;max-width:300px;">${payInfo}</td>
+            <td style="white-space:nowrap;font-size:12px;color:#6c757d;">${new Date(t.date).toLocaleString()}</td>
+            <td style="white-space:nowrap;">
+                <button class="btn-sm-gold mb-1" style="display:block;width:100%;background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 4px 12px rgba(34,197,94,0.3);" onclick="window.approveTxn(${t.id})"><i class="bi bi-check-lg"></i> APPROVE</button>
+                <button class="btn-sm-danger mb-1" style="display:block;width:100%;" onclick="window.rejectTxn(${t.id})"><i class="bi bi-x-lg"></i> REJECT</button>
+            </td>
+        </tr>`;
+    }).join('');
+
+    container.innerHTML = `
+        <div style="overflow-x:auto;">
+            <table class="table table-nexgold align-middle mb-0">
+                <thead>
+                    <tr>
+                    <th>Type</th><th>User</th><th>Asset / Grams</th><th>Value</th><th>Payment / Payout Info</th><th>Date</th><th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>
+        </div>`;
+    renderStats();
+};
+
+window.approveTxn = function (txId) {
+    const tx = getTransactionById(txId);
+    if (!tx) { showToast('Transaction not found — refresh pending list', 'error'); renderPendingApprovals(); return; }
+    const u = getUserById(tx.userId);
+    const ok = confirm(`APPROVE this ${tx.type} of ${formatNumber(tx.grams,4)}g ${tx.karat} gold for ${u ? u.name : 'Unknown user'}?\n\nThis will ${tx.type==='BUY' ? 'credit gold wallet + issue insurance certificate': 'debit gold wallet'}.`);
+    if (!ok) return;
+
+    const result = Admin.approveTransaction(txId);
+    if (result.success) {
+        showToast(result.message, 'success');
+        if (tx.type === 'BUY' && result.certificate) {
+            setTimeout(() => generateCertificatePDF(result.certificate), 300);
+        }
+        renderPendingApprovals();
+        loadAnalyticsCharts(true);
+        renderStats();
+    } else {
+        showToast(result.message || 'Approval failed', 'error');
+    }
+};
+
+window.rejectTxn = function (txId) {
+    const tx = getTransactionById(txId);
+    if (!tx) { showToast('Transaction not found', 'error'); renderPendingApprovals(); return; }
+    const reason = prompt('Enter reason for rejection (shown to user):', '');
+    if (reason === null) return;
+    const result = Admin.rejectTransaction(txId, reason || 'No reason provided');
+    if (result.success) {
+        showToast(result.message, 'info');
+        renderPendingApprovals();
+        loadAnalyticsCharts(true);
+        renderStats();
+    } else {
+        showToast(result.message || 'Rejection failed', 'error');
+    }
+};
 
 function renderUsersTable() {
     const tbody = document.getElementById('usersTableBody');
@@ -169,9 +280,6 @@ function loadPaymentMethodsIntoForm() {
     }
 }
 
-/* ================================================================
-   Global admin action (prompt + credit/debit)
-   ================================================================ */
 window.adminAction = function (action, walletType, userId) {
     if (userId === null || userId === undefined || userId === '') {
         showToast('Invalid user ID — please refresh the table', 'error');
@@ -217,10 +325,9 @@ window.toggleAdminPwd = function (btn) {
 /* ================================================================
    Analytics charts & recent system transactions
    ================================================================ */
-function loadAnalyticsCharts() {
-    // System transactions table
+function loadAnalyticsCharts(forceReload) {
     const tableContainer = document.getElementById('adminTxnsTable');
-    if (tableContainer && !tableContainer.dataset.loaded) {
+    if (tableContainer && (forceReload || !tableContainer.dataset.loaded)) {
         tableContainer.dataset.loaded = '1';
         const allTxns = getFromStorage('transactions', []);
         const users   = getFromStorage('users', []);
@@ -233,8 +340,10 @@ function loadAnalyticsCharts() {
                 </div>`;
         } else {
             const rows = allTxns.slice(0, 20).map(t => {
-                const u = users.find(x => x.id === t.userId);
+                const u = users.find(x => String(x.id) === String(t.userId));
                 const badgeClass = t.type.toLowerCase() === 'buy' ? 'buy' : t.type.toLowerCase() === 'sell' ? 'sell' : 'buy';
+                const sClass = statusBadgeClass(t.status);
+                const sLabel = t.status || TX_STATUS_APPROVED;
                 return `
                     <tr>
                         <td><span class="badge-${badgeClass}">${t.type}</span></td>
@@ -242,6 +351,7 @@ function loadAnalyticsCharts() {
                         <td>${t.karat}</td>
                         <td>${formatNumber(t.grams, 4)} g</td>
                         <td>${formatCurrency(t.price)}</td>
+                        <td><span style="padding:4px 10px;border-radius:10px;font-size:11px;font-weight:800;letter-spacing:0.4px;${sClass}">${sLabel}</span></td>
                         <td>${new Date(t.date).toLocaleString()}</td>
                     </tr>`;
             }).join('');
@@ -249,14 +359,13 @@ function loadAnalyticsCharts() {
             tableContainer.innerHTML = `
                 <table class="table table-nexgold align-middle">
                     <thead><tr>
-                        <th>Type</th><th>User</th><th>Asset</th><th>Grams</th><th>Value</th><th>Date</th>
+                        <th>Type</th><th>User</th><th>Asset</th><th>Grams</th><th>Value</th><th>Status</th><th>Date</th>
                     </tr></thead>
                     <tbody>${rows}</tbody>
                 </table>`;
         }
     }
 
-    // Volume bar chart
     const volCanvas = document.getElementById('analyticsChart');
     if (volCanvas && !volCanvas.dataset.drawn && window.Chart) {
         volCanvas.dataset.drawn = '1';
@@ -301,7 +410,6 @@ function loadAnalyticsCharts() {
         });
     }
 
-    // Pie chart - Tx type distribution
     const pieCanvas = document.getElementById('pieChart');
     if (pieCanvas && !pieCanvas.dataset.drawn && window.Chart) {
         pieCanvas.dataset.drawn = '1';
