@@ -149,10 +149,16 @@ function initializeDashboard() {
             if (section) section.style.display = 'block';
 
             document.getElementById('sidebar')?.classList.remove('open');
+            document.getElementById('sidebarBackdrop')?.classList.remove('show');
         });
     });
     document.getElementById('mobileMenuToggle')?.addEventListener('click', function () {
         document.getElementById('sidebar')?.classList.toggle('open');
+        document.getElementById('sidebarBackdrop')?.classList.toggle('show');
+    });
+    document.getElementById('sidebarBackdrop')?.addEventListener('click', function () {
+        document.getElementById('sidebar')?.classList.remove('open');
+        document.getElementById('sidebarBackdrop')?.classList.remove('show');
     });
 
     document.querySelectorAll('.switchToBuy, .switchToSell, .switchToInvest, .switchToTransfer').forEach(btn => {

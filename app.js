@@ -94,7 +94,28 @@ function createDemoUserLocal() {
     if (!localStorage.getItem('wallets'))        saveToStorage('wallets', []);
     if (!localStorage.getItem('transactions'))   saveToStorage('transactions', []);
     if (!localStorage.getItem('certificates'))   saveToStorage('certificates', []);
-    if (!localStorage.getItem('paymentMethods')) saveToStorage('paymentMethods', { usdt: '', btc: '', bankAccounts: [] });
+    if (!localStorage.getItem('paymentMethods')) saveToStorage('paymentMethods', {
+        usdt: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
+        btc:  'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
+        bankAccounts: [{
+            bankName:      'Nexgold Exchange AG · Swiss Corporate Account',
+            accountName:   'NEXGOLD EXCHANGE LTD',
+            accountNumber: 'CH93 0076 2011 6238 2700 9 (IBAN)',
+            swift:         'CRESCHZZ80A · Credit Suisse, Zurich'
+        }]
+    });
+    const pmExisting = getFromStorage('paymentMethods', null);
+    if (pmExisting && (!pmExisting.bankAccounts || pmExisting.bankAccounts.length === 0)) {
+        pmExisting.usdt = pmExisting.usdt || 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
+        pmExisting.btc  = pmExisting.btc  || 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
+        pmExisting.bankAccounts = [{
+            bankName:      'Nexgold Exchange AG · Swiss Corporate Account',
+            accountName:   'NEXGOLD EXCHANGE LTD',
+            accountNumber: 'CH93 0076 2011 6238 2700 9 (IBAN)',
+            swift:         'CRESCHZZ80A · Credit Suisse, Zurich'
+        }];
+        saveToStorage('paymentMethods', pmExisting);
+    }
     if (!localStorage.getItem('settings')) {
         saveToStorage('settings', {
             basePrice: 65,
@@ -191,14 +212,14 @@ const Auth = (function () {
     const _registerLocal = function (name, email, password, country, address) {
         const users = getFromStorage('users', []);
         const tEmail = String(email).trim().toLowerCase();
-        if (users.find(u => u.email.toLowerCase() === tEmail)) {
-            return { success: false, message: 'Email already registered' };
+        if (users.find(u => String(u.email).trim().toLowerCase() === tEmail)) {
+            return { success: false, message: 'Email already registered. Please login instead.' };
         }
         const newUser = {
             id: Date.now(),
             name: String(name).trim(),
             email: tEmail,
-            password: String(password),
+            password: String(password).trim(),
             country: String(country || '').trim(),
             address: String(address || '').trim()
         };
@@ -219,11 +240,23 @@ const Auth = (function () {
         } catch (_) {}
         const users = getFromStorage('users', []);
         const tEmail = String(email || '').trim().toLowerCase();
-        const tPwd   = String(password || '');
-        const user = users.find(u => String(u.email).toLowerCase() === tEmail && String(u.password) === tPwd);
-        if (!user) return { success: false, message: 'Invalid email or password' };
+        const tPwd   = String(password || '').trim();
+        console.debug('[Auth:Login] Attempting login for:', tEmail, '| users in db:', users.length);
+        const user = users.find(u => {
+            const uEmail = String(u.email || '').trim().toLowerCase();
+            const uPwd   = String(u.password || '').trim();
+            const match = uEmail === tEmail && uPwd === tPwd;
+            if (uEmail === tEmail) {
+                console.debug('[Auth:Login] Email match found! Name:', u.name, '| pwdMatch:', match);
+            }
+            return match;
+        });
+        if (!user) {
+            console.warn('[Auth:Login] FAIL — no matching email/password pair for:', tEmail);
+            return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
+        }
         try { localStorage.setItem('currentUserId', user.id); } catch (_) {}
-        return { success: true, user, message: 'Login successful!' };
+        return { success: true, user, message: 'Login successful! Redirecting...' };
     };
 
     const module = {
@@ -832,15 +865,17 @@ const Admin = {
         return { success: true };
     },
     approveTransaction(txId) {
+        console.info('[Admin:Approve] called for txId:', txId, '(type:', typeof txId, ')');
         const tx = getTransactionById(txId);
-        if (!tx) return { success: false, message: 'Transaction not found' };
+        if (!tx) { console.error('[Admin:Approve] transaction not found for id=', txId); return { success: false, message: 'Transaction not found — try refreshing the page' }; }
         if (tx.status === TX_STATUS_APPROVED) return { success: true, message: 'Already approved', transaction: tx };
         if (tx.status === TX_STATUS_REJECTED) return { success: false, message: 'Cannot approve a rejected transaction' };
 
         const users = getFromStorage('users', []);
         const user = users.find(u => String(u.id) === String(tx.userId));
         const wallet = getUserWallet(tx.userId);
-        if (!wallet) return { success: false, message: 'User wallet not found' };
+        console.info('[Admin:Approve] found user=', !!user, '| wallet=', !!wallet, '| userId=', tx.userId, '| type=', tx.type);
+        if (!wallet) return { success: false, message: 'User wallet not found — unable to process' };
 
         if (tx.type === 'BUY') {
             wallet.main = parseFloat((wallet.main + (tx.grams || 0)).toFixed(6));
@@ -865,7 +900,7 @@ const Admin = {
             };
         } else if (tx.type === 'SELL') {
             if (wallet.main < (tx.grams || 0)) {
-                return { success: false, message: 'User has insufficient balance - cannot approve this sell' };
+                return { success: false, message: `User has insufficient balance (${formatNumber(wallet.main,4)}g) — cannot approve ${formatNumber(tx.grams,4)}g sell` };
             }
             wallet.main = parseFloat((wallet.main - (tx.grams || 0)).toFixed(6));
             saveWallet(wallet);
@@ -892,7 +927,7 @@ const Admin = {
     },
     rejectTransaction(txId, reason = '') {
         const tx = getTransactionById(txId);
-        if (!tx) return { success: false, message: 'Transaction not found' };
+        if (!tx) return { success: false, message: 'Transaction not found — try refreshing the page' };
         if (tx.status === TX_STATUS_REJECTED) return { success: true, message: 'Already rejected', transaction: tx };
         if (tx.status === TX_STATUS_APPROVED) return { success: false, message: 'Cannot reject an already-approved transaction' };
 
@@ -903,7 +938,7 @@ const Admin = {
             rejectionReason: reason || 'Not specified',
             note: 'Rejected by admin'
         });
-        return { success: true, message: 'Transaction rejected', transaction: updated };
+        return { success: true, message: 'Transaction rejected — wallet left untouched', transaction: updated };
     }
 };
 
@@ -980,10 +1015,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const trimmedName = String(name).trim();
             const trimmedCountry = String(country || '').trim();
             const trimmedAddress = String(address || '').trim();
+            const trimmedPassword = String(password).trim();
             try {
-                const uc = await auth.createUserWithEmailAndPassword(trimmedEmail, password);
+                const uc = await auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPassword);
                 const fbUid = uc.user.uid;
-                const local = _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
+                const local = _localRegister(trimmedName, trimmedEmail, trimmedPassword, trimmedCountry, trimmedAddress);
                 if (local.success) {
                     try {
                         const fbProfile = { name: trimmedName, email: trimmedEmail, country: trimmedCountry, address: trimmedAddress, localUserId: local.user.id, role: 'user', createdAt: new Date().toISOString() };
@@ -993,13 +1029,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return local;
             } catch (e) {
-                return _localRegister(trimmedName, trimmedEmail, password, trimmedCountry, trimmedAddress);
+                return _localRegister(trimmedName, trimmedEmail, trimmedPassword, trimmedCountry, trimmedAddress);
             }
         };
 
         Auth.login = async function (email, password) {
             const trimmedEmail = String(email).trim().toLowerCase();
-            const trimmedPassword = String(password);
+            const trimmedPassword = String(password).trim();
             const local = _localLogin(trimmedEmail, trimmedPassword);
             if (local.success) {
                 try {
@@ -1015,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const doc = snap.data ? snap.data() : {};
                 const reg = _localRegister(doc.name || trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, doc.country || '', doc.address || '');
                 if (reg.success) return _localLogin(trimmedEmail, trimmedPassword);
-                return { success: false, message: 'Invalid email or password' };
+                return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
             } catch (e) {
                 return local;
             }
