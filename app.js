@@ -318,8 +318,17 @@ const Auth = (function () {
 })();
 
 // ========================================
-// WALLET & TRANSACTION HELPERS
+// USER, WALLET & TRANSACTION HELPERS
 // ========================================
+function getUserById(userId) {
+    if (userId === null || userId === undefined) return null;
+    const users = getFromStorage('users', []);
+    const uid = String(userId);
+    let u = users.find(x => String(x.id) === uid);
+    if (!u) u = users.find(x => String(x.fbUid || '') === uid);
+    if (!u) u = users.find(x => x.id == userId);
+    return u || null;
+}
 function getUserWallet(userId) {
     const wallets = getFromStorage('wallets', []);
     let w = wallets.find(x => String(x.userId) === String(userId));
