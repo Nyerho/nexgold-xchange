@@ -311,12 +311,145 @@ const Auth = (function () {
             return user;
         },
         register(name, email, password, country, address) {
-            return _registerLocal(name, email, password, country, address);
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (FB && FB.enabled && FB.auth && FB.auth.createUserWithEmailAndPassword) {
+                return (async () => {
+                    try {
+                        const trimmedEmail = String(email).trim().toLowerCase();
+                        const trimmedPwd   = String(password).trim();
+                        const trimmedName  = String(name).trim();
+                        const trimmedCountry = String(country || '').trim();
+                        const trimmedAddress = String(address || '').trim();
+                        const uc = await FB.auth.createUserWithEmailAndPassword(trimmedEmail, trimmedPwd);
+                        const fbUid = uc && uc.user && uc.user.uid;
+                        const local = _registerLocal(trimmedName, trimmedEmail, trimmedPwd, trimmedCountry, trimmedAddress);
+                        if (local && local.success && fbUid && FB.db) {
+                            try {
+                                await FB.db.collection('users').doc(fbUid).set({
+                                    name: trimmedName, email: trimmedEmail, country: trimmedCountry,
+                                    address: trimmedAddress, localUserId: local.user.id, role: 'user',
+                                    createdAt: new Date().toISOString()
+                                }).catch(() => {});
+                                await FB.db.collection('wallets').doc(fbUid).set({
+                                    userId: local.user.id, main: 0, vault: 0, bonus: 0,
+                                    updatedAt: new Date().toISOString()
+                                }).catch(() => {});
+                            } catch (_) {}
+                        }
+                        if (local && local.success) return local;
+                        if (local && (local.message || '').includes('already registered')) {
+                            const login = _loginLocal(trimmedEmail, trimmedPwd);
+                            if (login.success) return { ...login, message: login.message + ' (Account already existed)' };
+                        }
+                        return local;
+                    } catch (e) {
+                        const local = _registerLocal(name, email, password, country, address);
+                        if (local && local.success) return local;
+                        if (local && (local.message || '').includes('already registered')) {
+                            const login = _loginLocal(String(email).trim().toLowerCase(), String(password).trim());
+                            if (login.success) return { ...login, message: 'Welcome back! Signed you in.' };
+                        }
+                        return local;
+                    }
+                })();
+            }
+            const local = _registerLocal(name, email, password, country, address);
+            if (local && local.success) return Promise.resolve(local);
+            if (local && (local.message || '').includes('already registered')) {
+                const login = _loginLocal(String(email).trim().toLowerCase(), String(password).trim());
+                if (login.success) return Promise.resolve({ ...login, message: 'Welcome back! Signed you in.' });
+            }
+            return Promise.resolve(local);
         },
         login(email, password) {
-            return _loginLocal(email, password);
+            const tEmail = String(email || '').trim().toLowerCase();
+            const tPwd   = String(password || '').trim();
+            const local  = _loginLocal(tEmail, tPwd);
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (local && local.success) {
+                if (FB && FB.enabled && FB.auth && FB.auth.signInWithEmailAndPassword) {
+                    FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {});
+                    if (FB.analytics) try { FB.analytics.logEvent('login', { method: 'email' }); } catch (_) {}
+                }
+                return Promise.resolve(local);
+            }
+            async function tryFirebaseLogin(fb) {
+                try {
+                    const uc = await fb.auth.signInWithEmailAndPassword(tEmail, tPwd);
+                    const fbUid = uc && uc.user && uc.user.uid;
+                    let doc = {};
+                    if (fbUid && fb.db) {
+                        try {
+                            const snap = await fb.db.collection('users').doc(fbUid).get().catch(() => null);
+                            doc = (snap && typeof snap.data === 'function') ? (snap.data() || {}) : {};
+                        } catch (_) {}
+                    }
+                    const reg = _registerLocal(
+                        doc.name    || tEmail.split('@')[0],
+                        tEmail,
+                        tPwd,
+                        doc.country || '',
+                        doc.address || ''
+                    );
+                    if (reg && (reg.success || reg._reused)) {
+                        return _loginLocal(tEmail, tPwd);
+                    }
+                    if (reg && (reg.message || '').includes('already registered')) {
+                        const users = getFromStorage('users', []);
+                        const idx = users.findIndex(u => String(u.email || '').trim().toLowerCase() === tEmail);
+                        if (idx >= 0) {
+                            users[idx].password = tPwd;
+                            if (doc.name)    users[idx].name    = String(doc.name).trim() || users[idx].name;
+                            if (doc.country) users[idx].country = String(doc.country).trim() || users[idx].country;
+                            if (doc.address) users[idx].address = String(doc.address).trim() || users[idx].address;
+                            if (fbUid) users[idx].fbUid = fbUid;
+                            saveToStorage('users', users);
+                            return _loginLocal(tEmail, tPwd);
+                        }
+                    }
+                    return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
+                } catch (e) {
+                    return local;
+                }
+            }
+            if (FB && FB.enabled && FB.auth && FB.auth.signInWithEmailAndPassword && FB.db) {
+                return tryFirebaseLogin(FB);
+            }
+            if (typeof window !== 'undefined' && window.addEventListener) {
+                const FB_WAIT_MS = 6000;
+                return new Promise(resolve => {
+                    let settled = false;
+                    const timer = setTimeout(() => {
+                        if (settled) return;
+                        settled = true;
+                        const fb = window.FB;
+                        if (fb && fb.enabled && fb.auth && fb.auth.signInWithEmailAndPassword) {
+                            resolve(tryFirebaseLogin(fb));
+                        } else {
+                            resolve(local);
+                        }
+                    }, FB_WAIT_MS);
+                    window.addEventListener('firebase-ready', function once() {
+                        if (settled) return;
+                        settled = true;
+                        clearTimeout(timer);
+                        window.removeEventListener('firebase-ready', once);
+                        const fb = window.FB;
+                        if (fb && fb.enabled && fb.auth && fb.auth.signInWithEmailAndPassword) {
+                            resolve(tryFirebaseLogin(fb));
+                        } else {
+                            resolve(local);
+                        }
+                    }, { once: false });
+                });
+            }
+            return Promise.resolve(local);
         },
         logout() {
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (FB && FB.enabled && FB.auth && typeof FB.auth.signOut === 'function') {
+                try { FB.auth.signOut().catch(() => {}); } catch (_) {}
+            }
             try { localStorage.removeItem('currentUserId'); } catch (_) {}
             try { localStorage.removeItem('adminLoggedIn'); } catch (_) {}
             try { window.location.href = 'index.html'; } catch (_) {}
@@ -1176,9 +1309,114 @@ document.addEventListener('DOMContentLoaded', () => {
         console.info('[Firebase] Layer attached (local-auth-first mode)');
     };
 
-    if (window.FB && window.FB.enabled) onReady();
-    else window.addEventListener('firebase-ready', onReady, { once: true });
+    async function hydrateSessionFromFirebaseAuth() {
+        const FB = window.FB;
+        if (!FB || !FB.enabled || !FB.auth) return;
+        try {
+            const user = FB.auth.currentUser;
+            if (!user || !user.email) return;
+            const tEmail = String(user.email).trim().toLowerCase();
+            const localUsers = getFromStorage('users', []);
+            const alreadyLocal = localUsers.some(u => String(u.email || '').trim().toLowerCase() === tEmail
+                || (u.fbUid && String(u.fbUid) === String(user.uid)));
+            if (alreadyLocal) {
+                try {
+                    const match = localUsers.find(u => String(u.email || '').trim().toLowerCase() === tEmail
+                        || (u.fbUid && String(u.fbUid) === String(user.uid)));
+                    if (match && !localStorage.getItem('currentUserId')) {
+                        localStorage.setItem('currentUserId', String(match.id));
+                    }
+                } catch (_) {}
+                return;
+            }
+            let doc = {};
+            if (FB.db) {
+                try {
+                    const snap = await FB.db.collection('users').doc(user.uid).get().catch(() => null);
+                    doc = (snap && typeof snap.data === 'function') ? (snap.data() || {}) : {};
+                } catch (_) {}
+            }
+            const dummyPassword = '__fb_hydrated__';
+            const reg = Auth._localRegister(
+                doc.name    || (user.displayName ? String(user.displayName).trim() : tEmail.split('@')[0]),
+                tEmail,
+                dummyPassword,
+                doc.country || '',
+                doc.address || ''
+            );
+            if (reg && (reg.success || reg._reused)) {
+                const users = getFromStorage('users', []);
+                const idx = users.findIndex(u => String(u.email || '').trim().toLowerCase() === tEmail);
+                if (idx >= 0) {
+                    users[idx].fbUid = user.uid;
+                    users[idx]._hydratedFromFirebase = true;
+                    saveToStorage('users', users);
+                }
+                try {
+                    const saved = reg && reg.user ? reg.user : (reg && reg._reused ? reg.user : null);
+                    const targetId = saved ? saved.id : (idx >= 0 ? users[idx].id : null);
+                    if (targetId) {
+                        localStorage.setItem('currentUserId', String(targetId));
+                        console.info('[Auth:Hydrate] Reconstructed local user record + session from Firebase auth state:', tEmail);
+                    }
+                } catch (_) {}
+            }
+        } catch (e) {
+            console.debug('[Auth:Hydrate] Skipped:', e.message);
+        }
+    }
+
+    if (window.FB && window.FB.enabled) {
+        onReady();
+        setTimeout(hydrateSessionFromFirebaseAuth, 0);
+        if (window.FB && window.FB.auth && typeof window.FB.auth.onAuthStateChanged === 'function') {
+            window.FB.auth.onAuthStateChanged(function (u) {
+                if (u && u.email) setTimeout(hydrateSessionFromFirebaseAuth, 50);
+            });
+        }
+    } else {
+        window.addEventListener('firebase-ready', function onReadyOnce() {
+            onReady();
+            setTimeout(hydrateSessionFromFirebaseAuth, 0);
+            if (window.FB && window.FB.auth && typeof window.FB.auth.onAuthStateChanged === 'function') {
+                window.FB.auth.onAuthStateChanged(function (u) {
+                    if (u && u.email) setTimeout(hydrateSessionFromFirebaseAuth, 50);
+                });
+            }
+            window.removeEventListener('firebase-ready', onReadyOnce);
+        });
+    }
 })();
+
+/* ========================================
+   DIAGNOSTIC HELPERS (paste in DevTools)
+   ======================================== */
+window.authDump = function authDump() {
+    const users = getFromStorage('users', []);
+    const FB = window.FB || {};
+    const currentId = (function(){try{return localStorage.getItem('currentUserId');}catch(_){return null;}})();
+    const fbUser = FB.auth && FB.auth.currentUser;
+    const userSummary = users.map(u => ({
+        id: u.id, email: u.email, name: u.name,
+        pwdLen: (u.password || '').length, fbUid: u.fbUid || null,
+        hydrated: !!u._hydratedFromFirebase,
+        isCurrent: currentId !== null && String(u.id) === String(currentId)
+    }));
+    const info = {
+        FB_enabled: !!FB.enabled,
+        FB_auth_currentUser: fbUser ? { uid: fbUser.uid, email: fbUser.email, displayName: fbUser.displayName || null } : null,
+        localStorage_currentUserId: currentId,
+        users_count: users.length,
+        users: userSummary,
+        wallets: getFromStorage('wallets', []).length,
+        transactions: getFromStorage('transactions', []).length
+    };
+    console.group('%c NEXGOLD AUTH DUMP ', 'background:#000;color:#D4AF37;font-weight:900;padding:6px 14px;border:2px solid #D4AF37;border-radius:8px;');
+    console.table(userSummary);
+    console.log(info);
+    console.groupEnd();
+    return info;
+};
 
 /* ========================================
    DEMO USER SEEDER (console + auth page banner)
