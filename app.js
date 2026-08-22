@@ -210,21 +210,27 @@ function updateBreakdown(prefix, result) {
 // ========================================
 const Auth = (function () {
     const _registerLocal = function (name, email, password, country, address) {
-        const users = getFromStorage('users', []);
         const tEmail = String(email).trim().toLowerCase();
-        if (users.find(u => String(u.email).trim().toLowerCase() === tEmail)) {
+        const tPwd   = String(password).trim();
+        const users  = getFromStorage('users', []);
+        const existing = users.find(u => String(u.email || '').trim().toLowerCase() === tEmail);
+        if (existing) {
+            if (String(existing.password || '').trim() === tPwd) {
+                return { success: true, user: existing, _reused: true, message: 'Welcome back! Your account already exists — signing you in.' };
+            }
             return { success: false, message: 'Email already registered. Please login instead.' };
         }
         const newUser = {
             id: Date.now(),
             name: String(name).trim(),
             email: tEmail,
-            password: String(password).trim(),
+            password: tPwd,
             country: String(country || '').trim(),
             address: String(address || '').trim()
         };
         users.push(newUser);
-        saveToStorage('users', users);
+        const saved = saveToStorage('users', users);
+        if (!saved) return { success: false, message: 'Could not save your account. Please disable Private Browsing or free up storage and try again.' };
 
         const wallets = getFromStorage('wallets', []);
         if (!wallets.find(w => String(w.userId) === String(newUser.id))) {
@@ -238,24 +244,42 @@ const Auth = (function () {
         try {
             if (localStorage.getItem('currentUserId')) localStorage.removeItem('currentUserId');
         } catch (_) {}
-        const users = getFromStorage('users', []);
+        const users  = getFromStorage('users', []);
         const tEmail = String(email || '').trim().toLowerCase();
         const tPwd   = String(password || '').trim();
         console.debug('[Auth:Login] Attempting login for:', tEmail, '| users in db:', users.length);
-        const user = users.find(u => {
-            const uEmail = String(u.email || '').trim().toLowerCase();
-            const uPwd   = String(u.password || '').trim();
-            const match = uEmail === tEmail && uPwd === tPwd;
-            if (uEmail === tEmail) {
-                console.debug('[Auth:Login] Email match found! Name:', u.name, '| pwdMatch:', match);
+        let user = null;
+        const emailMatch = users.find(u => String(u.email || '').trim().toLowerCase() === tEmail);
+        if (emailMatch) {
+            const uPwd = String(emailMatch.password || '').trim();
+            if (uPwd === tPwd) {
+                user = emailMatch;
+                console.debug('[Auth:Login] Exact email + password match. Name:', emailMatch.name);
+            } else {
+                console.debug('[Auth:Login] Email match found but stored password differs.',
+                    '| providedLen:', tPwd.length, 'storedLen:', uPwd.length,
+                    '| looseEq:', uPwd == tPwd, '| encodedEq:', tPwd && uPwd && encodeURIComponent(uPwd) === encodeURIComponent(tPwd));
+                if (tPwd && uPwd && (uPwd == tPwd || encodeURIComponent(uPwd) === encodeURIComponent(tPwd))) user = emailMatch;
             }
-            return match;
-        });
+        }
+        if (!user) {
+            user = users.find(u => {
+                const uEmail = String(u.email || '').trim().toLowerCase();
+                const uPwd   = String(u.password || '').trim();
+                return uEmail === tEmail && (uPwd === tPwd || uPwd == tPwd);
+            });
+        }
         if (!user) {
             console.warn('[Auth:Login] FAIL — no matching email/password pair for:', tEmail);
-            return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
+            const hint = emailMatch ? ' Email exists — double-check your password.' : '';
+            return { success: false, message: 'Invalid email or password. Please check your details and try again.' + hint };
         }
-        try { localStorage.setItem('currentUserId', user.id); } catch (_) {}
+        let sessionSaved = false;
+        try {
+            localStorage.setItem('currentUserId', String(user.id));
+            sessionSaved = (localStorage.getItem('currentUserId') === String(user.id));
+        } catch (_) {}
+        if (!sessionSaved) return { success: false, message: 'Could not create your session. Please disable Private Browsing or try another browser.' };
         return { success: true, user, message: 'Login successful! Redirecting...' };
     };
 
@@ -1038,7 +1062,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 return local;
             } catch (e) {
-                return _localRegister(trimmedName, trimmedEmail, trimmedPassword, trimmedCountry, trimmedAddress);
+                const local = _localRegister(trimmedName, trimmedEmail, trimmedPassword, trimmedCountry, trimmedAddress);
+                if (local.success) return local;
+                if (local && local._reused) return local;
+                if (local && (local.message || '').includes('already registered')) {
+                    const login = _localLogin(trimmedEmail, trimmedPassword);
+                    if (login.success) return { ...login, message: 'Account already present. Signed you in!' };
+                }
+                return local;
             }
         };
 
@@ -1058,8 +1089,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const fbUid = uc.user.uid;
                 const snap = await db.collection('users').doc(fbUid).get().catch(() => ({ exists: false, data: () => ({}) }));
                 const doc = snap.data ? snap.data() : {};
-                const reg = _localRegister(doc.name || trimmedEmail.split('@')[0], trimmedEmail, trimmedPassword, doc.country || '', doc.address || '');
-                if (reg.success) return _localLogin(trimmedEmail, trimmedPassword);
+                const reg = _localRegister(
+                    doc.name     || trimmedEmail.split('@')[0],
+                    trimmedEmail,
+                    trimmedPassword,
+                    doc.country  || '',
+                    doc.address  || ''
+                );
+                if (reg.success || (reg && reg._reused)) {
+                    return _localLogin(trimmedEmail, trimmedPassword);
+                }
+                if (reg && (reg.message || '').includes('already registered')) {
+                    const users = getFromStorage('users', []);
+                    const idx = users.findIndex(u => String(u.email || '').trim().toLowerCase() === trimmedEmail);
+                    if (idx >= 0) {
+                        users[idx].name    = (doc.name    || users[idx].name || '').toString().trim() || users[idx].name;
+                        users[idx].country = (doc.country || users[idx].country || '').toString().trim() || users[idx].country;
+                        users[idx].address = (doc.address || users[idx].address || '').toString().trim() || users[idx].address;
+                        users[idx].password = trimmedPassword;
+                        users[idx].fbUid = fbUid;
+                        saveToStorage('users', users);
+                        console.info('[Auth:Login] Updated local password/profile for', trimmedEmail, 'based on successful Firebase sign-in.');
+                        return _localLogin(trimmedEmail, trimmedPassword);
+                    }
+                }
                 return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
             } catch (e) {
                 return local;
