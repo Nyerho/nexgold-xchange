@@ -1665,16 +1665,42 @@ body {
     top: 0; left: 0; right: 0;
     z-index: 1030;
     height: 80px;
-    background: rgba(7, 7, 7, 0.72);
+    background: rgba(7, 7, 7, 0.92);
     backdrop-filter: blur(18px) saturate(140%);
     -webkit-backdrop-filter: blur(18px) saturate(140%);
     border-bottom: 1px solid rgba(212, 175, 55, 0.12);
+    transform: translateZ(0);
+    will-change: transform;
 }
 .navbar-nexgold-premium::before {
     content: '';
     position: absolute;
     top: 0; left: 0; right: 0; height: 1px;
     background: linear-gradient(90deg, transparent 0%, rgba(212,175,55,0.55) 50%, transparent 100%);
+}
+
+body[data-page="admin"] {
+    padding-top: 80px;
+    overflow-anchor: none;
+}
+
+body[data-page="admin"] #adminLoginScreen {
+    min-height: calc(100vh - 80px);
+    margin-top: -80px;
+}
+
+body[data-page="admin"] #adminMainScreen {
+    min-height: calc(100vh - 80px);
+}
+
+body[data-page="admin"] .dashboard-wrapper {
+    padding-top: 28px;
+    min-height: auto;
+    background: transparent;
+}
+
+body[data-page="dashboard"] .dashboard-wrapper {
+    padding-top: 96px;
 }
 .nav-inner {
     height: 100%;
