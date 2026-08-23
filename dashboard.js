@@ -172,6 +172,123 @@ function initializeDashboard() {
     });
 
     setTimeout(drawPortfolioChart, 400);
+
+    function debounce(fn, wait) {
+        let t;
+        return function () {
+            clearTimeout(t);
+            t = setTimeout(fn, wait);
+        };
+    }
+
+    const refreshDashboard = debounce(function () {
+        refreshDashboardViews(userId);
+        updateTransferAndSellBalances();
+    }, 120);
+
+    if (window.Sync) {
+        Sync.on('wallets', refreshDashboard);
+        Sync.on('walletUpdated', refreshDashboard);
+        Sync.on('transactions', refreshDashboard);
+        Sync.on('certificates', function () {
+            renderCertificatesList(userId, 'certificatesList');
+            updateCertificatesStats(userId);
+        });
+        Sync.on('settings', function () {
+            setupCalculator('buy');
+            setupCalculator('sell');
+            refreshDashboard();
+        });
+        Sync.on('paymentMethods', function () {
+            setupPaymentMethodDisplay();
+        });
+
+        Sync.on('transactionUpdated', function (tx) {
+            if (!tx) return;
+            if (String(tx.userId) !== String(userId)) return;
+            refreshDashboard();
+            if (tx.status === TX_STATUS_APPROVED) {
+                if (tx.type === 'BUY') {
+                    showToast('🎉 Your BUY of ' + formatNumber(tx.grams, 4) + 'g has been APPROVED! Gold credited to wallet.', 'success');
+                    const btn = document.getElementById('buySubmitBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.background = '';
+                        btn.style.boxShadow = '';
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> I HAVE MADE PAYMENT · <span id="buyDisplayTotal2">$0.00</span>';
+                    }
+                } else if (tx.type === 'SELL') {
+                    showToast('🎉 Your SELL of ' + formatNumber(tx.grams, 4) + 'g has been APPROVED! Payout processing.', 'success');
+                    const btn = document.getElementById('sellSubmitBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.background = '';
+                        btn.style.boxShadow = '';
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> I HAVE MADE PAYMENT · <span id="sellDisplayTotal2">$0.00</span>';
+                    }
+                }
+            } else if (tx.status === TX_STATUS_REJECTED) {
+                const reason = tx.rejectionReason ? (' Reason: ' + tx.rejectionReason) : '';
+                if (tx.type === 'BUY') {
+                    showToast('❌ Your BUY order was REJECTED.' + reason, 'error');
+                    const btn = document.getElementById('buySubmitBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.background = '';
+                        btn.style.boxShadow = '';
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> I HAVE MADE PAYMENT · <span id="buyDisplayTotal2">$0.00</span>';
+                    }
+                } else if (tx.type === 'SELL') {
+                    showToast('❌ Your SELL order was REJECTED.' + reason, 'error');
+                    const btn = document.getElementById('sellSubmitBtn');
+                    if (btn) {
+                        btn.disabled = false;
+                        btn.style.background = '';
+                        btn.style.boxShadow = '';
+                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> I HAVE MADE PAYMENT · <span id="sellDisplayTotal2">$0.00</span>';
+                    }
+                }
+            }
+        });
+
+        Sync.on('transactionAdded', function (tx) {
+            if (!tx || String(tx.userId) !== String(userId)) return;
+            refreshDashboard();
+        });
+    }
+
+    (function applyPendingButtonStates() {
+        const myTxns = getUserTransactions(userId, 50);
+        const pendingBuys  = myTxns.filter(t => t.type === 'BUY'  && t.status === TX_STATUS_PENDING);
+        const pendingSells = myTxns.filter(t => t.type === 'SELL' && t.status === TX_STATUS_PENDING);
+        if (pendingBuys.length > 0) {
+            const btn = document.getElementById('buySubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>PENDING · Awaiting Admin Approval';
+                btn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706 55%,#92400e 100%)';
+                btn.style.boxShadow = '0 14px 34px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.35)';
+            }
+        }
+        if (pendingSells.length > 0) {
+            const btn = document.getElementById('sellSubmitBtn');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>PENDING · Awaiting Admin Approval';
+                btn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706 55%,#92400e 100%)';
+                btn.style.boxShadow = '0 14px 34px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.35)';
+            }
+        }
+    })();
+
+    (function refreshLivePricesFromSettings() {
+        try {
+            const s = getSettings();
+            document.querySelectorAll('.live-price').forEach(el => {
+                el.textContent = formatCurrency(s.basePrice) + '/g (24K)';
+            });
+        } catch (_) {}
+    })();
 }
 
 function copyToClipboard(text, btnEl) {

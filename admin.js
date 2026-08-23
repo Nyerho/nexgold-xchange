@@ -84,6 +84,49 @@ function initializeAdmin() {
     });
 
     setTimeout(loadAnalyticsCharts, 500);
+
+    function debounce(fn, wait) {
+        let t;
+        return function () {
+            clearTimeout(t);
+            t = setTimeout(fn, wait);
+        };
+    }
+
+    const refreshAllAdmin = debounce(function () {
+        renderStats();
+        renderPendingApprovals();
+        renderUsersTable();
+        loadAnalyticsCharts(true);
+    }, 120);
+
+    const refreshPendingAndStats = debounce(function () {
+        renderStats();
+        renderPendingApprovals();
+        loadAnalyticsCharts(true);
+    }, 100);
+
+    const refreshWalletsAndStats = debounce(function () {
+        renderStats();
+        renderUsersTable();
+        loadAnalyticsCharts(true);
+    }, 100);
+
+    if (window.Sync) {
+        Sync.on('transactions', refreshPendingAndStats);
+        Sync.on('transactionAdded', refreshPendingAndStats);
+        Sync.on('transactionUpdated', refreshPendingAndStats);
+        Sync.on('wallets', refreshWalletsAndStats);
+        Sync.on('walletUpdated', refreshWalletsAndStats);
+        Sync.on('users', renderUsersTable);
+        Sync.on('certificates', function () { renderStats(); loadAnalyticsCharts(true); });
+        Sync.on('settings', function () { loadSettingsIntoForm(); renderStats(); });
+        Sync.on('paymentMethods', loadPaymentMethodsIntoForm);
+        Sync.on('*', function (ev) {
+            if (['transactions','wallets','users','certificates','settings','paymentMethods'].includes(ev)) return;
+            refreshAllAdmin();
+        });
+    }
 }
 
 /* ================================================================

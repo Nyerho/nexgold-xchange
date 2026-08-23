@@ -29,6 +29,12 @@ function getFromStorage(key, defaultValue) {
 function saveToStorage(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
+        try {
+            if (key === 'certificates') { Sync.emit('certificates'); }
+            if (key === 'settings') { Sync.emit('settings'); }
+            if (key === 'paymentMethods') { Sync.emit('paymentMethods'); }
+            if (key === 'users') { Sync.emit('users'); }
+        } catch (_) {}
         return true;
     } catch (e) {
         console.error('[Storage] write failed for', key);
@@ -493,17 +499,62 @@ function getUserWallet(userId) {
     if (!w) w = wallets.find(x => x.id == userId);
     return w || null;
 }
+const Sync = (function () {
+    const CHANNEL_NAME = 'nexgold-sync-v1';
+    const bc = (typeof BroadcastChannel !== 'undefined') ? new BroadcastChannel(CHANNEL_NAME) : null;
+    const listeners = {};
+
+    function emit(event, payload) {
+        const msg = { event, payload, ts: Date.now(), id: Math.random().toString(36).slice(2) };
+        if (listeners[event]) listeners[event].forEach(fn => { try { fn(payload); } catch (e) { console.warn('[Sync] listener err', event, e); } });
+        if (listeners['*']) listeners['*'].forEach(fn => { try { fn(event, payload); } catch (_) {} });
+        if (bc) { try { bc.postMessage(msg); } catch (e) { console.debug('[Sync] bc failed:', e); } }
+    }
+
+    function on(event, fn) {
+        if (!listeners[event]) listeners[event] = [];
+        listeners[event].push(fn);
+    }
+
+    if (bc) {
+        bc.onmessage = function (e) {
+            const data = e.data || {};
+            const { event, payload } = data;
+            if (!event) return;
+            if (listeners[event]) listeners[event].forEach(fn => { try { fn(payload); } catch (err) { console.warn('[Sync] listener err', event, err); } });
+            if (listeners['*']) listeners['*'].forEach(fn => { try { fn(event, payload); } catch (_) {} });
+        };
+    }
+
+    window.addEventListener('storage', function (e) {
+        if (!e.key) return;
+        if (e.key.startsWith('__')) return;
+        const storageKey = e.key;
+        if (listeners['storage:' + storageKey]) listeners['storage:' + storageKey].forEach(fn => { try { fn(); } catch (_) {} });
+        if (listeners['*']) listeners['*'].forEach(fn => { try { fn('storage:' + storageKey, null); } catch (_) {} });
+        if (storageKey === 'transactions' && listeners['transactions']) listeners['transactions'].forEach(fn => { try { fn(); } catch (_) {} });
+        if (storageKey === 'wallets' && listeners['wallets']) listeners['wallets'].forEach(fn => { try { fn(); } catch (_) {} });
+        if (storageKey === 'certificates' && listeners['certificates']) listeners['certificates'].forEach(fn => { try { fn(); } catch (_) {} });
+        if (storageKey === 'settings' && listeners['settings']) listeners['settings'].forEach(fn => { try { fn(); } catch (_) {} });
+        if (storageKey === 'paymentMethods' && listeners['paymentMethods']) listeners['paymentMethods'].forEach(fn => { try { fn(); } catch (_) {} });
+    });
+
+    return { emit, on };
+})();
+
 function saveWallet(wallet) {
     const wallets = getFromStorage('wallets', []);
     const idx = wallets.findIndex(w => String(w.userId) === String(wallet.userId) || w.userId === wallet.userId);
     idx >= 0 ? (wallets[idx] = wallet) : wallets.push(wallet);
     saveToStorage('wallets', wallets);
+    try { Sync.emit('wallets'); Sync.emit('walletUpdated', wallet); } catch (_) {}
 }
 function saveTransaction(tx) {
     const transactions = getFromStorage('transactions', []);
     if (!tx.status) tx.status = TX_STATUS_APPROVED;
     transactions.unshift(tx);
     saveToStorage('transactions', transactions);
+    try { Sync.emit('transactions'); Sync.emit('transactionAdded', tx); } catch (_) {}
 }
 function updateTransaction(txId, updates) {
     const transactions = getFromStorage('transactions', []);
@@ -511,6 +562,7 @@ function updateTransaction(txId, updates) {
     if (idx >= 0) {
         transactions[idx] = { ...transactions[idx], ...updates };
         saveToStorage('transactions', transactions);
+        try { Sync.emit('transactions'); Sync.emit('transactionUpdated', transactions[idx]); } catch (_) {}
         return transactions[idx];
     }
     return null;
@@ -1165,7 +1217,7 @@ function copyToClipboard(text, btnEl) {
 // GLOBAL EXPORTS (for inline onclick handlers)
 // ========================================
 Object.assign(window, {
-    Auth, Admin, calculatePrice, buyGold, sellGold, transferBonusToMain,
+    Auth, Admin, Sync, calculatePrice, buyGold, sellGold, transferBonusToMain,
     generateCertificatePDF, downloadCertificate, calculateInvestment,
     formatCurrency, formatNumber, showToast, copyToClipboard,
     setupCalculator, renderWalletCards, renderTransactionHistory, renderCertificatesList,
