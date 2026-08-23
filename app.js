@@ -1138,13 +1138,36 @@ function showAuthModal(type = 'login') {
     try { window.location.href = 'auth.html?tab=' + type; } catch (_) {}
 }
 
+function copyToClipboard(text, btnEl) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        if (btnEl) {
+            const original = btnEl.innerHTML;
+            btnEl.innerHTML = '<i class="bi bi-check2"></i>';
+            btnEl.style.color = '#22c55e';
+            setTimeout(() => {
+                btnEl.innerHTML = original;
+                btnEl.style.color = '';
+            }, 1500);
+        }
+        showToast('Copied to clipboard!', 'success');
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast('Copied to clipboard!', 'success'); } catch(e) {}
+        document.body.removeChild(ta);
+    });
+}
+
 // ========================================
 // GLOBAL EXPORTS (for inline onclick handlers)
 // ========================================
 Object.assign(window, {
     Auth, Admin, calculatePrice, buyGold, sellGold, transferBonusToMain,
     generateCertificatePDF, downloadCertificate, calculateInvestment,
-    formatCurrency, formatNumber, showToast,
+    formatCurrency, formatNumber, showToast, copyToClipboard,
     setupCalculator, renderWalletCards, renderTransactionHistory, renderCertificatesList,
     getTransactionById, getPendingTransactions, getAllTransactions,
     TX_STATUS_PENDING, TX_STATUS_APPROVED, TX_STATUS_REJECTED

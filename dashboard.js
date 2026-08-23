@@ -174,6 +174,29 @@ function initializeDashboard() {
     setTimeout(drawPortfolioChart, 400);
 }
 
+function copyToClipboard(text, btnEl) {
+    if (!text) return;
+    navigator.clipboard.writeText(text).then(() => {
+        if (btnEl) {
+            const original = btnEl.innerHTML;
+            btnEl.innerHTML = '<i class="bi bi-check2"></i>';
+            btnEl.style.color = '#22c55e';
+            setTimeout(() => {
+                btnEl.innerHTML = original;
+                btnEl.style.color = '';
+            }, 1500);
+        }
+        showToast('Copied to clipboard!', 'success');
+    }).catch(() => {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast('Copied to clipboard!', 'success'); } catch(e) {}
+        document.body.removeChild(ta);
+    });
+}
+
 function setupPaymentMethodDisplay() {
     const methods = Admin.getPaymentMethods();
     const sel = document.getElementById('buyPaymentMethod');
@@ -186,35 +209,51 @@ function setupPaymentMethodDisplay() {
         if (m === 'Bank Wire') {
             if (methods.bankAccounts && methods.bankAccounts.length > 0) {
                 const b = methods.bankAccounts[0];
-                html = `<strong style="color:#fff;">Bank Wire Details:</strong><br>` +
-                    (b.bankName ? `<span><i class="bi bi-bank me-1"></i> Bank: ${b.bankName}</span><br>` : '') +
-                    (b.accountName ? `<span><i class="bi bi-person me-1"></i> Beneficiary: ${b.accountName}</span><br>` : '') +
-                    (b.accountNumber ? `<span><i class="bi bi-credit-card me-1"></i> Account / IBAN: <code style="background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;">${b.accountNumber}</code></span><br>` : '') +
-                    (b.swift ? `<span><i class="bi bi-globe me-1"></i> SWIFT / BIC: <code style="background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;">${b.swift}</code></span><br>` : '') +
+                html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <strong style="color:#fff;">Bank Wire Details:</strong>
+                        </div>` +
+                    (b.bankName ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;">
+                        <span><i class="bi bi-bank me-1"></i> Bank: ${b.bankName}</span>
+                        <button class="copy-btn" style="background:transparent;border:1px solid rgba(212,175,55,0.3);color:#D4AF37;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;" onclick="copyToClipboard(${JSON.stringify(String(b.bankName))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                    </div>` : '') +
+                    (b.accountName ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;">
+                        <span><i class="bi bi-person me-1"></i> Beneficiary: ${b.accountName}</span>
+                        <button class="copy-btn" style="background:transparent;border:1px solid rgba(212,175,55,0.3);color:#D4AF37;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;" onclick="copyToClipboard(${JSON.stringify(String(b.accountName))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                    </div>` : '') +
+                    (b.accountNumber ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;">
+                        <span><i class="bi bi-credit-card me-1"></i> Account / IBAN: <code style="background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;">${b.accountNumber}</code></span>
+                        <button class="copy-btn" style="background:transparent;border:1px solid rgba(212,175,55,0.3);color:#D4AF37;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;" onclick="copyToClipboard(${JSON.stringify(String(b.accountNumber))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                    </div>` : '') +
+                    (b.swift ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;padding:6px 0;">
+                        <span><i class="bi bi-globe me-1"></i> SWIFT / BIC: <code style="background:rgba(0,0,0,0.4);padding:2px 6px;border-radius:4px;">${b.swift}</code></span>
+                        <button class="copy-btn" style="background:transparent;border:1px solid rgba(212,175,55,0.3);color:#D4AF37;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:12px;" onclick="copyToClipboard(${JSON.stringify(String(b.swift))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                    </div>` : '') +
                     `<br><small style="color:#8a8a8a;">Please include your full name & email in transfer reference.</small>`;
             } else {
                 html = `<span style="color:#f59e0b;"><i class="bi bi-exclamation-triangle me-1"></i> Bank details pending — admin will provide wire instructions upon review.</span>`;
             }
         } else if (m === 'USDT') {
             if (methods.usdt) {
-                html = `<strong style="color:#fff;">USDT Wallet (TRC20 / ERC20):</strong><br>` +
-                    `<div style="margin-top:6px;padding:10px 14px;background:rgba(0,0,0,0.5);border:1px solid rgba(38,162,105,0.3);border-radius:8px;word-break:break-all;font-family:monospace;font-size:12.5px;color:#34d399;">${methods.usdt}</div>` +
+                html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <strong style="color:#fff;">USDT Wallet (TRC20 / ERC20):</strong>
+                            <button class="copy-btn" style="background:transparent;border:1px solid rgba(38,162,105,0.4);color:#34d399;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;" onclick="copyToClipboard(${JSON.stringify(String(methods.usdt))}, this)" title="Copy address"><i class="bi bi-copy"></i> Copy</button>
+                        </div>` +
+                    `<div style="margin-top:6px;padding:10px 14px;background:rgba(0,0,0,0.5);border:1px solid rgba(38,162,105,0.3);border-radius:8px;word-break:break-all;font-family:monospace;font-size:12.5px;color:#34d399;position:relative;">${methods.usdt}</div>` +
                     `<small style="color:#8a8a8a;margin-top:6px;display:block;">Network: TRC20 (preferred) or ERC20 · Send exact amount</small>`;
             } else {
                 html = `<span style="color:#f59e0b;"><i class="bi bi-exclamation-triangle me-1"></i> USDT address pending — admin will provide wallet upon review.</span>`;
             }
         } else if (m === 'BTC') {
             if (methods.btc) {
-                html = `<strong style="color:#fff;">Bitcoin (BTC) Wallet:</strong><br>` +
-                    `<div style="margin-top:6px;padding:10px 14px;background:rgba(0,0,0,0.5);border:1px solid rgba(247,147,26,0.3);border-radius:8px;word-break:break-all;font-family:monospace;font-size:12.5px;color:#f7931a;">${methods.btc}</div>` +
+                html = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <strong style="color:#fff;">Bitcoin (BTC) Wallet:</strong>
+                            <button class="copy-btn" style="background:transparent;border:1px solid rgba(247,147,26,0.4);color:#f7931a;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px;" onclick="copyToClipboard(${JSON.stringify(String(methods.btc))}, this)" title="Copy address"><i class="bi bi-copy"></i> Copy</button>
+                        </div>` +
+                    `<div style="margin-top:6px;padding:10px 14px;background:rgba(0,0,0,0.5);border:1px solid rgba(247,147,26,0.3);border-radius:8px;word-break:break-all;font-family:monospace;font-size:12.5px;color:#f7931a;position:relative;">${methods.btc}</div>` +
                     `<small style="color:#8a8a8a;margin-top:6px;display:block;">On-chain Bitcoin · 1 confirmation required</small>`;
             } else {
                 html = `<span style="color:#f59e0b;"><i class="bi bi-exclamation-triangle me-1"></i> BTC address pending — admin will provide wallet upon review.</span>`;
             }
-        } else if (m === 'Card') {
-            html = `<strong style="color:#fff;">Card Payment (+1.5% processing):</strong><br>` +
-                `<span style="color:#a78bfa;"><i class="bi bi-credit-card me-1"></i> Visa / Mastercard accepted</span><br>` +
-                `<small style="color:#8a8a8a;">Admin will send secure payment link via email upon order review.</small>`;
         }
         if (!html) html = `<span style="color:#8a8a8a;">Select a payment method to see account details.</span>`;
         infoDiv.innerHTML = html;
@@ -285,23 +324,28 @@ function setupBuySubmit(userId) {
 
         const original = buySubmitBtn.innerHTML;
         buySubmitBtn.disabled = true;
-        buySubmitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>SUBMITTING...';
+        buySubmitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>PROCESSING...';
         try {
             const result = await Promise.resolve(buyGold(karat, unit, qty, payMethod, details));
             if (result && result.success) {
                 if (result.pending) {
                     showToast(result.message + ' You will be notified once approved.', 'warning');
+                    buySubmitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>PENDING · Awaiting Admin Approval';
+                    buySubmitBtn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706 55%,#92400e 100%)';
+                    buySubmitBtn.style.boxShadow = '0 14px 34px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.35)';
                 } else {
                     showToast(result.message, 'success');
                     if (result.certificate) setTimeout(() => generateCertificatePDF(result.certificate), 600);
+                    buySubmitBtn.disabled = false;
+                    buySubmitBtn.innerHTML = original;
                 }
                 refreshDashboardViews(userId);
             } else {
                 showToast((result && result.message) || 'Buy failed', 'error');
+                buySubmitBtn.disabled = false;
+                buySubmitBtn.innerHTML = original;
             }
-        } catch (e) { showToast(e.message || 'Buy failed', 'error'); }
-        buySubmitBtn.disabled = false;
-        buySubmitBtn.innerHTML = original;
+        } catch (e) { showToast(e.message || 'Buy failed', 'error'); buySubmitBtn.disabled = false; buySubmitBtn.innerHTML = original; }
     });
 }
 
@@ -321,22 +365,27 @@ function setupSellSubmit(userId) {
 
         const original = sellSubmitBtn.innerHTML;
         sellSubmitBtn.disabled = true;
-        sellSubmitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>SUBMITTING...';
+        sellSubmitBtn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>PROCESSING...';
         try {
             const result = await Promise.resolve(sellGold(karat, unit, qty, payout, deliv, payDet));
             if (result && result.success) {
                 if (result.pending) {
                     showToast(result.message + ' Admin will verify your gold balance before payout.', 'warning');
+                    sellSubmitBtn.innerHTML = '<i class="bi bi-hourglass-split me-2"></i>PENDING · Awaiting Admin Approval';
+                    sellSubmitBtn.style.background = 'linear-gradient(135deg,#f59e0b,#d97706 55%,#92400e 100%)';
+                    sellSubmitBtn.style.boxShadow = '0 14px 34px rgba(245,158,11,0.3),inset 0 1px 0 rgba(255,255,255,0.35)';
                 } else {
                     showToast(result.message, 'success');
+                    sellSubmitBtn.disabled = false;
+                    sellSubmitBtn.innerHTML = original;
                 }
                 refreshDashboardViews(userId);
             } else {
                 showToast((result && result.message) || 'Sell failed', 'error');
+                sellSubmitBtn.disabled = false;
+                sellSubmitBtn.innerHTML = original;
             }
-        } catch (e) { showToast(e.message || 'Sell failed', 'error'); }
-        sellSubmitBtn.disabled = false;
-        sellSubmitBtn.innerHTML = original;
+        } catch (e) { showToast(e.message || 'Sell failed', 'error'); sellSubmitBtn.disabled = false; sellSubmitBtn.innerHTML = original; }
     });
 }
 

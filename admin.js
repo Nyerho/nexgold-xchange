@@ -139,14 +139,29 @@ window.renderPendingApprovals = function () {
         let payInfo = '';
         if (t.type === 'BUY') {
             payInfo = [
-                t.paymentMethod   ? `<div><i class="bi bi-credit-card me-1"></i> Method: <strong>${t.paymentMethod}</strong></div>` : '',
-                t.paymentDetails  ? `<div style="font-size:12px;color:#b0b0b0;margin-top:2px;">${t.paymentDetails}</div>` : ''
+                t.paymentMethod   ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                    <div><i class="bi bi-credit-card me-1"></i> Method: <strong>${t.paymentMethod}</strong></div>
+                    <button class="copy-btn" style="background:transparent;border:1px solid rgba(139,92,246,0.3);color:#a78bfa;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;" onclick="copyToClipboard(${JSON.stringify(String(t.paymentMethod))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                </div>` : '',
+                t.paymentDetails  ? `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-top:4px;">
+                    <div style="font-size:12px;color:#b0b0b0;line-height:1.5;">${t.paymentDetails}</div>
+                    <button class="copy-btn" style="background:transparent;border:1px solid rgba(139,92,246,0.3);color:#a78bfa;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;flex-shrink:0;" onclick="copyToClipboard(${JSON.stringify(String(t.paymentDetails))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                </div>` : ''
             ].filter(Boolean).join('');
         } else {
             payInfo = [
-                t.payoutMethod   ? `<div><i class="bi bi-wallet2 me-1"></i> Payout: <strong>${t.payoutMethod}</strong></div>` : '',
-                t.payoutDetails  ? `<div style="font-size:12px;color:#b0b0b0;margin-top:2px;word-break:break-word;">${t.payoutDetails}</div>` : '',
-                t.deliveryAddress ? `<div style="font-size:12px;color:#93c5fd;margin-top:4px;"><i class="bi bi-truck me-1"></i> Delivery: ${t.deliveryAddress}</div>` : ''
+                t.payoutMethod   ? `<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+                    <div><i class="bi bi-wallet2 me-1"></i> Payout: <strong>${t.payoutMethod}</strong></div>
+                    <button class="copy-btn" style="background:transparent;border:1px solid rgba(139,92,246,0.3);color:#a78bfa;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;" onclick="copyToClipboard(${JSON.stringify(String(t.payoutMethod))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                </div>` : '',
+                t.payoutDetails  ? `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-top:4px;">
+                    <div style="font-size:12px;color:#b0b0b0;line-height:1.5;word-break:break-word;">${t.payoutDetails}</div>
+                    <button class="copy-btn" style="background:transparent;border:1px solid rgba(139,92,246,0.3);color:#a78bfa;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;flex-shrink:0;" onclick="copyToClipboard(${JSON.stringify(String(t.payoutDetails))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                </div>` : '',
+                t.deliveryAddress ? `<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-top:4px;">
+                    <div style="font-size:12px;color:#93c5fd;line-height:1.5;"><i class="bi bi-truck me-1"></i> Delivery: ${t.deliveryAddress}</div>
+                    <button class="copy-btn" style="background:transparent;border:1px solid rgba(59,130,246,0.3);color:#60a5fa;border-radius:6px;padding:2px 8px;cursor:pointer;font-size:11px;flex-shrink:0;" onclick="copyToClipboard(${JSON.stringify(String(t.deliveryAddress))}, this)" title="Copy"><i class="bi bi-copy"></i></button>
+                </div>` : ''
             ].filter(Boolean).join('');
         }
         if (!payInfo) payInfo = '<small class="text-muted">No details provided</small>';
