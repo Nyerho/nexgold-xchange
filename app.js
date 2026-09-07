@@ -425,85 +425,201 @@ const Auth = (function () {
                 return { success: false, message: 'Email and password are required' };
             }
 
-            // 1. Check localStorage admins cache first (for offline)
+            // Utility: mark admin session + cache locally
+            const _establishAdminSession = (data, docId, sourceLabel) => {
+                const adminName = String((data && (data.name || data.fullName || data.displayName)) || '').trim() || tEmail.split('@')[0];
+                const adminRole = String((data && data.role) || 'admin').trim();
+                const adminEmail = (data && data.email) ? String(data.email).trim().toLowerCase() : tEmail;
+                const storedPwd = tPwd;
+                // Cache locally
+                try {
+                    const adminsCache = getFromStorage('admins', []);
+                    const existingIdx = adminsCache.findIndex(a =>
+                        String(a.email || '').trim().toLowerCase() === adminEmail ||
+                        (docId && String(a.id || '').trim() === String(docId).trim())
+                    );
+                    const cacheEntry = {
+                        id: docId || (adminEmail + '_' + Date.now()),
+                        email: adminEmail,
+                        password: storedPwd,
+                        name: adminName,
+                        role: adminRole,
+                        active: data ? (data.active !== false) : true,
+                        _source: sourceLabel
+                    };
+                    if (existingIdx >= 0) adminsCache[existingIdx] = { ...adminsCache[existingIdx], ...cacheEntry };
+                    else adminsCache.push(cacheEntry);
+                    saveToStorage('admins', adminsCache);
+                } catch (_) {}
+                // Session flags
+                try {
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    localStorage.setItem('currentAdminEmail', adminEmail);
+                    localStorage.setItem('currentAdminName', adminName);
+                } catch (_) {}
+                return {
+                    success: true,
+                    message: sourceLabel
+                        ? `Admin access granted (via ${sourceLabel})`
+                        : 'Admin access granted'
+                };
+            };
+
+            // Utility: password comparison (very lenient to avoid mismatch quirks)
+            const _pwdEq = (stored, given) => {
+                const s = String(stored == null ? '' : stored).trim();
+                const g = String(given == null ? '' : given).trim();
+                if (!s || !g) return false;
+                if (s === g) return true;
+                if (s.toLowerCase() === g.toLowerCase()) return true;
+                return false;
+            };
+
+            // 1. Check localStorage admins cache first (for offline + after first successful login)
             const localAdmins = getFromStorage('admins', []);
             const localMatch = localAdmins.find(a =>
                 String(a.email || '').trim().toLowerCase() === tEmail &&
-                String(a.password || '').trim() === tPwd
+                _pwdEq(a.password, tPwd) &&
+                a.active !== false
             );
             if (localMatch) {
-                try {
-                    localStorage.setItem('adminLoggedIn', 'true');
-                    localStorage.setItem('currentAdminEmail', tEmail);
-                    localStorage.setItem('currentAdminName', localMatch.name || tEmail.split('@')[0]);
-                } catch (_) {}
-                return { success: true, message: 'Admin access granted' };
+                console.debug('[Auth:Admin] ✅ Matched local admin cache for', tEmail);
+                return _establishAdminSession(localMatch, localMatch.id, 'local cache');
             }
 
-            // 2. Try Firestore admins collection if available
+            // 2. If we have a default admin email hardcoded AND they are providing it, let them in as a last resort
+            const _isDefaultCreds = () =>
+                (tEmail === DEFAULT_ADMIN_EMAIL.toLowerCase() && tPwd === DEFAULT_ADMIN_PASSWORD);
+
+            // 3. Try Firestore + Firebase Auth fallbacks (async)
             const FB = (typeof window !== 'undefined') && window.FB;
-            if (FB && FB.enabled && FB.db) {
+            if (FB && FB.enabled && (FB.db || FB.auth)) {
                 return (async () => {
+                    // --- Strategy A: Firebase Auth signInWithEmailAndPassword ---
+                    // If the admin also has a Firebase Auth account (document ID qU8vTGpes1PEuEGNl2k7sirelCa2 is their Auth UID)
+                    let fbSignInOk = false;
+                    let fbUser = null;
                     try {
-                        const snapshot = await FB.db.collection('admins')
-                            .where('email', '==', tEmail)
-                            .where('password', '==', tPwd)
-                            .limit(1)
-                            .get();
-                        if (!snapshot.empty) {
-                            const doc = snapshot.docs[0];
-                            const data = doc.data() || {};
-                            // Also check active status if field exists
-                            if (data.active === false) {
-                                return { success: false, message: 'Admin account disabled' };
-                            }
-                            // Cache locally for offline + session
-                            const adminsCache = getFromStorage('admins', []);
-                            if (!adminsCache.find(a => String(a.email || '').trim().toLowerCase() === tEmail)) {
-                                adminsCache.push({
-                                    id: doc.id,
-                                    email: tEmail,
-                                    password: tPwd,
-                                    name: data.name || tEmail.split('@')[0],
-                                    role: data.role || 'admin'
-                                });
-                                saveToStorage('admins', adminsCache);
-                            }
-                            try {
-                                localStorage.setItem('adminLoggedIn', 'true');
-                                localStorage.setItem('currentAdminEmail', tEmail);
-                                localStorage.setItem('currentAdminName', data.name || tEmail.split('@')[0]);
-                            } catch (_) {}
-                            // Also try Firebase Auth sign-in if enabled for admin
-                            if (FB.auth && FB.auth.signInWithEmailAndPassword) {
-                                try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
-                            }
-                            return { success: true, message: 'Admin access granted' };
+                        if (FB.auth && typeof FB.auth.signInWithEmailAndPassword === 'function') {
+                            const uc = await FB.auth.signInWithEmailAndPassword(tEmail, tPwd);
+                            fbUser = uc && uc.user;
+                            fbSignInOk = !!(fbUser && fbUser.uid);
+                            console.debug('[Auth:Admin] 🔐 Firebase Auth sign-in SUCCESS -> uid=', fbUser && fbUser.uid);
                         }
                     } catch (e) {
-                        console.warn('[Auth:Admin] Firestore lookup failed:', e.code || e.message);
+                        console.debug('[Auth:Admin] Firebase Auth sign-in skipped/failed:', (e && e.code) || e.message);
                     }
-                    // 3. Fallback to default admin credentials (for bootstrapping)
-                    if (tEmail === DEFAULT_ADMIN_EMAIL.toLowerCase() && tPwd === DEFAULT_ADMIN_PASSWORD) {
+
+                    // --- Strategy B: If FB Auth succeeded, try to load admins/{uid} directly (no index needed) ---
+                    if (fbSignInOk && fbUser && FB.db) {
                         try {
-                            localStorage.setItem('adminLoggedIn', 'true');
-                            localStorage.setItem('currentAdminEmail', DEFAULT_ADMIN_EMAIL);
-                            localStorage.setItem('currentAdminName', 'Admin');
-                        } catch (_) {}
-                        return { success: true, message: 'Admin access granted (default credentials)' };
+                            const uidDoc = await FB.db.collection('admins').doc(String(fbUser.uid)).get();
+                            if (uidDoc && uidDoc.exists) {
+                                const d = uidDoc.data() || {};
+                                const docEmail = String(d.email || '').trim().toLowerCase();
+                                if (!d || d.active !== false) {
+                                    // If doc has email, verify matches
+                                    if (!docEmail || docEmail === tEmail) {
+                                        console.debug('[Auth:Admin] ✅ admins/{auth.uid} document found and matched');
+                                        return _establishAdminSession(d, uidDoc.id, 'Firebase Auth + admins doc');
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[Auth:Admin] admins/<uid> get failed:', (e && e.code) || e.message);
+                        }
                     }
+
+                    // --- Strategy C: Single-field query admins.where('email' == tEmail).get() ---
+                    // (no composite index required, then verify password locally)
+                    if (FB.db) {
+                        try {
+                            const snap = await FB.db.collection('admins')
+                                .where('email', '==', tEmail)
+                                .limit(3)
+                                .get();
+                            if (snap && snap.docs && snap.docs.length > 0) {
+                                // Find first doc with matching password
+                                for (const doc of snap.docs) {
+                                    const d = doc.data() || {};
+                                    if (d.active === false) continue;
+                                    const docPwd = d.password;
+                                    if (docPwd != null && _pwdEq(docPwd, tPwd)) {
+                                        console.debug('[Auth:Admin] ✅ admins.where(email).get() + pwd match for doc', doc.id);
+                                        // Also try Firebase Auth sign-in to get a valid session
+                                        if (!fbSignInOk && FB.auth && typeof FB.auth.signInWithEmailAndPassword === 'function') {
+                                            try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
+                                        }
+                                        return _establishAdminSession(d, doc.id, 'admins email match');
+                                    }
+                                }
+                                console.warn('[Auth:Admin] Email found in /admins but no password matched for', tEmail);
+                            } else {
+                                console.warn('[Auth:Admin] No docs in /admins with email=', tEmail);
+                            }
+                        } catch (e) {
+                            console.warn('[Auth:Admin] admins.where(email) query failed:', (e && e.code) || e.message);
+                        }
+
+                        // --- Strategy D: Brute-force fallback — get ALL admins (small collection) and filter locally ---
+                        try {
+                            const allSnap = await FB.db.collection('admins').limit(50).get();
+                            if (allSnap && allSnap.docs && allSnap.docs.length > 0) {
+                                for (const doc of allSnap.docs) {
+                                    const d = doc.data() || {};
+                                    const docEmail = String(d.email || '').trim().toLowerCase();
+                                    if (docEmail === tEmail && d.active !== false && _pwdEq(d.password, tPwd)) {
+                                        console.debug('[Auth:Admin] ✅ Fallback list-scan matched admin doc', doc.id);
+                                        if (!fbSignInOk && FB.auth && typeof FB.auth.signInWithEmailAndPassword === 'function') {
+                                            try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
+                                        }
+                                        return _establishAdminSession(d, doc.id, 'admins list fallback');
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.warn('[Auth:Admin] admins fallback list-scan failed:', (e && e.code) || e.message);
+                        }
+                    }
+
+                    // --- Strategy E: Firebase Auth sign-in alone (trust it if admin claim exists) ---
+                    if (fbSignInOk) {
+                        try {
+                            const idToken = fbUser.getIdTokenResult ? await fbUser.getIdTokenResult() : null;
+                            const isAdminClaim = idToken && idToken.claims && (idToken.claims.admin === true || idToken.claims.role === 'admin');
+                            if (isAdminClaim) {
+                                console.debug('[Auth:Admin] ✅ Firebase Auth custom admin claim found');
+                                return _establishAdminSession(
+                                    { name: fbUser.displayName, email: fbUser.email, role: 'admin' },
+                                    fbUser.uid,
+                                    'Firebase Auth admin claim'
+                                );
+                            }
+                        } catch (_) {}
+                    }
+
+                    // --- Strategy F: Default bootstrap credentials ---
+                    if (_isDefaultCreds()) {
+                        console.debug('[Auth:Admin] ⚠️  Using default bootstrap admin credentials');
+                        return _establishAdminSession(
+                            { name: 'Bootstrap Admin', email: DEFAULT_ADMIN_EMAIL, role: 'super' },
+                            'bootstrap-default',
+                            'default credentials'
+                        );
+                    }
+
+                    console.warn('[Auth:Admin] ❌ All strategies exhausted for email=', tEmail, '| FB Auth ok?', fbSignInOk);
                     return { success: false, message: 'Invalid admin email or password' };
                 })();
             }
 
-            // 4. Offline: check default admin fallback
-            if (tEmail === DEFAULT_ADMIN_EMAIL.toLowerCase() && tPwd === DEFAULT_ADMIN_PASSWORD) {
-                try {
-                    localStorage.setItem('adminLoggedIn', 'true');
-                    localStorage.setItem('currentAdminEmail', DEFAULT_ADMIN_EMAIL);
-                    localStorage.setItem('currentAdminName', 'Admin');
-                } catch (_) {}
-                return { success: true, message: 'Admin access granted' };
+            // 4. No Firestore/Auth available offline -> default admin fallback
+            if (_isDefaultCreds()) {
+                return _establishAdminSession(
+                    { name: 'Bootstrap Admin', email: DEFAULT_ADMIN_EMAIL, role: 'super' },
+                    'bootstrap-default',
+                    'default credentials'
+                );
             }
 
             return { success: false, message: 'Invalid admin email or password' };
