@@ -12,6 +12,22 @@ const TX_STATUS_PENDING  = 'PENDING';
 const TX_STATUS_APPROVED = 'APPROVED';
 const TX_STATUS_REJECTED = 'REJECTED';
 
+// Default admin credentials (fallback if admins collection empty or offline)
+// You should change these in production or rely on Firestore admins collection
+const DEFAULT_ADMIN_EMAIL = 'admin@nexgold.exchange';
+const DEFAULT_ADMIN_PASSWORD = 'admin123';
+
+// Helper to get current admin email from session (for audit fields)
+function getCurrentAdminEmail() {
+    try {
+        const stored = localStorage.getItem('currentAdminEmail');
+        if (stored) return stored;
+    } catch (_) {}
+    // Fallback for legacy sessions
+    const legacyOk = localStorage.getItem('adminLoggedIn') === 'true';
+    return legacyOk ? DEFAULT_ADMIN_EMAIL : 'system@nexgold.exchange';
+}
+
 // ========================================
 // STORAGE HELPERS
 // ========================================
@@ -66,6 +82,7 @@ function getElementValue(el) {
     if (!localStorage.getItem('wallets'))        saveToStorage('wallets', []);
     if (!localStorage.getItem('transactions'))   saveToStorage('transactions', []);
     if (!localStorage.getItem('certificates'))   saveToStorage('certificates', []);
+    if (!localStorage.getItem('admins'))         saveToStorage('admins', []);
     if (!localStorage.getItem('paymentMethods')) saveToStorage('paymentMethods', {
         usdt: '',
         btc:  '',
@@ -401,22 +418,94 @@ const Auth = (function () {
             }
             return Promise.resolve(local);
         },
-        logout() {
-            const FB = (typeof window !== 'undefined') && window.FB;
-            if (FB && FB.enabled && FB.auth && typeof FB.auth.signOut === 'function') {
-                try { FB.auth.signOut().catch(() => {}); } catch (_) {}
-            }
-            try { localStorage.removeItem('currentUserId'); } catch (_) {}
-            try { localStorage.removeItem('adminLoggedIn'); } catch (_) {}
-            try { window.location.href = 'index.html'; } catch (_) {}
-        },
         adminLogin(email, password) {
             const tEmail = String(email || '').trim().toLowerCase();
             const tPwd = String(password || '').trim();
-            if (tEmail === String(ADMIN_EMAIL).toLowerCase() && tPwd === String(ADMIN_PASSWORD)) {
-                try { localStorage.setItem('adminLoggedIn', 'true'); } catch (_) {}
+            if (!tEmail || !tPwd) {
+                return { success: false, message: 'Email and password are required' };
+            }
+
+            // 1. Check localStorage admins cache first (for offline)
+            const localAdmins = getFromStorage('admins', []);
+            const localMatch = localAdmins.find(a =>
+                String(a.email || '').trim().toLowerCase() === tEmail &&
+                String(a.password || '').trim() === tPwd
+            );
+            if (localMatch) {
+                try {
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    localStorage.setItem('currentAdminEmail', tEmail);
+                    localStorage.setItem('currentAdminName', localMatch.name || tEmail.split('@')[0]);
+                } catch (_) {}
                 return { success: true, message: 'Admin access granted' };
             }
+
+            // 2. Try Firestore admins collection if available
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (FB && FB.enabled && FB.db) {
+                return (async () => {
+                    try {
+                        const snapshot = await FB.db.collection('admins')
+                            .where('email', '==', tEmail)
+                            .where('password', '==', tPwd)
+                            .limit(1)
+                            .get();
+                        if (!snapshot.empty) {
+                            const doc = snapshot.docs[0];
+                            const data = doc.data() || {};
+                            // Also check active status if field exists
+                            if (data.active === false) {
+                                return { success: false, message: 'Admin account disabled' };
+                            }
+                            // Cache locally for offline + session
+                            const adminsCache = getFromStorage('admins', []);
+                            if (!adminsCache.find(a => String(a.email || '').trim().toLowerCase() === tEmail)) {
+                                adminsCache.push({
+                                    id: doc.id,
+                                    email: tEmail,
+                                    password: tPwd,
+                                    name: data.name || tEmail.split('@')[0],
+                                    role: data.role || 'admin'
+                                });
+                                saveToStorage('admins', adminsCache);
+                            }
+                            try {
+                                localStorage.setItem('adminLoggedIn', 'true');
+                                localStorage.setItem('currentAdminEmail', tEmail);
+                                localStorage.setItem('currentAdminName', data.name || tEmail.split('@')[0]);
+                            } catch (_) {}
+                            // Also try Firebase Auth sign-in if enabled for admin
+                            if (FB.auth && FB.auth.signInWithEmailAndPassword) {
+                                try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
+                            }
+                            return { success: true, message: 'Admin access granted' };
+                        }
+                    } catch (e) {
+                        console.warn('[Auth:Admin] Firestore lookup failed:', e.code || e.message);
+                    }
+                    // 3. Fallback to default admin credentials (for bootstrapping)
+                    if (tEmail === DEFAULT_ADMIN_EMAIL.toLowerCase() && tPwd === DEFAULT_ADMIN_PASSWORD) {
+                        try {
+                            localStorage.setItem('adminLoggedIn', 'true');
+                            localStorage.setItem('currentAdminEmail', DEFAULT_ADMIN_EMAIL);
+                            localStorage.setItem('currentAdminName', 'Admin');
+                        } catch (_) {}
+                        return { success: true, message: 'Admin access granted (default credentials)' };
+                    }
+                    return { success: false, message: 'Invalid admin email or password' };
+                })();
+            }
+
+            // 4. Offline: check default admin fallback
+            if (tEmail === DEFAULT_ADMIN_EMAIL.toLowerCase() && tPwd === DEFAULT_ADMIN_PASSWORD) {
+                try {
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    localStorage.setItem('currentAdminEmail', DEFAULT_ADMIN_EMAIL);
+                    localStorage.setItem('currentAdminName', 'Admin');
+                } catch (_) {}
+                return { success: true, message: 'Admin access granted' };
+            }
+
             return { success: false, message: 'Invalid admin email or password' };
         },
         checkAdminSession(redirect = true) {
@@ -425,6 +514,24 @@ const Auth = (function () {
                 try { window.location.href = 'admin.html'; } catch (_) {}
             }
             return isAdmin;
+        },
+        getCurrentAdmin() {
+            if (localStorage.getItem('adminLoggedIn') !== 'true') return null;
+            return {
+                email: localStorage.getItem('currentAdminEmail') || DEFAULT_ADMIN_EMAIL,
+                name: localStorage.getItem('currentAdminName') || 'Admin'
+            };
+        },
+        logout() {
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (FB && FB.enabled && FB.auth && typeof FB.auth.signOut === 'function') {
+                try { FB.auth.signOut().catch(() => {}); } catch (_) {}
+            }
+            try { localStorage.removeItem('currentUserId'); } catch (_) {}
+            try { localStorage.removeItem('adminLoggedIn'); } catch (_) {}
+            try { localStorage.removeItem('currentAdminEmail'); } catch (_) {}
+            try { localStorage.removeItem('currentAdminName'); } catch (_) {}
+            try { window.location.href = 'index.html'; } catch (_) {}
         }
     };
     return module;
@@ -1057,7 +1164,7 @@ const Admin = {
             const updated = updateTransaction(txId, {
                 status: TX_STATUS_APPROVED,
                 approvedAt: new Date().toISOString(),
-                approvedBy: ADMIN_EMAIL,
+                approvedBy: getCurrentAdminEmail(),
                 note: 'Approved by admin - gold credited to wallet'
             });
             return {
@@ -1076,7 +1183,7 @@ const Admin = {
             const updated = updateTransaction(txId, {
                 status: TX_STATUS_APPROVED,
                 approvedAt: new Date().toISOString(),
-                approvedBy: ADMIN_EMAIL,
+                approvedBy: getCurrentAdminEmail(),
                 note: 'Approved by admin - gold debited & payout queued'
             });
             return {
@@ -1088,7 +1195,7 @@ const Admin = {
             const updated = updateTransaction(txId, {
                 status: TX_STATUS_APPROVED,
                 approvedAt: new Date().toISOString(),
-                approvedBy: ADMIN_EMAIL
+                approvedBy: getCurrentAdminEmail()
             });
             return { success: true, message: 'Transaction approved', transaction: updated };
         }
@@ -1102,7 +1209,7 @@ const Admin = {
         const updated = updateTransaction(txId, {
             status: TX_STATUS_REJECTED,
             rejectedAt: new Date().toISOString(),
-            rejectedBy: ADMIN_EMAIL,
+            rejectedBy: getCurrentAdminEmail(),
             rejectionReason: reason || 'Not specified',
             note: 'Rejected by admin'
         });

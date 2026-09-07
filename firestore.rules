@@ -1,0 +1,128 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper: is authenticated
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Helper: get user email lowercased
+    function userEmail() {
+      return request.auth != null && request.auth.token.email != null
+        ? request.auth.token.email.lower()
+        : '';
+    }
+
+    // Helper: check if caller is a super admin via custom token claim
+    function isSuperAdmin() {
+      return request.auth != null &&
+             request.auth.token.admin == true;
+    }
+
+    // Helper: check if caller is listed in /admins collection
+    function isAdminInCollection() {
+      return isSignedIn() &&
+             exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+             (isSignedIn() &&
+              existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    }
+
+    // More thorough admin check (by email in admins collection OR uid OR claim)
+    function isAdmin() {
+      if (isSuperAdmin()) return true;
+      if (!isSignedIn()) return false;
+      // By uid document
+      if (exists(/databases/$(database)/documents/admins/$(request.auth.uid))) {
+        const adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
+        return adminDoc.data.active != false;
+      }
+      // Fallback: search admins by email (requires composite index in production)
+      // In a real setup always prefer the uid-based lookup above.
+      return false;
+    }
+
+    // Helper: is writing one's OWN user doc
+    function isOwnUserDoc(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ============ ADMINS COLLECTION ============
+    // Store admin profile keyed by the admin's Firebase Auth UID.
+    // Document fields: email, password (legacy), name, role, active, createdAt, lastLogin
+    match /admins/{adminUid} {
+      allow read: if isAdmin();
+      allow create: if isSuperAdmin();
+      allow update: if isSuperAdmin() || (isSignedIn() && request.auth.uid == adminUid &&
+          request.resource.data.keys().hasOnly(['name','lastLogin','email']) &&
+          request.resource.data.active == resource.data.active);
+      allow delete: if isSuperAdmin();
+    }
+
+    // ============ USERS COLLECTION ============
+    // User documents keyed by the user's Firebase Auth UID.
+    match /users/{userId} {
+      allow read: if isAdmin() || isOwnUserDoc(userId);
+      allow create: if isOwnUserDoc(userId) || isAdmin();
+      allow update: if isAdmin() || (isOwnUserDoc(userId) &&
+          request.resource.data.keys().hasOnly([
+            'name','email','country','address','displayName','photoURL','updatedAt'
+          ]));
+      allow delete: if isAdmin();
+    }
+
+    // ============ WALLETS COLLECTION ============
+    // Wallets keyed by user's Firebase Auth UID.
+    // Only admins may credit/debit; users can only READ their own wallet.
+    match /wallets/{userId} {
+      allow read: if isAdmin() || isOwnUserDoc(userId);
+      allow create: if isAdmin() || isOwnUserDoc(userId);
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============ TRANSACTIONS COLLECTION ============
+    // Any signed-in user can CREATE (submit buy/sell orders).
+    // User can only READ their own transactions; admins read all.
+    // Only admins can UPDATE status (approve/reject).
+    match /transactions/{txId} {
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data._userId == request.auth.uid) ||
+        (isSignedIn() && resource.data.userId != null &&
+         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.userId);
+      allow create: if isSignedIn();
+      allow update: if isAdmin() &&
+          request.resource.data.keys().hasOnly([
+            'status','approvedAt','approvedBy','rejectedAt','rejectedBy',
+            'rejectionReason','note','_syncedAt'
+          ]);
+      allow delete: if isAdmin();
+    }
+
+    // ============ CERTIFICATES COLLECTION ============
+    // Certificates issued by admins after a BUY approval.
+    match /certificates/{certId} {
+      allow read: if isAdmin() ||
+        (isSignedIn() && resource.data.userId != null &&
+         (resource.data.userEmail.lower() == userEmail() ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.userId)));
+      allow create: if isAdmin();
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
+    }
+
+    // ============ SYSTEM / SETTINGS DOCS ============
+    // Platform-wide configuration (base gold price, interest rates, payment methods).
+    match /system/{docId} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin();
+    }
+
+    // ============ DEFAULT CATCH-ALL (deny) ============
+    match /{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

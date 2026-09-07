@@ -443,7 +443,7 @@
                                         </div>
                                         <div class="calc-actions">
                                             <button id="sellSubmitBtn" class="btn-hero-gold w-100 justify-content-center" style="background:linear-gradient(135deg,#f87171,#dc2626 55%,#991b1b 100%);box-shadow:0 14px 34px rgba(239,68,68,0.3),inset 0 1px 0 rgba(255,255,255,0.35);">
-                                                <i class="bi bi-check-circle-fill"></i> I HAVE MADE PAYMENT · <span id="sellDisplayTotal2">$0.00</span>
+                                                <i class="bi bi-send-fill"></i> I HAVE SENT IT · <span id="sellDisplayTotal2">$0.00</span>
                                             </button>
                                         </div>
                                     </div>
@@ -664,5 +664,10 @@
     <script src="app.js"></script>
     <script src="firebase-sync.js"></script>
     <script src="dashboard.js"></script>
+    <div style="position:fixed;bottom:16px;right:16px;z-index:9998;">
+        <a href="auth.html?tab=admin" title="Administrator Access" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:rgba(10,10,10,0.85);backdrop-filter:blur(10px);border:1px solid #2a2a2a;color:#8a8a8a;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;transition:all .2s ease;box-shadow:0 8px 30px rgba(0,0,0,0.5);" onmouseover="this.style.color='#D4AF37';this.style.borderColor='rgba(212,175,55,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.color='#8a8a8a';this.style.borderColor='#2a2a2a';this.style.transform='translateY(0)';">
+            <i class="bi bi-lock-fill" style="font-size:14px;"></i> Admin
+        </a>
+    </div>
 </body>
 </html>

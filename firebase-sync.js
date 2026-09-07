@@ -41,11 +41,12 @@
         if (!db) return false;
         try {
             console.debug('[GlobalSync] Pulling all collections from Firestore…');
-            const [usersSnap, walletsSnap, txnsSnap, certsSnap] = await Promise.all([
+            const [usersSnap, walletsSnap, txnsSnap, certsSnap, adminsSnap] = await Promise.all([
                 db.collection('users').get().catch(() => ({ size: 0, docs: [] })),
                 db.collection('wallets').get().catch(() => ({ size: 0, docs: [] })),
                 db.collection('transactions').get().catch(() => ({ size: 0, docs: [] })),
-                db.collection('certificates').get().catch(() => ({ size: 0, docs: [] }))
+                db.collection('certificates').get().catch(() => ({ size: 0, docs: [] })),
+                db.collection('admins').get().catch(() => ({ size: 0, docs: [] }))
             ]);
             let settingsVal = null, paymentsVal = null;
             try {
@@ -61,6 +62,7 @@
             const localWallets = _get('wallets', []);
             const localTxns    = _get('transactions', []);
             const localCerts   = _get('certificates', []);
+            const localAdmins  = _get('admins', []);
 
             const byEmail = new Map();
             const byId    = new Map();
@@ -74,8 +76,9 @@
             const walletsByUid = new Map(localWallets.map(w => [String(w.userId), w]));
             const txnsById     = new Map(localTxns.map(t => [String(t.id), t]));
             const certsById    = new Map(localCerts.map(c => [String(c.id), c]));
+            const adminsByEmail = new Map(localAdmins.map(a => [String(a.email || '').trim().toLowerCase(), a]));
 
-            let usersDirty = false, walletsDirty = false, txnsDirty = false, certsDirty = false;
+            let usersDirty = false, walletsDirty = false, txnsDirty = false, certsDirty = false, adminsDirty = false;
 
             const userDocs = (usersSnap && usersSnap.docs) ? usersSnap.docs : [];
             userDocs.forEach(doc => {
@@ -213,7 +216,35 @@
                 certsDirty = true;
             });
 
+            const adminDocs = (adminsSnap && adminsSnap.docs) ? adminsSnap.docs : [];
+            adminDocs.forEach(doc => {
+                const d = doc.data() || {};
+                const email = String(d.email || '').trim().toLowerCase();
+                if (!email) return;
+                if (!adminsByEmail.has(email)) {
+                    localAdmins.push({
+                        id: doc.id,
+                        email: email,
+                        password: String(d.password || ''),
+                        name: String(d.name || email.split('@')[0]),
+                        role: String(d.role || 'admin'),
+                        active: d.active !== false
+                    });
+                    adminsByEmail.set(email, localAdmins[localAdmins.length - 1]);
+                    adminsDirty = true;
+                } else {
+                    const existing = adminsByEmail.get(email);
+                    let dirty = false;
+                    if (d.name && existing.name !== String(d.name).trim()) { existing.name = String(d.name).trim(); dirty = true; }
+                    if (d.password && existing.password !== String(d.password)) { existing.password = String(d.password); dirty = true; }
+                    if (d.role && existing.role !== String(d.role)) { existing.role = String(d.role); dirty = true; }
+                    if (d.active === false && existing.active !== false) { existing.active = false; dirty = true; }
+                    if (dirty) adminsDirty = true;
+                }
+            });
+
             if (usersDirty)   _set('users', localUsers);
+            if (adminsDirty)  _set('admins', localAdmins);
             if (walletsDirty) _set('wallets', localWallets);
             if (txnsDirty) {
                 localTxns.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
@@ -240,6 +271,7 @@
 
             console.debug('[GlobalSync] Pulled from Firestore:',
                 (usersSnap.size||0), 'users,',
+                (adminsSnap.size||0), 'admins,',
                 (walletsSnap.size||0), 'wallets,',
                 (txnsSnap.size||0), 'txns,',
                 (certsSnap.size||0), 'certs');

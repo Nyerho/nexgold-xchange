@@ -13,15 +13,24 @@ function initializeAdmin() {
         loginScreen.style.display = 'flex';
         mainScreen.style.display  = 'none';
 
-        document.getElementById('adminLoginBtn')?.addEventListener('click', function () {
+        document.getElementById('adminLoginBtn')?.addEventListener('click', async function () {
             const email = document.getElementById('adminEmailAdmin').value;
             const pw = document.getElementById('adminPassword').value.trim();
-            const result = Auth.adminLogin(email, pw);
-            if (result.success) {
-                showToast('Admin access granted', 'success');
-                setTimeout(() => location.reload(), 500);
-            } else {
-                showToast(result.message, 'error');
+            const btn = this;
+            const originalHTML = btn ? btn.innerHTML : null;
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>AUTHORIZING...'; }
+            try {
+                const result = await Promise.resolve(Auth.adminLogin(email, pw));
+                if (result.success) {
+                    showToast(result.message || 'Admin access granted', 'success');
+                    setTimeout(() => location.reload(), 500);
+                } else {
+                    showToast(result.message, 'error');
+                    if (btn && originalHTML) { btn.disabled = false; btn.innerHTML = originalHTML; }
+                }
+            } catch (err) {
+                showToast(err.message || 'Admin login failed', 'error');
+                if (btn && originalHTML) { btn.disabled = false; btn.innerHTML = originalHTML; }
             }
         });
         document.getElementById('adminPassword')?.addEventListener('keydown', function (e) {
