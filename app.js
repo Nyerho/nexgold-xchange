@@ -8,8 +8,6 @@
 // ========================================
 const KARAT_MULTIPLIERS = { '24K': 1, '22K': 0.916, '18K': 0.75 };
 const UNIT_MULTIPLIERS  = { 'Gram': 1, 'Ounce': 31.103, 'Kilo': 1000 };
-const ADMIN_PASSWORD = 'admin123';
-const ADMIN_EMAIL = 'admin@nexgold.exchange';
 const TX_STATUS_PENDING  = 'PENDING';
 const TX_STATUS_APPROVED = 'APPROVED';
 const TX_STATUS_REJECTED = 'REJECTED';
@@ -63,65 +61,19 @@ function getElementValue(el) {
 // ========================================
 // DATA INITIALIZATION (runs everywhere)
 // ========================================
-function createDemoUserLocal() {
-    const email    = 'demo@nexgold.exchange';
-    const password = 'Demo@123';
-    const users    = getFromStorage('users', []);
-    if (!users.find(u => u.email.toLowerCase() === email.toLowerCase())) {
-        const newUser = {
-            id: Date.now() - 86400000 * 7,
-            name: 'Demo Investor',
-            email: email,
-            password: password,
-            country: 'United States',
-            address: '1 Demo Way, New York, NY 10001'
-        };
-        users.push(newUser);
-        saveToStorage('users', users);
-
-        const wallets = getFromStorage('wallets', []);
-        const wallet = { userId: newUser.id, main: 10.5, vault: 5.25, bonus: 2.1 };
-        wallets.push(wallet);
-        saveToStorage('wallets', wallets);
-
-        const txns = [
-            { id: Date.now() - 86400000 * 6, userId: newUser.id, type: 'BUY',  karat: '24K', grams: 5.0,  price: 5 * 65, date: new Date(Date.now() - 86400000 * 6).toISOString(), status: TX_STATUS_APPROVED },
-            { id: Date.now() - 86400000 * 3, userId: newUser.id, type: 'BUY',  karat: '22K', grams: 5.5,  price: 5.5 * 65 * 0.916, date: new Date(Date.now() - 86400000 * 3).toISOString(), status: TX_STATUS_APPROVED },
-            { id: Date.now() - 86400000 * 1, userId: newUser.id, type: 'SELL', karat: '24K', grams: 0.25, price: 0.25 * 65, date: new Date(Date.now() - 86400000 * 1).toISOString(), status: TX_STATUS_APPROVED }
-        ];
-        txns.forEach(saveTransaction);
-        return { success: true, message: 'Demo account created locally', user: newUser };
-    }
-    return { success: false, message: 'Demo user exists' };
-}
-
 (function initializeData() {
     if (!localStorage.getItem('users'))          saveToStorage('users', []);
     if (!localStorage.getItem('wallets'))        saveToStorage('wallets', []);
     if (!localStorage.getItem('transactions'))   saveToStorage('transactions', []);
     if (!localStorage.getItem('certificates'))   saveToStorage('certificates', []);
     if (!localStorage.getItem('paymentMethods')) saveToStorage('paymentMethods', {
-        usdt: 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t',
-        btc:  'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh',
-        bankAccounts: [{
-            bankName:      'Nexgold Exchange AG · Swiss Corporate Account',
-            accountName:   'NEXGOLD EXCHANGE LTD',
-            accountNumber: 'CH93 0076 2011 6238 2700 9 (IBAN)',
-            swift:         'CRESCHZZ80A · Credit Suisse, Zurich'
-        }]
+        usdt: '',
+        btc:  '',
+        bankAccounts: []
     });
     const pmExisting = getFromStorage('paymentMethods', null);
-    if (pmExisting && (!pmExisting.bankAccounts || pmExisting.bankAccounts.length === 0)) {
-        pmExisting.usdt = pmExisting.usdt || 'TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t';
-        pmExisting.btc  = pmExisting.btc  || 'bc1qxy2kgdygjrsqtzq2n0yrf2493p83kkfjhx0wlh';
-        pmExisting.bankAccounts = [{
-            bankName:      'Nexgold Exchange AG · Swiss Corporate Account',
-            accountName:   'NEXGOLD EXCHANGE LTD',
-            accountNumber: 'CH93 0076 2011 6238 2700 9 (IBAN)',
-            swift:         'CRESCHZZ80A · Credit Suisse, Zurich'
-        }];
-        saveToStorage('paymentMethods', pmExisting);
-    }
+    if (pmExisting && !pmExisting.bankAccounts) pmExisting.bankAccounts = [];
+    if (pmExisting) saveToStorage('paymentMethods', pmExisting);
     if (!localStorage.getItem('settings')) {
         saveToStorage('settings', {
             basePrice: 65,
@@ -137,8 +89,6 @@ function createDemoUserLocal() {
         if (!t.status) { t.status = TX_STATUS_APPROVED; needsSave = true; }
     });
     if (needsSave) saveToStorage('transactions', txns);
-    const users = getFromStorage('users', []);
-    if (users.length === 0) createDemoUserLocal();
 })();
 
 // ========================================
