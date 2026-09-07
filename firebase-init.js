@@ -11,7 +11,7 @@
             const existing = document.querySelector(`script[data-fb-module="${name}"]`);
             if (existing) return resolve();
             const s = document.createElement('script');
-            s.src = `https://www.gstatic.com/firebasejs/10.12.5/firebase-${name}.js`;
+            s.src = `https://www.gstatic.com/firebasejs/10.12.5/firebase-${name}-compat.js`;
             s.type = 'text/javascript';
             s.async = false;
             s.setAttribute('data-fb-module', name);

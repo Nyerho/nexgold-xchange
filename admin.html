@@ -157,6 +157,7 @@
                         <p style="color:#8a8a8a;margin-top:8px;">Manage users, platform settings, payment methods, and view analytics.</p>
                     </div>
                     <div class="col-md-4 text-md-end d-flex justify-content-md-end gap-2 flex-wrap">
+                        <button class="btn-home-outline" onclick="if(window.NexgoldGlobalSync){window.NexgoldGlobalSync.forceSync();showToast('Syncing latest data from the cloud…','info');}else{refreshUsers();}"><i class="bi bi-cloud-arrow-down"></i> Sync from Cloud</button>
                         <button class="btn-home-outline" onclick="refreshUsers()"><i class="bi bi-arrow-clockwise"></i> Refresh</button>
                         <a href="index.html" class="btn-home-square-gold" style="background:linear-gradient(135deg,#c4b5fd,#8b5cf6 55%,#5b21b6 100%);box-shadow:0 10px 24px rgba(139,92,246,0.25);"><i class="bi bi-eye"></i> View Site</a>
                     </div>
@@ -388,6 +389,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="firebase-init.js"></script>
     <script src="app.js"></script>
+    <script src="firebase-sync.js"></script>
     <script src="admin.js"></script>
 </body>
 </html>
