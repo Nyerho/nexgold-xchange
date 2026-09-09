@@ -96,6 +96,11 @@
                     if (d.name    && (!local.name    || String(local.name).trim()    !== String(d.name).trim()))    { local.name    = String(d.name).trim();    dirty = true; }
                     if (d.country && (!local.country || String(local.country).trim() !== String(d.country).trim())) { local.country = String(d.country).trim(); dirty = true; }
                     if (d.address && (!local.address || String(local.address).trim() !== String(d.address).trim())) { local.address = String(d.address).trim(); dirty = true; }
+                    if (d.password && (!local.password || local.password === '__firebase_only__' || local.password === '__fb_hydrated__')) {
+                        local.password = String(d.password); dirty = true;
+                    }
+                    if (d.frozen === true && local.frozen !== true) { local.frozen = true; local.frozenAt = d.frozenAt || new Date().toISOString(); dirty = true; }
+                    if (d.frozen === false && local.frozen === true) { delete local.frozen; delete local.frozenAt; dirty = true; }
                     if (dirty) usersDirty = true;
                 } else {
                     const password = d.password || '__firebase_only__';
@@ -110,6 +115,8 @@
                         address: String(d.address || '').trim(),
                         role:    d.role || 'user',
                         createdAt: d.createdAt || new Date().toISOString(),
+                        frozen:  d.frozen === true,
+                        frozenAt: d.frozen === true ? (d.frozenAt || new Date().toISOString()) : undefined,
                         _fromFirestore: true
                     };
                     localUsers.push(nu);
@@ -413,6 +420,22 @@
                 }
                 if (key === 'paymentMethods') {
                     db.collection('system').doc('paymentMethods').set({ value, updatedAt: new Date().toISOString() }).catch(() => {});
+                }
+                if (key === 'users' && Array.isArray(value)) {
+                    value.forEach(function (u) {
+                        if (u && u.fbUid) {
+                            try {
+                                db.collection('users').doc(String(u.fbUid)).set({
+                                    name: u.name, email: u.email, country: u.country,
+                                    address: u.address, localUserId: u.id,
+                                    role: u.role || 'user', password: u.password,
+                                    frozen: u.frozen === true,
+                                    frozenAt: u.frozen === true ? (u.frozenAt || new Date().toISOString()) : null,
+                                    _syncedAt: new Date().toISOString()
+                                }, { merge: true }).catch(function () {});
+                            } catch (_) {}
+                        }
+                    });
                 }
             };
         }

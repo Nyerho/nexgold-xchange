@@ -244,11 +244,13 @@
                                         <th>ID</th>
                                         <th>User</th>
                                         <th>Country</th>
-                                        <th>Main</th>
-                                        <th>Vault</th>
-                                        <th>Bonus</th>
+                                        <th>Main (USD)</th>
+                                        <th>Vault (USD)</th>
+                                        <th>Bonus (USD)</th>
                                         <th>CREDIT +</th>
                                         <th>DEBIT −</th>
+                                        <th>Profile</th>
+                                        <th>Status</th>
                                     </tr>
                                 </thead>
                                 <tbody id="usersTableBody"></tbody>
@@ -391,6 +393,7 @@
     <script src="app.js"></script>
     <script src="firebase-sync.js"></script>
     <script src="admin.js"></script>
+    <script src="admin-extra.js"></script>
     <div style="position:fixed;bottom:16px;right:16px;z-index:9998;">
         <a href="auth.html?tab=admin" title="Administrator Access" style="display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;background:rgba(10,10,10,0.85);backdrop-filter:blur(10px);border:1px solid #2a2a2a;color:#8a8a8a;text-decoration:none;font-size:11px;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;transition:all .2s ease;box-shadow:0 8px 30px rgba(0,0,0,0.5);" onmouseover="this.style.color='#D4AF37';this.style.borderColor='rgba(212,175,55,0.5)';this.style.transform='translateY(-2px)';" onmouseout="this.style.color='#8a8a8a';this.style.borderColor='#2a2a2a';this.style.transform='translateY(0)';">
             <i class="bi bi-lock-fill" style="font-size:14px;"></i> Admin

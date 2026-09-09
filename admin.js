@@ -20,16 +20,24 @@ function initializeAdmin() {
             const originalHTML = btn ? btn.innerHTML : null;
             if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>AUTHORIZING...'; }
             try {
+                if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+                    try {
+                        await Promise.race([
+                            window.NexgoldGlobalSync.pullAllFromFirestore(),
+                            new Promise(function(res) { setTimeout(res, 2500); })
+                        ]);
+                    } catch (_) {}
+                }
                 const result = await Promise.resolve(Auth.adminLogin(email, pw));
-                if (result.success) {
+                if (result && result.success) {
                     showToast(result.message || 'Admin access granted', 'success');
                     setTimeout(() => location.reload(), 500);
                 } else {
-                    showToast(result.message, 'error');
+                    showToast((result && result.message) || 'Invalid admin email or password', 'error');
                     if (btn && originalHTML) { btn.disabled = false; btn.innerHTML = originalHTML; }
                 }
             } catch (err) {
-                showToast(err.message || 'Admin login failed', 'error');
+                showToast((err && err.message) || 'Admin login failed', 'error');
                 if (btn && originalHTML) { btn.disabled = false; btn.innerHTML = originalHTML; }
             }
         });
@@ -253,40 +261,53 @@ window.renderPendingApprovals = function () {
     renderStats();
 };
 
-window.approveTxn = function (txId) {
+window.approveTxn = async function (txId) {
     const tx = getTransactionById(txId);
     if (!tx) { showToast('Transaction not found — refresh pending list', 'error'); renderPendingApprovals(); return; }
     const u = getUserById(tx.userId);
     const ok = confirm(`APPROVE this ${tx.type} of ${formatNumber(tx.grams,4)}g ${tx.karat} gold for ${u ? u.name : 'Unknown user'}?\n\nThis will ${tx.type==='BUY' ? 'credit gold wallet + issue insurance certificate': 'debit gold wallet'}.`);
     if (!ok) return;
 
-    const result = Admin.approveTransaction(txId);
-    if (result.success) {
-        showToast(result.message, 'success');
-        if (tx.type === 'BUY' && result.certificate) {
-            setTimeout(() => generateCertificatePDF(result.certificate), 300);
+    try {
+        const result = await Promise.resolve(Admin.approveTransaction(txId));
+        if (result && result.success) {
+            showToast(result.message, 'success');
+            if (tx.type === 'BUY' && result.certificate) {
+                setTimeout(() => generateCertificatePDF(result.certificate), 300);
+            }
+            if (window.NexgoldGlobalSync) { try { window.NexgoldGlobalSync.forceSync(); } catch (_) {} }
+            renderPendingApprovals();
+            loadAnalyticsCharts(true);
+            renderStats();
+            renderUsersTable();
+        } else {
+            showToast((result && result.message) || 'Approval failed', 'error');
         }
-        renderPendingApprovals();
-        loadAnalyticsCharts(true);
-        renderStats();
-    } else {
-        showToast(result.message || 'Approval failed', 'error');
+    } catch (e) {
+        console.error('[Admin:Approve] error:', e);
+        showToast('Approval error: ' + (e.message || 'Unknown error'), 'error');
     }
 };
 
-window.rejectTxn = function (txId) {
+window.rejectTxn = async function (txId) {
     const tx = getTransactionById(txId);
     if (!tx) { showToast('Transaction not found', 'error'); renderPendingApprovals(); return; }
     const reason = prompt('Enter reason for rejection (shown to user):', '');
     if (reason === null) return;
-    const result = Admin.rejectTransaction(txId, reason || 'No reason provided');
-    if (result.success) {
-        showToast(result.message, 'info');
-        renderPendingApprovals();
-        loadAnalyticsCharts(true);
-        renderStats();
-    } else {
-        showToast(result.message || 'Rejection failed', 'error');
+    try {
+        const result = await Promise.resolve(Admin.rejectTransaction(txId, reason || 'No reason provided'));
+        if (result && result.success) {
+            showToast(result.message, 'info');
+            if (window.NexgoldGlobalSync) { try { window.NexgoldGlobalSync.forceSync(); } catch (_) {} }
+            renderPendingApprovals();
+            loadAnalyticsCharts(true);
+            renderStats();
+        } else {
+            showToast((result && result.message) || 'Rejection failed', 'error');
+        }
+    } catch (e) {
+        console.error('[Admin:Reject] error:', e);
+        showToast('Rejection error: ' + (e.message || 'Unknown error'), 'error');
     }
 };
 
@@ -295,21 +316,53 @@ function renderUsersTable() {
     if (!tbody) return;
 
     const users = Admin.getAllUsersWithWallets();
+    const settings = getSettings();
+    const pricePerGram = settings.basePrice;
+
     if (users.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="text-center py-5 text-muted">No users registered yet</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="11" class="text-center py-5 text-muted">No users registered yet</td></tr>`;
         return;
     }
 
     tbody.innerHTML = users.map(u => {
         const uid = u.id;
+        const mainUSD = (u.wallet.main || 0) * pricePerGram;
+        const vaultUSD = (u.wallet.vault || 0) * pricePerGram;
+        const bonusUSD = (u.wallet.bonus || 0) * pricePerGram;
+        const totalGrams = (u.wallet.main || 0) + (u.wallet.vault || 0) + (u.wallet.bonus || 0);
+        const totalUSD = totalGrams * pricePerGram;
+        const isFrozen = u.frozen === true;
+
         return `
-        <tr>
-            <td><strong>#${String(uid).slice(-5)}</strong></td>
-            <td>${u.name}<br><small class="text-muted">${u.email}</small></td>
+        <tr style="${isFrozen ? 'opacity:0.55;background:rgba(239,68,68,0.04);' : ''}">
+            <td>
+                <strong>#${String(uid).slice(-5)}</strong>
+                ${isFrozen ? '<br><span style="font-size:10px;padding:2px 8px;border-radius:10px;background:rgba(239,68,68,0.15);color:#ef4444;font-weight:800;letter-spacing:0.5px;"><i class="bi bi-lock-fill"></i> FROZEN</span>' : ''}
+            </td>
+            <td>
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#D4AF37,#8A6A12);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px;flex-shrink:0;">
+                        ${(u.name || 'U').charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                        <strong style="color:#fff;">${u.name}</strong>
+                        <br><small class="text-muted">${u.email}</small>
+                    </div>
+                </div>
+            </td>
             <td>${u.country || '-'}</td>
-            <td><strong class="text-gold">${formatNumber(u.wallet.main, 4)}g</strong></td>
-            <td><strong style="color:#60a5fa;">${formatNumber(u.wallet.vault, 4)}g</strong></td>
-            <td><strong style="color:#34d399;">${formatNumber(u.wallet.bonus, 4)}g</strong></td>
+            <td>
+                <div style="color:#fff;font-weight:700;">${formatCurrency(mainUSD)}</div>
+                <small style="color:#7a7a7a;">${formatNumber(u.wallet.main, 4)}g</small>
+            </td>
+            <td>
+                <div style="color:#fff;font-weight:700;">${formatCurrency(vaultUSD)}</div>
+                <small style="color:#7a7a7a;">${formatNumber(u.wallet.vault, 4)}g</small>
+            </td>
+            <td>
+                <div style="color:#fff;font-weight:700;">${formatCurrency(bonusUSD)}</div>
+                <small style="color:#7a7a7a;">${formatNumber(u.wallet.bonus, 4)}g</small>
+            </td>
             <td>
                 <button class="btn-sm-gold me-1 mb-1"   data-admin-action="credit" data-admin-wallet="main"  data-admin-userid="${uid}"><i class="bi bi-plus"></i> Main</button>
                 <button class="btn-sm-gold me-1 mb-1"   data-admin-action="credit" data-admin-wallet="vault" data-admin-userid="${uid}"><i class="bi bi-plus"></i> Vault</button>
@@ -319,6 +372,24 @@ function renderUsersTable() {
                 <button class="btn-sm-danger me-1 mb-1" data-admin-action="debit"  data-admin-wallet="main"  data-admin-userid="${uid}"><i class="bi bi-dash"></i> Main</button>
                 <button class="btn-sm-danger me-1 mb-1" data-admin-action="debit"  data-admin-wallet="vault" data-admin-userid="${uid}"><i class="bi bi-dash"></i> Vault</button>
                 <button class="btn-sm-danger mb-1"      data-admin-action="debit"  data-admin-wallet="bonus" data-admin-userid="${uid}"><i class="bi bi-dash"></i> Bonus</button>
+            </td>
+            <td>
+                <button class="btn-sm-blue me-1 mb-1"   data-admin-action="profile" data-admin-userid="${uid}" style="background:linear-gradient(135deg,#3b82f6,#2563eb);box-shadow:0 4px 12px rgba(59,130,246,0.25);border:0;">
+                    <i class="bi bi-person-gear"></i> Edit
+                </button>
+                <button class="btn-sm-blue me-1 mb-1"   data-admin-action="view" data-admin-userid="${uid}" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9);box-shadow:0 4px 12px rgba(139,92,246,0.25);border:0;">
+                    <i class="bi bi-eye"></i> View
+                </button>
+            </td>
+            <td>
+                ${isFrozen
+                    ? `<button class="btn-sm-gold mb-1" data-admin-action="unfreeze" data-admin-userid="${uid}" style="background:linear-gradient(135deg,#22c55e,#16a34a);box-shadow:0 4px 12px rgba(34,197,94,0.3);border:0;width:100%;">
+                         <i class="bi bi-unlock-fill"></i> UNFREEZE
+                       </button>`
+                    : `<button class="btn-sm-danger mb-1" data-admin-action="freeze" data-admin-userid="${uid}" style="width:100%;">
+                         <i class="bi bi-lock-fill"></i> FREEZE
+                       </button>`
+                }
             </td>
         </tr>`; }).join('');
 }
@@ -347,26 +418,64 @@ function loadPaymentMethodsIntoForm() {
     }
 }
 
-window.adminAction = function (action, walletType, userId) {
+window.adminAction = async function (action, walletType, userId) {
     if (userId === null || userId === undefined || userId === '') {
         showToast('Invalid user ID — please refresh the table', 'error');
         return;
     }
     const uidNumOrStr = !isNaN(parseFloat(userId)) && isFinite(userId) ? Number(userId) : String(userId);
 
+    if (action === 'freeze' || action === 'unfreeze') {
+        const freezeStatus = action === 'freeze';
+        const user = getUserById(uidNumOrStr);
+        const userName = user ? user.name : userId;
+        if (!confirm(`${freezeStatus ? 'FREEZE' : 'UNFREEZE'} account for user: ${userName}?\n\n${freezeStatus ? 'Frozen accounts cannot log in or perform any transactions.' : 'Unfreezing will restore full account access.'}`)) {
+            return;
+        }
+        try {
+            const result = await Promise.resolve(Admin.setAccountFrozen(uidNumOrStr, freezeStatus));
+            if (result.success) {
+                showToast(result.message, freezeStatus ? 'warning' : 'success');
+                if (window.NexgoldGlobalSync) { try { window.NexgoldGlobalSync.forceSync(); } catch (_) {} }
+                renderUsersTable();
+                renderStats();
+            } else {
+                showToast(result.message || 'Action failed', 'error');
+            }
+        } catch (e) {
+            showToast('Error: ' + (e.message || 'Unknown error'), 'error');
+        }
+        return;
+    }
+
+    if (action === 'profile') {
+        window.openUserProfileModal(uidNumOrStr, true);
+        return;
+    }
+
+    if (action === 'view') {
+        window.openUserProfileModal(uidNumOrStr, false);
+        return;
+    }
+
     const grams = prompt(`[${action.toUpperCase()}] Enter GRAMS to add/remove from user's ${walletType.toUpperCase()} wallet\n(User: ${userId})`);
     if (!grams || isNaN(parseFloat(grams))) return;
 
-    const result = (action === 'credit')
-        ? Admin.creditWallet(uidNumOrStr, walletType, grams)
-        : Admin.debitWallet (uidNumOrStr, walletType, grams);
+    try {
+        const result = await Promise.resolve((action === 'credit')
+            ? Admin.creditWallet(uidNumOrStr, walletType, grams)
+            : Admin.debitWallet (uidNumOrStr, walletType, grams));
 
-    if (result.success) {
-        showToast(result.message + ` (user ${userId})`, 'success');
-        renderUsersTable();
-        renderStats();
-    } else {
-        showToast(result.message || 'Invalid user / wallet not found', 'error');
+        if (result && result.success) {
+            showToast(result.message + ` (user ${userId})`, 'success');
+            if (window.NexgoldGlobalSync) { try { window.NexgoldGlobalSync.forceSync(); } catch (_) {} }
+            renderUsersTable();
+            renderStats();
+        } else {
+            showToast((result && result.message) || 'Invalid user / wallet not found', 'error');
+        }
+    } catch (e) {
+        showToast('Error: ' + (e.message || 'Unknown error'), 'error');
     }
 };
 

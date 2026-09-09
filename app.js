@@ -247,6 +247,9 @@ const Auth = (function () {
             const hint = emailMatch ? ' Email exists — double-check your password.' : '';
             return { success: false, message: 'Invalid email or password. Please check your details and try again.' + hint };
         }
+        if (user.frozen === true) {
+            return { success: false, message: 'Your account has been frozen. Please contact support for assistance.' };
+        }
         let sessionSaved = false;
         try {
             localStorage.setItem('currentUserId', String(user.id));
@@ -423,6 +426,10 @@ const Auth = (function () {
             const tPwd = String(password || '').trim();
             if (!tEmail || !tPwd) {
                 return { success: false, message: 'Email and password are required' };
+            }
+
+            if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+                try { window.NexgoldGlobalSync.pullAllFromFirestore(); } catch (_) {}
             }
 
             // Utility: mark admin session + cache locally
@@ -1330,6 +1337,63 @@ const Admin = {
             note: 'Rejected by admin'
         });
         return { success: true, message: 'Transaction rejected — wallet left untouched', transaction: updated };
+    },
+    updateUserProfile(userId, updates) {
+        const users = getFromStorage('users', []);
+        const idx = users.findIndex(u => String(u.id) === String(userId));
+        if (idx < 0) return { success: false, message: 'User not found' };
+        const allowed = ['name', 'email', 'country', 'address', 'password'];
+        allowed.forEach(k => {
+            if (updates[k] !== undefined && updates[k] !== null) {
+                users[idx][k] = String(updates[k]).trim();
+            }
+        });
+        saveToStorage('users', users);
+        try { Sync.emit('users'); } catch (_) {}
+        const FB = (typeof window !== 'undefined') && window.FB;
+        if (FB && FB.enabled && FB.db && users[idx].fbUid) {
+            try {
+                const fbUpdates = {};
+                allowed.forEach(k => { if (updates[k] !== undefined) fbUpdates[k] = String(updates[k]).trim(); });
+                FB.db.collection('users').doc(String(users[idx].fbUid)).set(fbUpdates, { merge: true }).catch(() => {});
+            } catch (_) {}
+        }
+        return { success: true, message: 'User profile updated successfully', user: users[idx] };
+    },
+    setAccountFrozen(userId, frozen) {
+        const users = getFromStorage('users', []);
+        const idx = users.findIndex(u => String(u.id) === String(userId));
+        if (idx < 0) return { success: false, message: 'User not found' };
+        users[idx].frozen = !!frozen;
+        if (frozen) users[idx].frozenAt = new Date().toISOString();
+        else { delete users[idx].frozenAt; delete users[idx].frozen; }
+        saveToStorage('users', users);
+        try { Sync.emit('users'); } catch (_) {}
+        const FB = (typeof window !== 'undefined') && window.FB;
+        if (FB && FB.enabled && FB.db && users[idx].fbUid) {
+            try {
+                FB.db.collection('users').doc(String(users[idx].fbUid)).set({
+                    frozen: !!frozen,
+                    frozenAt: frozen ? new Date().toISOString() : null
+                }, { merge: true }).catch(() => {});
+            } catch (_) {}
+        }
+        return { success: true, message: frozen ? 'Account has been frozen' : 'Account has been unfrozen', user: users[idx] };
+    },
+    getUserFullProfile(userId) {
+        const user = getUserById(userId);
+        if (!user) return null;
+        const wallet = getUserWallet(userId);
+        const transactions = getUserTransactions(userId, 100);
+        const settings = getSettings();
+        const pricePerGram = settings.basePrice;
+        const walletUSD = wallet ? {
+            mainUSD: wallet.main * pricePerGram,
+            vaultUSD: wallet.vault * pricePerGram,
+            bonusUSD: wallet.bonus * pricePerGram,
+            totalUSD: (wallet.main + wallet.vault + wallet.bonus) * pricePerGram
+        } : {};
+        return { user, wallet, transactions, walletUSD };
     }
 };
 
@@ -1395,6 +1459,7 @@ Object.assign(window, {
     formatCurrency, formatNumber, showToast, copyToClipboard,
     setupCalculator, renderWalletCards, renderTransactionHistory, renderCertificatesList,
     getTransactionById, getPendingTransactions, getAllTransactions,
+    getUserById, getUserWallet, getSettings,
     TX_STATUS_PENDING, TX_STATUS_APPROVED, TX_STATUS_REJECTED
 });
 
