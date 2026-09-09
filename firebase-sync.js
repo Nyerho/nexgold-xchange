@@ -41,12 +41,33 @@
         if (!db) return false;
         try {
             console.debug('[GlobalSync] Pulling all collections from Firestore…');
+
+            function guardedGet(label, collectionName) {
+                return db.collection(collectionName).get().then(function (snap) {
+                    console.debug('[GlobalSync] 🟢 ' + label + ' pulled: ' + (snap && snap.size != null ? snap.size : '?') + ' docs');
+                    return snap;
+                }).catch(function (err) {
+                    const code = (err && err.code) || 'unknown';
+                    const msg = (err && err.message) || String(err);
+                    console.warn('[GlobalSync] 🔴 ' + label + ' FAILED — code=' + code + ' msg=' + msg);
+                    if (code === 'permission-denied' || code === 'permission-denied') {
+                        console.warn('[GlobalSync] ⚠️  PERMISSION DENIED on /' + collectionName + ' — is admin authenticated? Check that admins/<authUid> doc exists in Firestore.');
+                    }
+                    if (window.showToast && typeof window.showToast === 'function') {
+                        try {
+                            window.showToast('Sync warning: /' + collectionName + ' (' + code + ')', 'warning');
+                        } catch (_) {}
+                    }
+                    return { size: 0, docs: [] };
+                });
+            }
+
             const [usersSnap, walletsSnap, txnsSnap, certsSnap, adminsSnap] = await Promise.all([
-                db.collection('users').get().catch(() => ({ size: 0, docs: [] })),
-                db.collection('wallets').get().catch(() => ({ size: 0, docs: [] })),
-                db.collection('transactions').get().catch(() => ({ size: 0, docs: [] })),
-                db.collection('certificates').get().catch(() => ({ size: 0, docs: [] })),
-                db.collection('admins').get().catch(() => ({ size: 0, docs: [] }))
+                guardedGet('users', 'users'),
+                guardedGet('wallets', 'wallets'),
+                guardedGet('transactions', 'transactions'),
+                guardedGet('certificates', 'certificates'),
+                guardedGet('admins', 'admins')
             ]);
             let settingsVal = null, paymentsVal = null;
             try {
@@ -360,9 +381,54 @@
         const { auth, db, analytics } = FB;
 
         if (!window.__nexgoldGlobalSyncInstalled) {
-            pullAllFromFirestore(db).catch(() => {});
-            setTimeout(() => pullAllFromFirestore(db).catch(() => {}), 5000);
-            setInterval(() => pullAllFromFirestore(db).catch(() => {}), 60000);
+            let authResolved = false;
+            let authUser = null;
+
+            function doPullWithLogging() {
+                console.debug('[GlobalSync] Pulling... FB.auth.currentUser=',
+                    auth && auth.currentUser ? auth.currentUser.uid + ' (' + (auth.currentUser.email || '') + ')' : 'NULL');
+                return pullAllFromFirestore(db);
+            }
+
+            function scheduleInitialPulls() {
+                doPullWithLogging().catch(() => {});
+                setTimeout(() => doPullWithLogging().catch(() => {}), 5000);
+                setTimeout(() => doPullWithLogging().catch(() => {}), 15000);
+                setTimeout(() => doPullWithLogging().catch(() => {}), 30000);
+            }
+
+            let pulledAlready = false;
+            function pullIfReadyAndNeeded() {
+                if (pulledAlready) return;
+                if (authUser || authResolved) {
+                    pulledAlready = true;
+                    scheduleInitialPulls();
+                }
+            }
+
+            if (auth && typeof auth.onAuthStateChanged === 'function') {
+                let authTimer = setTimeout(function () {
+                    authResolved = true;
+                    console.warn('[GlobalSync] onAuthStateChanged timed out after 8s — proceeding with/without auth.');
+                    pullIfReadyAndNeeded();
+                }, 8000);
+                auth.onAuthStateChanged(function (u) {
+                    authResolved = true;
+                    authUser = u || null;
+                    clearTimeout(authTimer);
+                    if (u) {
+                        console.debug('[GlobalSync] ✅ Auth ready — user signed in:', u.uid, u.email || '(no email)');
+                    } else {
+                        console.debug('[GlobalSync] Auth ready — no user signed in (pull will proceed unauthenticated)');
+                    }
+                    pullIfReadyAndNeeded();
+                });
+            } else {
+                authResolved = true;
+                pullIfReadyAndNeeded();
+            }
+
+            setInterval(() => doPullWithLogging().catch(() => {}), 60000);
         }
         window.__nexgoldGlobalSyncInstalled = true;
 

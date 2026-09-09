@@ -31,15 +31,26 @@ async function initializeAdmin() {
                 const result = await Promise.resolve(Auth.adminLogin(email, pw));
                 if (result && result.success) {
                     showToast(result.message || 'Admin access granted — syncing Firestore…', 'success');
+                    let pulledCount = 0;
                     if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
                         try {
+                            const preSyncUsers = getFromStorage('users', []).length;
                             await Promise.race([
                                 window.NexgoldGlobalSync.pullAllFromFirestore(),
-                                new Promise(function(res) { setTimeout(res, 3500); })
+                                new Promise(function(res) { setTimeout(res, 6000); })
                             ]);
+                            if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+                                await Promise.race([
+                                    window.NexgoldGlobalSync.pullAllFromFirestore(),
+                                    new Promise(function(res) { setTimeout(res, 6000); })
+                                ]);
+                            }
+                            const postSyncUsers = getFromStorage('users', []).length;
+                            pulledCount = postSyncUsers - preSyncUsers;
+                            showToast('Synced ' + Math.max(0, pulledCount) + ' new user(s) — finishing up…', 'success');
                         } catch (_) {}
                     }
-                    setTimeout(() => location.reload(), 300);
+                    setTimeout(() => location.reload(), Math.max(1500, 1500));
                 } else {
                     showToast((result && result.message) || 'Invalid admin email or password', 'error');
                     if (btn && originalHTML) { btn.disabled = false; btn.innerHTML = originalHTML; }
@@ -65,7 +76,14 @@ async function initializeAdmin() {
         try {
             await Promise.race([
                 window.NexgoldGlobalSync.pullAllFromFirestore(),
-                new Promise(function(res) { setTimeout(res, 4000); })
+                new Promise(function(res) { setTimeout(res, 8000); })
+            ]);
+        } catch (_) {}
+        try {
+            await new Promise(function(res) { setTimeout(res, 2000); });
+            await Promise.race([
+                window.NexgoldGlobalSync.pullAllFromFirestore(),
+                new Promise(function(res) { setTimeout(res, 8000); })
             ]);
         } catch (_) {}
     }
@@ -73,6 +91,12 @@ async function initializeAdmin() {
     renderStats();
     renderPendingApprovals();
     renderUsersTable();
+
+    if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+        setTimeout(function () {
+            window.NexgoldGlobalSync.pullAllFromFirestore().catch(function () {});
+        }, 12000);
+    }
     loadSettingsIntoForm();
     loadPaymentMethodsIntoForm();
 
@@ -173,26 +197,50 @@ window.adminSyncAllNow = async function adminSyncAllNow() {
     if (window[syncKey]) return;
     window[syncKey] = true;
     try {
-        const toastId = 'sync-' + Date.now();
-        showToast('🔄 Syncing from Firestore… please wait', 'info');
+        const preUsers = getFromStorage('users', []).length;
+        showToast('🔄 Syncing from Firestore… (pass 1/3)', 'info');
         if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.forceSync === 'function') {
             try {
                 window.NexgoldGlobalSync.forceSync();
-                await new Promise(function (res) { setTimeout(res, 2500); });
+                await new Promise(function (res) { setTimeout(res, 3000); });
             } catch (_) {}
         }
         if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
             try {
                 await Promise.race([
                     window.NexgoldGlobalSync.pullAllFromFirestore(),
-                    new Promise(function(res) { setTimeout(res, 5000); })
+                    new Promise(function(res) { setTimeout(res, 8000); })
+                ]);
+            } catch (_) {}
+        }
+        showToast('🔄 Sync pass 2/3…', 'info');
+        await new Promise(function (res) { setTimeout(res, 2000); });
+        if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+            try {
+                await Promise.race([
+                    window.NexgoldGlobalSync.pullAllFromFirestore(),
+                    new Promise(function(res) { setTimeout(res, 8000); })
+                ]);
+            } catch (_) {}
+        }
+        showToast('🔄 Sync pass 3/3 — finalizing…', 'info');
+        await new Promise(function (res) { setTimeout(res, 2000); });
+        if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+            try {
+                await Promise.race([
+                    window.NexgoldGlobalSync.pullAllFromFirestore(),
+                    new Promise(function(res) { setTimeout(res, 8000); })
                 ]);
             } catch (_) {}
         }
         try { renderStats(); renderPendingApprovals(); renderUsersTable(); loadAnalyticsCharts(true); } catch (_) {}
         try {
-            const users = getFromStorage('users', []);
-            showToast('✅ Sync complete! ' + users.length + ' users loaded locally', 'success');
+            const users = getFromStorage('users', []).length;
+            const newUsers = users - preUsers;
+            const msg = newUsers > 0
+                ? ('✅ Sync complete! ' + users + ' users total (+' + newUsers + ' new)')
+                : ('✅ Sync complete! ' + users + ' users loaded locally');
+            showToast(msg, 'success');
         } catch (_) {
             showToast('✅ Sync complete!', 'success');
         }
