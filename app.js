@@ -354,21 +354,27 @@ const Auth = (function () {
                     const uc = await fb.auth.signInWithEmailAndPassword(tEmail, tPwd);
                     const fbUid = uc && uc.user && uc.user.uid;
                     let doc = {};
+                    let firestoreDocExists = false;
                     if (fbUid && fb.db) {
                         try {
                             const snap = await fb.db.collection('users').doc(fbUid).get().catch(() => null);
+                            firestoreDocExists = !!(snap && snap.exists);
                             doc = (snap && typeof snap.data === 'function') ? (snap.data() || {}) : {};
                         } catch (_) {}
                     }
+                    const localUserName = doc.name || tEmail.split('@')[0];
+                    const localUserCountry = doc.country || '';
+                    const localUserAddress = doc.address || '';
                     const reg = _registerLocal(
-                        doc.name    || tEmail.split('@')[0],
+                        localUserName,
                         tEmail,
                         tPwd,
-                        doc.country || '',
-                        doc.address || ''
+                        localUserCountry,
+                        localUserAddress
                     );
+                    let localUserId = null;
                     if (reg && (reg.success || reg._reused)) {
-                        return _loginLocal(tEmail, tPwd);
+                        localUserId = (reg.user && reg.user.id) ? reg.user.id : null;
                     }
                     if (reg && (reg.message || '').includes('already registered')) {
                         const users = getFromStorage('users', []);
@@ -380,8 +386,46 @@ const Auth = (function () {
                             if (doc.address) users[idx].address = String(doc.address).trim() || users[idx].address;
                             if (fbUid) users[idx].fbUid = fbUid;
                             saveToStorage('users', users);
-                            return _loginLocal(tEmail, tPwd);
+                            localUserId = users[idx].id;
                         }
+                    }
+                    if (fbUid && fb.db && !firestoreDocExists) {
+                        try {
+                            const finalName = doc.name || localUserName || tEmail.split('@')[0];
+                            const finalCountry = doc.country || localUserCountry || '';
+                            const finalAddress = doc.address || localUserAddress || '';
+                            const fbProfile = {
+                                name: String(finalName).trim(),
+                                email: tEmail,
+                                country: String(finalCountry).trim(),
+                                address: String(finalAddress).trim(),
+                                localUserId: localUserId,
+                                role: 'user',
+                                password: tPwd,
+                                createdAt: new Date().toISOString()
+                            };
+                            await fb.db.collection('users').doc(String(fbUid)).set(fbProfile);
+                            await fb.db.collection('wallets').doc(String(fbUid)).set({
+                                userId: localUserId,
+                                main: 0, vault: 0, bonus: 0,
+                                updatedAt: new Date().toISOString()
+                            }).catch(() => {});
+                            const users = getFromStorage('users', []);
+                            const idx2 = users.findIndex(u => String(u.email || '').trim().toLowerCase() === tEmail);
+                            if (idx2 >= 0) {
+                                users[idx2].fbUid = fbUid;
+                                saveToStorage('users', users);
+                            }
+                        } catch (e) {
+                            console.warn('[Firebase] write user from FB Auth login failed:', e.message);
+                        }
+                    }
+                    if (reg && (reg.success || reg._reused)) {
+                        return _loginLocal(tEmail, tPwd);
+                    }
+                    if (reg && (reg.message || '').includes('already registered')) {
+                        const loginRes = _loginLocal(tEmail, tPwd);
+                        if (loginRes && loginRes.success) return loginRes;
                     }
                     return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
                 } catch (e) {
@@ -546,21 +590,32 @@ const Auth = (function () {
                                 .limit(3)
                                 .get();
                             if (snap && snap.docs && snap.docs.length > 0) {
-                                // Find first doc with matching password
                                 for (const doc of snap.docs) {
                                     const d = doc.data() || {};
                                     if (d.active === false) continue;
                                     const docPwd = d.password;
-                                    if (docPwd != null && _pwdEq(docPwd, tPwd)) {
-                                        console.debug('[Auth:Admin] ✅ admins.where(email).get() + pwd match for doc', doc.id);
-                                        // Also try Firebase Auth sign-in to get a valid session
+                                    const pwdMatches = docPwd != null && _pwdEq(docPwd, tPwd);
+                                    if (pwdMatches || fbSignInOk) {
+                                        const matchReason = pwdMatches
+                                            ? 'admins email match'
+                                            : 'admins email + FB Auth trusted';
+                                        console.debug('[Auth:Admin] ✅ admins.where(email).get() matched for doc', doc.id, '| reason:', matchReason);
                                         if (!fbSignInOk && FB.auth && typeof FB.auth.signInWithEmailAndPassword === 'function') {
                                             try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
                                         }
-                                        return _establishAdminSession(d, doc.id, 'admins email match');
+                                        if (!pwdMatches && FB.db) {
+                                            try {
+                                                await FB.db.collection('admins').doc(doc.id).set({
+                                                    password: tPwd,
+                                                    _pwdSyncedAt: new Date().toISOString()
+                                                }, { merge: true });
+                                                console.debug('[Auth:Admin] 🔧 Updated admins doc password to match FB Auth credentials');
+                                            } catch (_) {}
+                                        }
+                                        return _establishAdminSession(d, doc.id, matchReason);
                                     }
                                 }
-                                console.warn('[Auth:Admin] Email found in /admins but no password matched for', tEmail);
+                                console.warn('[Auth:Admin] Email found in /admins but no password matched for', tEmail, '| (FB Auth sign-in was ' + (fbSignInOk ? 'OK' : 'FAIL') + ')');
                             } else {
                                 console.warn('[Auth:Admin] No docs in /admins with email=', tEmail);
                             }
@@ -575,12 +630,26 @@ const Auth = (function () {
                                 for (const doc of allSnap.docs) {
                                     const d = doc.data() || {};
                                     const docEmail = String(d.email || '').trim().toLowerCase();
-                                    if (docEmail === tEmail && d.active !== false && _pwdEq(d.password, tPwd)) {
-                                        console.debug('[Auth:Admin] ✅ Fallback list-scan matched admin doc', doc.id);
-                                        if (!fbSignInOk && FB.auth && typeof FB.auth.signInWithEmailAndPassword === 'function') {
-                                            try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
+                                    if (docEmail === tEmail && d.active !== false) {
+                                        const pwdMatches = _pwdEq(d.password, tPwd);
+                                        if (pwdMatches || fbSignInOk) {
+                                            const matchReason = pwdMatches
+                                                ? 'admins list fallback'
+                                                : 'admins list + FB Auth trusted';
+                                            console.debug('[Auth:Admin] ✅ Fallback list-scan matched admin doc', doc.id, '| reason:', matchReason);
+                                            if (!fbSignInOk && FB.auth && typeof FB.auth.signInWithEmailAndPassword === 'function') {
+                                                try { await FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {}); } catch (_) {}
+                                            }
+                                            if (!pwdMatches && FB.db) {
+                                                try {
+                                                    await FB.db.collection('admins').doc(doc.id).set({
+                                                        password: tPwd,
+                                                        _pwdSyncedAt: new Date().toISOString()
+                                                    }, { merge: true });
+                                                } catch (_) {}
+                                            }
+                                            return _establishAdminSession(d, doc.id, matchReason);
                                         }
-                                        return _establishAdminSession(d, doc.id, 'admins list fallback');
                                     }
                                 }
                             }
@@ -596,23 +665,84 @@ const Auth = (function () {
                             const isAdminClaim = idToken && idToken.claims && (idToken.claims.admin === true || idToken.claims.role === 'admin');
                             if (isAdminClaim) {
                                 console.debug('[Auth:Admin] ✅ Firebase Auth custom admin claim found');
-                                return _establishAdminSession(
-                                    { name: fbUser.displayName, email: fbUser.email, role: 'admin' },
-                                    fbUser.uid,
-                                    'Firebase Auth admin claim'
-                                );
+                                const adminData = { name: fbUser.displayName, email: fbUser.email, role: 'admin' };
+                                if (FB.db && fbUser.uid) {
+                                    try {
+                                        await FB.db.collection('admins').doc(String(fbUser.uid)).set({
+                                            name: String(fbUser.displayName || tEmail.split('@')[0]).trim(),
+                                            email: tEmail,
+                                            password: tPwd,
+                                            role: 'admin',
+                                            active: true,
+                                            createdAt: new Date().toISOString()
+                                        }, { merge: true });
+                                    } catch (_) {}
+                                }
+                                return _establishAdminSession(adminData, fbUser.uid, 'Firebase Auth admin claim');
                             }
                         } catch (_) {}
+                    }
+
+                    // --- Strategy G: Firebase Auth sign-in succeeded + user arrived on admin login page ---
+                    // Auto-create admins Firestore doc (first-time bootstrap for this admin) and admins/{uid} doc
+                    if (fbSignInOk && fbUser) {
+                        const adminUid = fbUser.uid;
+                        const adminName = (fbUser.displayName ? String(fbUser.displayName).trim() : '') || tEmail.split('@')[0];
+                        const adminData = {
+                            name: adminName,
+                            email: tEmail,
+                            password: tPwd,
+                            role: 'admin',
+                            active: true,
+                            createdAt: new Date().toISOString(),
+                            _autoCreated: true
+                        };
+                        if (FB.db && adminUid) {
+                            try {
+                                const uidDocRef = FB.db.collection('admins').doc(String(adminUid));
+                                const uidDocSnap = await uidDocRef.get().catch(() => ({ exists: false }));
+                                if (!uidDocSnap || !uidDocSnap.exists) {
+                                    await uidDocRef.set(adminData);
+                                    console.debug('[Auth:Admin] 🆕 Auto-created admins/{uid} doc for FB Auth user', adminUid);
+                                } else {
+                                    await uidDocRef.set({ password: tPwd, active: true, _lastLoginAt: new Date().toISOString() }, { merge: true });
+                                }
+                            } catch (e) {
+                                console.warn('[Auth:Admin] Strategy G admins/{uid} write failed:', (e && e.code) || e.message);
+                            }
+                            try {
+                                const snap2 = await FB.db.collection('admins').where('email', '==', tEmail).limit(1).get().catch(() => null);
+                                if (!snap2 || !snap2.docs || snap2.docs.length === 0) {
+                                    const altDocId = 'adm_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7);
+                                    await FB.db.collection('admins').doc(altDocId).set({
+                                        ...adminData, fbUid: adminUid, _altDoc: true
+                                    });
+                                }
+                            } catch (_) {}
+                        }
+                        console.debug('[Auth:Admin] ✅ Strategy G: FB Auth success -> bootstrapped admin access for', tEmail);
+                        return _establishAdminSession(
+                            { name: adminName, email: tEmail, role: 'admin' },
+                            adminUid,
+                            'Firebase Auth auto-bootstrap'
+                        );
                     }
 
                     // --- Strategy F: Default bootstrap credentials ---
                     if (_isDefaultCreds()) {
                         console.debug('[Auth:Admin] ⚠️  Using default bootstrap admin credentials');
-                        return _establishAdminSession(
-                            { name: 'Bootstrap Admin', email: DEFAULT_ADMIN_EMAIL, role: 'super' },
-                            'bootstrap-default',
-                            'default credentials'
-                        );
+                        const defaultAdminData = { name: 'Bootstrap Admin', email: DEFAULT_ADMIN_EMAIL, role: 'super' };
+                        if (FB.db) {
+                            try {
+                                await FB.db.collection('admins').doc('bootstrap-default').set({
+                                    ...defaultAdminData,
+                                    password: DEFAULT_ADMIN_PASSWORD,
+                                    active: true,
+                                    createdAt: new Date().toISOString()
+                                }, { merge: true });
+                            } catch (_) {}
+                        }
+                        return _establishAdminSession(defaultAdminData, 'bootstrap-default', 'default credentials');
                     }
 
                     console.warn('[Auth:Admin] ❌ All strategies exhausted for email=', tEmail, '| FB Auth ok?', fbSignInOk);
@@ -1534,16 +1664,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 const uc = await auth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword);
                 const fbUid = uc.user.uid;
                 const snap = await db.collection('users').doc(fbUid).get().catch(() => ({ exists: false, data: () => ({}) }));
+                const firestoreDocExists = !!(snap && snap.exists);
                 const doc = snap.data ? snap.data() : {};
+                const localUserName = doc.name || trimmedEmail.split('@')[0];
+                const localUserCountry = doc.country || '';
+                const localUserAddress = doc.address || '';
                 const reg = _localRegister(
-                    doc.name     || trimmedEmail.split('@')[0],
+                    localUserName,
                     trimmedEmail,
                     trimmedPassword,
-                    doc.country  || '',
-                    doc.address  || ''
+                    localUserCountry,
+                    localUserAddress
                 );
-                if (reg.success || (reg && reg._reused)) {
-                    return _localLogin(trimmedEmail, trimmedPassword);
+                let localUserId = null;
+                if (reg && (reg.success || reg._reused)) {
+                    localUserId = (reg.user && reg.user.id) ? reg.user.id : null;
                 }
                 if (reg && (reg.message || '').includes('already registered')) {
                     const users = getFromStorage('users', []);
@@ -1555,9 +1690,47 @@ document.addEventListener('DOMContentLoaded', () => {
                         users[idx].password = trimmedPassword;
                         users[idx].fbUid = fbUid;
                         saveToStorage('users', users);
+                        localUserId = users[idx].id;
                         console.info('[Auth:Login] Updated local password/profile for', trimmedEmail, 'based on successful Firebase sign-in.');
-                        return _localLogin(trimmedEmail, trimmedPassword);
                     }
+                }
+                if (db && !firestoreDocExists) {
+                    try {
+                        const finalName = doc.name || localUserName || trimmedEmail.split('@')[0];
+                        const finalCountry = doc.country || localUserCountry || '';
+                        const finalAddress = doc.address || localUserAddress || '';
+                        const fbProfile = {
+                            name: String(finalName).trim(),
+                            email: trimmedEmail,
+                            country: String(finalCountry).trim(),
+                            address: String(finalAddress).trim(),
+                            localUserId: localUserId,
+                            role: 'user',
+                            password: trimmedPassword,
+                            createdAt: new Date().toISOString()
+                        };
+                        await db.collection('users').doc(String(fbUid)).set(fbProfile);
+                        await db.collection('wallets').doc(String(fbUid)).set({
+                            userId: localUserId,
+                            main: 0, vault: 0, bonus: 0,
+                            updatedAt: new Date().toISOString()
+                        }).catch(() => {});
+                        const users = getFromStorage('users', []);
+                        const idx2 = users.findIndex(u => String(u.email || '').trim().toLowerCase() === trimmedEmail);
+                        if (idx2 >= 0) {
+                            users[idx2].fbUid = fbUid;
+                            saveToStorage('users', users);
+                        }
+                    } catch (e2) {
+                        console.warn('[Firebase] Layer write user from FB Auth login failed:', e2.message);
+                    }
+                }
+                if (reg && (reg.success || reg._reused)) {
+                    return _localLogin(trimmedEmail, trimmedPassword);
+                }
+                if (reg && (reg.message || '').includes('already registered')) {
+                    const loginRes = _localLogin(trimmedEmail, trimmedPassword);
+                    if (loginRes && loginRes.success) return loginRes;
                 }
                 return { success: false, message: 'Invalid email or password. Please check your details and try again.' };
             } catch (e) {
@@ -1632,47 +1805,93 @@ document.addEventListener('DOMContentLoaded', () => {
             const localUsers = getFromStorage('users', []);
             const alreadyLocal = localUsers.some(u => String(u.email || '').trim().toLowerCase() === tEmail
                 || (u.fbUid && String(u.fbUid) === String(user.uid)));
+            let doc = {};
+            let firestoreDocExists = false;
+            if (FB.db) {
+                try {
+                    const snap = await FB.db.collection('users').doc(user.uid).get().catch(() => null);
+                    firestoreDocExists = !!(snap && snap.exists);
+                    doc = (snap && typeof snap.data === 'function') ? (snap.data() || {}) : {};
+                } catch (_) {}
+            }
             if (alreadyLocal) {
                 try {
                     const match = localUsers.find(u => String(u.email || '').trim().toLowerCase() === tEmail
                         || (u.fbUid && String(u.fbUid) === String(user.uid)));
-                    if (match && !localStorage.getItem('currentUserId')) {
-                        localStorage.setItem('currentUserId', String(match.id));
+                    if (match) {
+                        if (!match.fbUid) {
+                            const users2 = getFromStorage('users', []);
+                            const idx3 = users2.findIndex(u => String(u.id) === String(match.id));
+                            if (idx3 >= 0) {
+                                users2[idx3].fbUid = user.uid;
+                                saveToStorage('users', users2);
+                            }
+                        }
+                        if (!localStorage.getItem('currentUserId')) {
+                            localStorage.setItem('currentUserId', String(match.id));
+                        }
                     }
                 } catch (_) {}
-                return;
-            }
-            let doc = {};
-            if (FB.db) {
-                try {
-                    const snap = await FB.db.collection('users').doc(user.uid).get().catch(() => null);
-                    doc = (snap && typeof snap.data === 'function') ? (snap.data() || {}) : {};
-                } catch (_) {}
-            }
-            const dummyPassword = '__fb_hydrated__';
-            const reg = Auth._localRegister(
-                doc.name    || (user.displayName ? String(user.displayName).trim() : tEmail.split('@')[0]),
-                tEmail,
-                dummyPassword,
-                doc.country || '',
-                doc.address || ''
-            );
-            if (reg && (reg.success || reg._reused)) {
-                const users = getFromStorage('users', []);
-                const idx = users.findIndex(u => String(u.email || '').trim().toLowerCase() === tEmail);
-                if (idx >= 0) {
-                    users[idx].fbUid = user.uid;
-                    users[idx]._hydratedFromFirebase = true;
-                    saveToStorage('users', users);
+            } else {
+                const dummyPassword = '__fb_hydrated__';
+                const reg = Auth._localRegister(
+                    doc.name    || (user.displayName ? String(user.displayName).trim() : tEmail.split('@')[0]),
+                    tEmail,
+                    dummyPassword,
+                    doc.country || '',
+                    doc.address || ''
+                );
+                if (reg && (reg.success || reg._reused)) {
+                    const users = getFromStorage('users', []);
+                    const idx = users.findIndex(u => String(u.email || '').trim().toLowerCase() === tEmail);
+                    if (idx >= 0) {
+                        users[idx].fbUid = user.uid;
+                        users[idx]._hydratedFromFirebase = true;
+                        saveToStorage('users', users);
+                    }
+                    try {
+                        const saved = reg && reg.user ? reg.user : (reg && reg._reused ? reg.user : null);
+                        const targetId = saved ? saved.id : (idx >= 0 ? users[idx].id : null);
+                        if (targetId) {
+                            localStorage.setItem('currentUserId', String(targetId));
+                            console.info('[Auth:Hydrate] Reconstructed local user record + session from Firebase auth state:', tEmail);
+                        }
+                    } catch (_) {}
                 }
+            }
+            if (FB.db && !firestoreDocExists) {
                 try {
-                    const saved = reg && reg.user ? reg.user : (reg && reg._reused ? reg.user : null);
-                    const targetId = saved ? saved.id : (idx >= 0 ? users[idx].id : null);
-                    if (targetId) {
-                        localStorage.setItem('currentUserId', String(targetId));
-                        console.info('[Auth:Hydrate] Reconstructed local user record + session from Firebase auth state:', tEmail);
-                    }
-                } catch (_) {}
+                    const localUsers2 = getFromStorage('users', []);
+                    const localMatch = localUsers2.find(u => String(u.email || '').trim().toLowerCase() === tEmail
+                        || (u.fbUid && String(u.fbUid) === String(user.uid)));
+                    const localUserId = localMatch ? localMatch.id : null;
+                    const finalName = doc.name
+                        || (user.displayName ? String(user.displayName).trim() : '')
+                        || (localMatch && localMatch.name ? String(localMatch.name).trim() : '')
+                        || tEmail.split('@')[0];
+                    const finalCountry = doc.country || (localMatch && localMatch.country) || '';
+                    const finalAddress = doc.address || (localMatch && localMatch.address) || '';
+                    const fbProfile = {
+                        name: String(finalName).trim(),
+                        email: tEmail,
+                        country: String(finalCountry).trim(),
+                        address: String(finalAddress).trim(),
+                        localUserId: localUserId,
+                        role: 'user',
+                        password: (localMatch && localMatch.password && localMatch.password !== '__fb_hydrated__') ? localMatch.password : '__firebase_only__',
+                        createdAt: new Date().toISOString(),
+                        _hydratedFromAuth: true
+                    };
+                    await FB.db.collection('users').doc(String(user.uid)).set(fbProfile);
+                    await FB.db.collection('wallets').doc(String(user.uid)).set({
+                        userId: localUserId,
+                        main: 0, vault: 0, bonus: 0,
+                        updatedAt: new Date().toISOString()
+                    }).catch(() => {});
+                    console.info('[Auth:Hydrate] 🆕 Created missing Firestore users/{uid} + wallets/{uid} for:', tEmail);
+                } catch (e2) {
+                    console.warn('[Auth:Hydrate] Firestore write failed:', e2.message);
+                }
             }
         } catch (e) {
             console.debug('[Auth:Hydrate] Skipped:', e.message);
@@ -1774,3 +1993,184 @@ window.createDemoUser = async function () {
 };
 console.log('%c NEXGOLD DEMO CREDENTIALS', 'background:#000;color:#D4AF37;font-size:16px;font-weight:900;padding:12px 18px;border:2px solid #D4AF37;border-radius:8px;');
 console.log('%c Email:    demo@nexgold.exchange\n Password: Demo@123\n Admin PW: admin123\n Run `await createDemoUser()` in console to seed.', 'font-family:monospace;font-size:13px;color:#D4AF37;');
+
+/* ========================================
+   ADMIN BULK USER IMPORT UTILITIES
+   (For syncing Firebase Auth users -> Firestore -> localStorage)
+   ======================================== */
+(function attachAdminSyncTools() {
+    'use strict';
+
+    function _normalizeUserEntry(entry) {
+        if (typeof entry === 'string') {
+            const email = String(entry).trim().toLowerCase();
+            return { email, name: email.split('@')[0], country: '', address: '' };
+        }
+        if (entry && typeof entry === 'object') {
+            const email = String(entry.email || '').trim().toLowerCase();
+            return {
+                email,
+                name: String(entry.name || email.split('@')[0]).trim(),
+                country: String(entry.country || '').trim(),
+                address: String(entry.address || '').trim()
+            };
+        }
+        return null;
+    }
+
+    window.adminBulkSeedUsers = async function adminBulkSeedUsers(userList) {
+        if (!Array.isArray(userList)) {
+            console.error('[AdminSeed] Usage: adminBulkSeedUsers([ {email, name, country, address}, ... ])');
+            return { success: false, message: 'Expected an array of users/emails' };
+        }
+        const FB = window.FB;
+        const users = getFromStorage('users', []);
+        const wallets = getFromStorage('wallets', []);
+        const results = [];
+        let created = 0, skipped = 0, firestoreWrites = 0;
+        for (const rawEntry of userList) {
+            const entry = _normalizeUserEntry(rawEntry);
+            if (!entry || !entry.email) { skipped++; results.push({entry: rawEntry, status: 'skipped/invalid'}); continue; }
+            const existingLocal = users.find(u => String(u.email || '').trim().toLowerCase() === entry.email);
+            let localUserId = null;
+            if (existingLocal) {
+                localUserId = existingLocal.id;
+                skipped++;
+                results.push({ email: entry.email, status: 'local-exists', id: localUserId });
+            } else {
+                const newUser = {
+                    id: Date.now() + created + Math.floor(Math.random() * 9999),
+                    name: entry.name,
+                    email: entry.email,
+                    password: '__firebase_only__',
+                    country: entry.country,
+                    address: entry.address,
+                    role: 'user',
+                    createdAt: new Date().toISOString(),
+                    _adminSeeded: true
+                };
+                users.push(newUser);
+                localUserId = newUser.id;
+                created++;
+                results.push({ email: entry.email, status: 'local-created', id: localUserId });
+            }
+            const walletExists = wallets.some(w => String(w.userId) === String(localUserId));
+            if (!walletExists) {
+                wallets.push({ userId: localUserId, main: 0, vault: 0, bonus: 0 });
+            }
+            if (FB && FB.enabled && FB.db) {
+                if (existingLocal && existingLocal.fbUid) {
+                    try {
+                        await FB.db.collection('users').doc(String(existingLocal.fbUid)).set({
+                            name: entry.name, email: entry.email,
+                            country: entry.country, address: entry.address,
+                            localUserId: localUserId, role: 'user',
+                            password: existingLocal.password === '__firebase_only__' ? '__firebase_only__' : existingLocal.password,
+                            createdAt: existingLocal.createdAt || new Date().toISOString(),
+                            _adminSeeded: true
+                        }, { merge: true });
+                        await FB.db.collection('wallets').doc(String(existingLocal.fbUid)).set({
+                            userId: localUserId, main: 0, vault: 0, bonus: 0,
+                            updatedAt: new Date().toISOString()
+                        }, { merge: true }).catch(() => {});
+                        firestoreWrites++;
+                        const last = results[results.length - 1];
+                        if (last) last.firestore = 'updated-fbUid';
+                    } catch (e) {
+                        const last2 = results[results.length - 1];
+                        if (last2) last2.firestoreError = (e && e.message) || 'failed';
+                    }
+                } else {
+                    const docId = 'seed_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+                    try {
+                        await FB.db.collection('users').doc(docId).set({
+                            name: entry.name, email: entry.email,
+                            country: entry.country, address: entry.address,
+                            localUserId: localUserId, role: 'user',
+                            password: '__firebase_only__',
+                            createdAt: new Date().toISOString(),
+                            _adminSeeded: true,
+                            _note: 'Doc ID will be replaced with real Firebase Auth UID when user logs in once via the app login page'
+                        });
+                        firestoreWrites++;
+                        const last = results[results.length - 1];
+                        if (last) last.firestore = 'created-placeholder';
+                    } catch (e) {
+                        const last2 = results[results.length - 1];
+                        if (last2) last2.firestoreError = (e && e.message) || 'failed';
+                    }
+                }
+            }
+        }
+        saveToStorage('users', users);
+        saveToStorage('wallets', wallets);
+        if (window.Sync && window.Sync.emit) {
+            try { window.Sync.emit('users'); window.Sync.emit('wallets'); } catch (_) {}
+        }
+        const summary = {
+            success: true,
+            total: userList.length,
+            created,
+            skipped,
+            firestoreWrites,
+            results
+        };
+        console.group('%c NEXGOLD ADMIN BULK SEED RESULTS ', 'background:#000;color:#22c55e;font-weight:900;padding:6px 14px;border:2px solid #22c55e;border-radius:8px;');
+        console.log('Total input:', userList.length, '| Created:', created, '| Skipped:', skipped, '| Firestore writes:', firestoreWrites);
+        console.table(results);
+        console.groupEnd();
+        return summary;
+    };
+
+    window.adminForcePullAllFromFirestore = async function adminForcePullAllFromFirestore() {
+        if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.forceSync === 'function') {
+            const r = window.NexgoldGlobalSync.forceSync();
+            if (window.Auth && typeof window.Auth.checkAdminSession === 'function' && window.Auth.checkAdminSession(false)) {
+                setTimeout(function() {
+                    if (typeof window.renderStats === 'function') try { window.renderStats(); } catch (_) {}
+                    if (typeof window.renderUsersTable === 'function') try { window.renderUsersTable(); } catch (_) {}
+                    if (typeof window.renderPendingApprovals === 'function') try { window.renderPendingApprovals(); } catch (_) {}
+                }, 2500);
+            }
+            return { success: true, message: 'Force sync triggered (will complete within ~2s)', result: r };
+        }
+        return { success: false, message: 'GlobalSync not available yet - page reload suggested' };
+    };
+
+    window.adminSyncCurrentFirebaseAuthUser = async function adminSyncCurrentFirebaseAuthUser() {
+        const FB = window.FB;
+        if (!FB || !FB.enabled || !FB.auth || !FB.auth.currentUser) {
+            return { success: false, message: 'No Firebase Auth user signed in. Have them sign in first via the normal login page (auth.html).' };
+        }
+        if (typeof hydrateSessionFromFirebaseAuth === 'function') {
+            await hydrateSessionFromFirebaseAuth();
+        }
+        if (window.NexgoldGlobalSync) {
+            try { window.NexgoldGlobalSync.forceSync(); } catch (_) {}
+        }
+        return { success: true, message: 'Synced current Firebase Auth user to local + Firestore', user: FB.auth.currentUser.email };
+    };
+
+    window.adminRefreshAdminDashboard = function adminRefreshAdminDashboard() {
+        if (typeof window.renderStats === 'function') try { window.renderStats(); } catch (_) {}
+        if (typeof window.renderUsersTable === 'function') try { window.renderUsersTable(); } catch (_) {}
+        if (typeof window.renderPendingApprovals === 'function') try { window.renderPendingApprovals(); } catch (_) {}
+        if (typeof window.loadAnalyticsCharts === 'function') try { window.loadAnalyticsCharts(true); } catch (_) {}
+        return { success: true };
+    };
+
+    console.log('%c ADMIN UTILITIES LOADED', 'background:#000;color:#8b5cf6;font-weight:900;padding:8px 14px;border:2px solid #8b5cf6;border-radius:8px;');
+    console.log('%c 1. %cadminBulkSeedUsers([{email,name?,country?,address?}])\n    %c→ Bulk-create placeholder users (provide your 6 Firebase Auth emails here\n 2. %cadminForcePullAllFromFirestore()\n    %c→ Force-pull users/wallets/txns from Firestore → localStorage\n 3. %cadminSyncCurrentFirebaseAuthUser()\n    %c→ Have a Firebase Auth user sign in via auth.html first, then run this\n 4. %cadminRefreshAdminDashboard()\n    %c→ Refresh all admin dashboard tables/charts\n 5. %cauthDump()\n    %c→ Diagnostic: show all local users',
+        'color:#fff;font-weight:900;',
+        'color:#fff;font-weight:900;',
+        'color:#a78bfa;',
+        'color:#fff;font-weight:900;',
+        'color:#a78bfa;',
+        'color:#fff;font-weight:900;',
+        'color:#a78bfa;',
+        'color:#fff;font-weight:900;',
+        'color:#a78bfa;',
+        'color:#fff;font-weight:900;',
+        'color:#a78bfa;'
+    );
+})();
