@@ -4,7 +4,7 @@
 
 document.addEventListener('DOMContentLoaded', initializeAdmin);
 
-function initializeAdmin() {
+async function initializeAdmin() {
     const loginScreen = document.getElementById('adminLoginScreen');
     const mainScreen  = document.getElementById('adminMainScreen');
     const isAdmin     = Auth.checkAdminSession(false);
@@ -30,8 +30,16 @@ function initializeAdmin() {
                 }
                 const result = await Promise.resolve(Auth.adminLogin(email, pw));
                 if (result && result.success) {
-                    showToast(result.message || 'Admin access granted', 'success');
-                    setTimeout(() => location.reload(), 500);
+                    showToast(result.message || 'Admin access granted — syncing Firestore…', 'success');
+                    if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+                        try {
+                            await Promise.race([
+                                window.NexgoldGlobalSync.pullAllFromFirestore(),
+                                new Promise(function(res) { setTimeout(res, 3500); })
+                            ]);
+                        } catch (_) {}
+                    }
+                    setTimeout(() => location.reload(), 300);
                 } else {
                     showToast((result && result.message) || 'Invalid admin email or password', 'error');
                     if (btn && originalHTML) { btn.disabled = false; btn.innerHTML = originalHTML; }
@@ -52,6 +60,15 @@ function initializeAdmin() {
 
     loginScreen.style.display = 'none';
     mainScreen.style.display  = 'block';
+
+    if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+        try {
+            await Promise.race([
+                window.NexgoldGlobalSync.pullAllFromFirestore(),
+                new Promise(function(res) { setTimeout(res, 4000); })
+            ]);
+        } catch (_) {}
+    }
 
     renderStats();
     renderPendingApprovals();
@@ -145,6 +162,46 @@ function initializeAdmin() {
         });
     }
 }
+
+window.refreshUsers = function refreshUsers() {
+    try { renderUsersTable(); renderStats(); showToast('Users table refreshed', 'success'); }
+    catch (e) { showToast('Refresh failed: ' + e.message, 'error'); }
+};
+
+window.adminSyncAllNow = async function adminSyncAllNow() {
+    const syncKey = '__syncingNow_';
+    if (window[syncKey]) return;
+    window[syncKey] = true;
+    try {
+        const toastId = 'sync-' + Date.now();
+        showToast('🔄 Syncing from Firestore… please wait', 'info');
+        if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.forceSync === 'function') {
+            try {
+                window.NexgoldGlobalSync.forceSync();
+                await new Promise(function (res) { setTimeout(res, 2500); });
+            } catch (_) {}
+        }
+        if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
+            try {
+                await Promise.race([
+                    window.NexgoldGlobalSync.pullAllFromFirestore(),
+                    new Promise(function(res) { setTimeout(res, 5000); })
+                ]);
+            } catch (_) {}
+        }
+        try { renderStats(); renderPendingApprovals(); renderUsersTable(); loadAnalyticsCharts(true); } catch (_) {}
+        try {
+            const users = getFromStorage('users', []);
+            showToast('✅ Sync complete! ' + users.length + ' users loaded locally', 'success');
+        } catch (_) {
+            showToast('✅ Sync complete!', 'success');
+        }
+    } catch (e) {
+        showToast('Sync error: ' + e.message, 'error');
+    } finally {
+        delete window[syncKey];
+    }
+};
 
 /* ================================================================
    Sub-renderers

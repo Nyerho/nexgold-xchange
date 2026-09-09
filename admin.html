@@ -202,6 +202,23 @@
                     </div>
                 </div>
 
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card" style="background:linear-gradient(135deg, rgba(139,92,246,0.06), rgba(212,175,55,0.08));border:1.5px solid rgba(212,175,55,0.25);border-radius:18px;">
+                            <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-3" style="padding:18px 22px;">
+                                <div>
+                                    <h5 class="mb-1" style="font-weight:800;color:#8b5cf6;"><i class="bi bi-cloud-arrow-down-fill me-2"></i>Firestore Cross-Device Sync</h5>
+                                    <div class="mb-0" style="color:#555;font-size:13px;">Pulls ALL users, wallets, transactions &amp; admins from Firestore so every device sees the same data. Then re-renders the dashboard.</div>
+                                </div>
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <button class="btn-sm-gold" style="background:#8b5cf6;border-color:#7c3aed;min-width:180px;" onclick="adminSyncAllNow()"><i class="bi bi-lightning-charge-fill me-2"></i><b>SYNC USERS / DATA NOW</b></button>
+                                    <button class="btn-sm-gold" onclick="Auth.logout()"><i class="bi bi-box-arrow-right me-2"></i>Sign Out</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- CHARTS ROW -->
                 <div class="row g-4 mb-5">
                     <div class="col-xl-8">

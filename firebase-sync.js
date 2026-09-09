@@ -133,6 +133,11 @@
                 const d = doc.data() || {};
                 let user = (fbUid ? byFbUid.get(fbUid) : null) ||
                            (d.userId ? byId.get(String(d.userId)) : null);
+                if (!user && d.email) {
+                    const email = String(d.email || '').trim().toLowerCase();
+                    user = byEmail.get(email);
+                }
+                if (!user && !d.userId) return;
                 if (!user) return;
                 const userId = user.id;
                 let wallet = walletsByUid.get(String(userId));
@@ -148,6 +153,17 @@
                 if (newM > parseFloat(wallet.main  || 0)) { wallet.main  = newM; walletsDirty = true; }
                 if (newV > parseFloat(wallet.vault || 0)) { wallet.vault = newV; walletsDirty = true; }
                 if (newB > parseFloat(wallet.bonus || 0)) { wallet.bonus = newB; walletsDirty = true; }
+            });
+
+            const byEmailNow = new Map();
+            localUsers.forEach(u => { const em = String(u.email || '').trim().toLowerCase(); if (em) byEmailNow.set(em, u); });
+            localUsers.forEach(u => {
+                const userId = u.id;
+                if (!walletsByUid.has(String(userId))) {
+                    localWallets.push({ userId: userId, main: 0, vault: 0, bonus: 0 });
+                    walletsByUid.set(String(userId), localWallets[localWallets.length - 1]);
+                    walletsDirty = true;
+                }
             });
 
             const txnDocs = (txnsSnap && txnsSnap.docs) ? txnsSnap.docs : [];
@@ -282,6 +298,14 @@
                 (walletsSnap.size||0), 'wallets,',
                 (txnsSnap.size||0), 'txns,',
                 (certsSnap.size||0), 'certs');
+
+            if (window.dispatchEvent) {
+                try { window.dispatchEvent(new CustomEvent('nexgold-sync-pulled', { detail: { users: localUsers.length, wallets: localWallets.length } })); } catch (_) {}
+            }
+            if (typeof window.renderStats === 'function') try { window.renderStats(); } catch (_) {}
+            if (typeof window.renderUsersTable === 'function') try { window.renderUsersTable(); } catch (_) {}
+            if (typeof window.renderPendingApprovals === 'function') try { window.renderPendingApprovals(); } catch (_) {}
+            if (typeof window.renderTransactionsTable === 'function') try { window.renderTransactionsTable(); } catch (_) {}
             return true;
         } catch (e) {
             console.warn('[GlobalSync] pullAllFromFirestore failed:', e.message || e);

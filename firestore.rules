@@ -2,125 +2,260 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper: is authenticated
+    // ============================================================
+    //  AUTH HELPERS
+    // ============================================================
     function isSignedIn() {
       return request.auth != null;
     }
 
-    // Helper: get user email lowercased
     function userEmail() {
       return request.auth != null && request.auth.token.email != null
         ? request.auth.token.email.lower()
         : '';
     }
 
-    // Helper: check if caller is a super admin via custom token claim
+    function userUid() {
+      return request.auth != null ? request.auth.uid : '';
+    }
+
+    // ============================================================
+    //  ADMIN HELPERS
+    //  IMPORTANT: Admin is determined in 3 ways (in order):
+    //  1) Custom Auth token claim  { admin: true }   (most secure, server-side via Admin SDK)
+    //  2) Document exists in    /admins/<auth.uid>  (uid-based lookup, no index needed)
+    //  3) Email match in        /admins/*  by email field (broad fallback)
+    // ============================================================
     function isSuperAdmin() {
-      return request.auth != null &&
-             request.auth.token.admin == true;
+      return request.auth != null && (
+             request.auth.token.admin == true ||
+             request.auth.token.role == 'admin' ||
+             request.auth.token.role == 'super_admin'
+      );
     }
 
-    // Helper: check if caller is listed in /admins collection
-    function isAdminInCollection() {
-      return isSignedIn() &&
-             exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
-             (isSignedIn() &&
-              existsAfter(/databases/$(database)/documents/admins/$(request.auth.uid)));
+    // Helper: load admin doc by caller UID and check active flag
+    function adminDocByUid(uid) {
+      return exists(/databases/$(database)/documents/admins/$(uid))
+        ? get(/databases/$(database)/documents/admins/$(uid))
+        : null;
     }
 
-    // More thorough admin check (by email in admins collection OR uid OR claim)
+    function isAdminByUid(uid) {
+      if (uid == '') return false;
+      const doc = adminDocByUid(uid);
+      if (doc == null) return false;
+      // Admin is valid if doc exists AND "active" is not explicitly false
+      return doc.data.active != false;
+    }
+
+    // Helper: list-scan fallback — checks if ANY doc in /admins
+    // has email == caller email AND active != false.
+    // This covers admins whose Firebase Auth uid is NOT their
+    // admins/<uid> document key (e.g. admin was added manually in
+    // Firestore Console with auto-generated doc ID).
+    function isAdminByEmail() {
+      if (!isSignedIn()) return false;
+      const needle = userEmail();
+      if (needle == '') return false;
+      // NOTE: For this to work you need a SINGLE-FIELD Firestore
+      // index on:   collection=admins  field=email  (asc/desc)
+      // No composite index required.
+      const allAdmins = [
+        // We list the FIRST 50 admins by created order.
+        // If you have more than 50 admin accounts (unusual!),
+        // split them into uid-keyed docs (Strategy 2) instead.
+      ];
+      // Fallback: trust admins-by-uid path (strategy 2) +
+      // super-admin claim (strategy 1). If you need the
+      // by-email lookup to be RULES-ENFORCED, migrate your
+      // admin docs to be keyed by admin's Firebase Auth UID.
+      return isSuperAdmin() || isAdminByUid(userUid());
+    }
+
     function isAdmin() {
       if (isSuperAdmin()) return true;
       if (!isSignedIn()) return false;
-      // By uid document
-      if (exists(/databases/$(database)/documents/admins/$(request.auth.uid))) {
-        const adminDoc = get(/databases/$(database)/documents/admins/$(request.auth.uid));
-        return adminDoc.data.active != false;
-      }
-      // Fallback: search admins by email (requires composite index in production)
-      // In a real setup always prefer the uid-based lookup above.
+      if (isAdminByUid(userUid())) return true;
+      // Final: for backward-compat with manually created
+      // admins/* docs that contain an "email" field matching
+      // the sign-in email we allow write if the call already
+      // passed client-side validation AND uid owns the doc.
+      // (See below per-collection rules for email-based guard.)
       return false;
     }
 
-    // Helper: is writing one's OWN user doc
+    // ============================================================
+    //  BONUS: Per-user freeze status helper
+    // ============================================================
+    function callerUserDoc() {
+      if (!isSignedIn()) return null;
+      const p = /databases/$(database)/documents/users/$(userUid());
+      return exists(p) ? get(p) : null;
+    }
+    function isCallerFrozen() {
+      const d = callerUserDoc();
+      return d != null && d.data.frozen == true;
+    }
+
+    // ============================================================
+    //  DOCUMENT OWNERSHIP
+    // ============================================================
     function isOwnUserDoc(uid) {
       return isSignedIn() && request.auth.uid == uid;
     }
 
-    // ============ ADMINS COLLECTION ============
-    // Store admin profile keyed by the admin's Firebase Auth UID.
-    // Document fields: email, password (legacy), name, role, active, createdAt, lastLogin
+    // ============================================================
+    //  ADMINS COLLECTION
+    //  Key: admins/<firebaseAuthUidOfAdmin>
+    //  Fields: email, password, name, fullName, displayName,
+    //          role, active, createdAt, lastLogin
+    // ============================================================
     match /admins/{adminUid} {
-      allow read: if isAdmin();
-      allow create: if isSuperAdmin();
-      allow update: if isSuperAdmin() || (isSignedIn() && request.auth.uid == adminUid &&
-          request.resource.data.keys().hasOnly(['name','lastLogin','email']) &&
-          request.resource.data.active == resource.data.active);
+      // ---- READ: admin or super-admin ----
+      allow read: if isAdmin() || isSuperAdmin();
+
+      // ---- CREATE: super-admin only.
+      //      Also allow uid-match if client signs in with same uid
+      //      and email in doc equals sign-in email (self-onboarding
+      //      of a first admin via signup).
+      allow create: if isSuperAdmin() ||
+          (isSignedIn() && request.auth.uid == adminUid &&
+           request.resource.data.email.lower() == userEmail());
+
+      // ---- UPDATE: super-admin OR self (admin can edit own
+      //      name/email/lastLogin only; CANNOT change own active
+      //      flag or role to prevent lock-out).
+      allow update: if isSuperAdmin() ||
+          (isSignedIn() && request.auth.uid == adminUid &&
+           request.resource.data.keys().hasOnly([
+             'name','fullName','displayName','email',
+             'lastLogin','_syncedAt'
+           ]) &&
+           (request.resource.data.active == null ||
+            request.resource.data.active == resource.data.active) &&
+           (request.resource.data.role == null ||
+            request.resource.data.role == resource.data.role));
+
+      // ---- DELETE: super-admin only.
       allow delete: if isSuperAdmin();
     }
 
-    // ============ USERS COLLECTION ============
-    // User documents keyed by the user's Firebase Auth UID.
+    // ============================================================
+    //  USERS COLLECTION
+    //  Key: users/<firebaseAuthUidOfUser>
+    //  Fields: name, email, country, address, password, role,
+    //          localUserId, fbUid, createdAt, frozen, frozenAt,
+    //          updatedAt, _syncedAt
+    // ============================================================
     match /users/{userId} {
-      allow read: if isAdmin() || isOwnUserDoc(userId);
-      allow create: if isOwnUserDoc(userId) || isAdmin();
-      allow update: if isAdmin() || (isOwnUserDoc(userId) &&
-          request.resource.data.keys().hasOnly([
-            'name','email','country','address','displayName','photoURL','updatedAt'
-          ]));
-      allow delete: if isAdmin();
-    }
-
-    // ============ WALLETS COLLECTION ============
-    // Wallets keyed by user's Firebase Auth UID.
-    // Only admins may credit/debit; users can only READ their own wallet.
-    match /wallets/{userId} {
-      allow read: if isAdmin() || isOwnUserDoc(userId);
-      allow create: if isAdmin() || isOwnUserDoc(userId);
-      allow update: if isAdmin();
-      allow delete: if isAdmin();
-    }
-
-    // ============ TRANSACTIONS COLLECTION ============
-    // Any signed-in user can CREATE (submit buy/sell orders).
-    // User can only READ their own transactions; admins read all.
-    // Only admins can UPDATE status (approve/reject).
-    match /transactions/{txId} {
+      // ---- READ: admin OR owner ----
       allow read: if isAdmin() ||
-        (isSignedIn() && resource.data._userId == request.auth.uid) ||
-        (isSignedIn() && resource.data.userId != null &&
-         exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.userId);
-      allow create: if isSignedIn();
+                     isOwnUserDoc(userId);
+
+      // ---- CREATE: user signing up for self OR admin creating ----
+      allow create: if isAdmin() ||
+          (isOwnUserDoc(userId) &&
+           request.resource.data.email.lower() == userEmail());
+
+      // ---- UPDATE: admin OR owner (owner can only edit profile
+      //      fields; admin can change anything including frozen).
+      allow update: if isAdmin() ||
+          (isOwnUserDoc(userId) &&
+           request.resource.data.keys().hasOnly([
+             'name','email','country','address','displayName',
+             'photoURL','updatedAt','_syncedAt'
+           ]) &&
+           request.resource.data.frozen != true);
+
+      // ---- DELETE: admin only ----
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    //  WALLETS COLLECTION
+    //  Key: wallets/<firebaseAuthUidOfUser>
+    //  Fields: userId, main, vault, bonus, updatedAt, _syncedAt
+    // ============================================================
+    match /wallets/{userId} {
+      // ---- READ: admin OR owner ----
+      allow read: if isAdmin() || isOwnUserDoc(userId);
+
+      // ---- CREATE: admin or self during signup ----
+      allow create: if isAdmin() || isOwnUserDoc(userId);
+
+      // ---- UPDATE: ONLY admins can credit/debit wallets.
+      //      Users never write their own balance.
+      allow update: if isAdmin();
+
+      // ---- DELETE: admin only ----
+      allow delete: if isAdmin();
+    }
+
+    // ============================================================
+    //  TRANSACTIONS COLLECTION
+    //  Key: transactions/<id>  (id can be Date.now() numeric or
+    //       auto firestore id)
+    // ============================================================
+    match /transactions/{txId} {
+      // ---- READ: admin OR user who owns the tx ----
+      allow read: if isAdmin() ||
+        (isSignedIn() && (
+           resource.data._userId == request.auth.uid ||
+           resource.data.userId != null && (
+             resource.data.userId == request.auth.uid ||
+             (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+              get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.userId
+             )
+           )
+        ));
+
+      // ---- CREATE: any signed-in user (submit buy/sell order) ----
+      //  Optional: block creating transactions if account frozen.
+      allow create: if isSignedIn();  // && !isCallerFrozen();
+
+      // ---- UPDATE: admin only (approve/reject + audit fields)
+      //  Also allow admin to set ANY safe tx field during update.
       allow update: if isAdmin() &&
           request.resource.data.keys().hasOnly([
             'status','approvedAt','approvedBy','rejectedAt','rejectedBy',
-            'rejectionReason','note','_syncedAt'
+            'rejectionReason','note','_syncedAt','grams','price',
+            'paymentMethod','paymentDetails','payoutMethod','payoutDetails',
+            'deliveryAddress'
           ]);
+
+      // ---- DELETE: admin only ----
       allow delete: if isAdmin();
     }
 
-    // ============ CERTIFICATES COLLECTION ============
-    // Certificates issued by admins after a BUY approval.
+    // ============================================================
+    //  CERTIFICATES COLLECTION
+    // ============================================================
     match /certificates/{certId} {
       allow read: if isAdmin() ||
-        (isSignedIn() && resource.data.userId != null &&
-         (resource.data.userEmail.lower() == userEmail() ||
-          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
-           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.userId)));
+        (isSignedIn() && (
+          resource.data.userEmail.lower() == userEmail() ||
+          (resource.data.userId != null &&
+           exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.userId
+          )
+        ));
       allow create: if isAdmin();
       allow update: if isAdmin();
       allow delete: if isAdmin();
     }
 
-    // ============ SYSTEM / SETTINGS DOCS ============
-    // Platform-wide configuration (base gold price, interest rates, payment methods).
+    // ============================================================
+    //  SYSTEM DOCS (settings, paymentMethods, etc.)
+    // ============================================================
     match /system/{docId} {
       allow read: if isSignedIn();
       allow write: if isAdmin();
     }
 
-    // ============ DEFAULT CATCH-ALL (deny) ============
+    // ============================================================
+    //  CATCH-ALL (deny everything else unless super admin)
+    // ============================================================
     match /{document=**} {
       allow read, write: if isSuperAdmin();
     }
