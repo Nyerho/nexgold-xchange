@@ -1593,7 +1593,7 @@ const Admin = {
         const users = getFromStorage('users', []);
         const idx = users.findIndex(u => String(u.id) === String(userId));
         if (idx < 0) return { success: false, message: 'User not found' };
-        const allowed = ['name', 'email', 'country', 'address', 'password'];
+        const allowed = ['name', 'email', 'country', 'address', 'password', 'photoURL'];
         allowed.forEach(k => {
             if (updates[k] !== undefined && updates[k] !== null) {
                 users[idx][k] = String(updates[k]).trim();
@@ -1610,6 +1610,35 @@ const Admin = {
             } catch (_) {}
         }
         return { success: true, message: 'User profile updated successfully', user: users[idx] };
+    },
+    deleteUser(userId) {
+        const users = getFromStorage('users', []);
+        const wallets = getFromStorage('wallets', []);
+        const txns = getFromStorage('transactions', []);
+        const certs = getFromStorage('certificates', []);
+        const idx = users.findIndex(u => String(u.id) === String(userId));
+        if (idx < 0) return { success: false, message: 'User not found' };
+        const user = users[idx];
+        const FB = (typeof window !== 'undefined') && window.FB;
+        if (FB && FB.enabled && FB.db && user.fbUid) {
+            try {
+                FB.db.collection('users').doc(String(user.fbUid)).delete().catch(() => {});
+                FB.db.collection('wallets').doc(String(user.fbUid)).delete().catch(() => {});
+            } catch (_) {}
+        }
+        users.splice(idx, 1);
+        const widx = wallets.findIndex(w => String(w.userId) === String(userId));
+        if (widx >= 0) wallets.splice(widx, 1);
+        const newTxns = txns.filter(t => String(t.userId) !== String(userId));
+        const newCerts = certs.filter(c => String(c.userId) !== String(userId));
+        saveToStorage('users', users);
+        saveToStorage('wallets', wallets);
+        saveToStorage('transactions', newTxns);
+        saveToStorage('certificates', newCerts);
+        try {
+            Sync.emit('users'); Sync.emit('wallets'); Sync.emit('transactions'); Sync.emit('certificates');
+        } catch (_) {}
+        return { success: true, message: 'User ' + (user.email || user.name || userId) + ' deleted permanently' };
     },
     setAccountFrozen(userId, frozen) {
         const users = getFromStorage('users', []);

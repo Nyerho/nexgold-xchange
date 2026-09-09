@@ -84,6 +84,59 @@ async function initializeAdmin() {
     renderPendingApprovals();
     renderUsersTable();
 
+    // Seed placeholder users for Firebase Auth accounts that haven't logged in yet.
+    // These are real emails/UIDs visible in Firebase Console but no Firestore user doc exists.
+    (function ensureKnownAuthUsersSeeded() {
+        try {
+            const knownUsers = [
+                { fbUid: 'UDzfRsJAZcYTH1IVDogH9aG', email: 'lsc68@verizon.net', name: 'User Lsc68' },
+                { fbUid: 'f6MjCVr46jWxQ6c2eyuLHGIL', email: 'marcusharberofficial@', name: 'Marcus Harber' },
+                { fbUid: '0EtOl243MsQvoxSUEx7mXetp', email: 'neroesiso@gmail.com', name: 'Neroesis O' },
+                { fbUid: 'Zyr3RANmB9NSuavHxRLfeOwU', email: 'stanleyf418@gmail.com', name: 'Stanley F' },
+                { fbUid: '5twNNtHOfdVHMd5HVC2i0rEh', email: 'sydney.wilson87@mx-', name: 'Sydney Wilson' }
+            ];
+            const users = getFromStorage('users', []);
+            const wallets = getFromStorage('wallets', []);
+            let changed = false;
+            knownUsers.forEach(tpl => {
+                const exists = users.some(u =>
+                    (u.email || '').toLowerCase() === (tpl.email || '').toLowerCase() ||
+                    String(u.fbUid || '') === String(tpl.fbUid || '')
+                );
+                if (exists) return;
+                const newId = String(Date.now()) + String(Math.floor(Math.random() * 9999));
+                const u = {
+                    id: newId,
+                    fbUid: tpl.fbUid,
+                    localUserId: newId,
+                    email: tpl.email,
+                    name: tpl.name || 'User ' + String(tpl.fbUid || '').slice(-4),
+                    country: '—',
+                    address: '',
+                    password: 'password',
+                    createdAt: new Date().toISOString(),
+                    _source: 'seeded-from-auth',
+                    _seededAt: new Date().toISOString(),
+                    photoURL: ''
+                };
+                users.push(u);
+                const widx = wallets.findIndex(w => String(w.userId) === String(newId));
+                if (widx < 0) wallets.push({ userId: newId, main: 0, vault: 0, bonus: 0 });
+                changed = true;
+            });
+            if (changed) {
+                saveToStorage('users', users);
+                saveToStorage('wallets', wallets);
+                try { Sync.emit('users'); Sync.emit('wallets'); } catch (_) {}
+                console.debug('[Admin] Seeded known Firebase Auth users into localStorage so they appear in admin table.');
+                renderUsersTable();
+                renderStats();
+            }
+        } catch (e) {
+            console.warn('[Admin] Seeder skipped:', e.message);
+        }
+    })();
+
     if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
         setTimeout(function () {
             window.NexgoldGlobalSync.pullAllFromFirestore().catch(function () {});
@@ -488,6 +541,11 @@ function renderUsersTable() {
                        </button>`
                 }
             </td>
+            <td>
+                <button class="btn-sm-danger mb-1" data-admin-action="delete" data-admin-userid="${uid}" style="width:100%;background:linear-gradient(135deg,#991b1b,#7f1d1d);box-shadow:0 4px 12px rgba(153,27,27,0.3);border:0;">
+                    <i class="bi bi-trash"></i> DELETE
+                </button>
+            </td>
         </tr>`; }).join('');
 }
 
@@ -538,6 +596,32 @@ window.adminAction = async function (action, walletType, userId) {
                 renderStats();
             } else {
                 showToast(result.message || 'Action failed', 'error');
+            }
+        } catch (e) {
+            showToast('Error: ' + (e.message || 'Unknown error'), 'error');
+        }
+        return;
+    }
+
+    if (action === 'delete') {
+        const user = getUserById(uidNumOrStr);
+        const userName = user ? (user.name || '') + ' (' + (user.email || userId) + ')' : userId;
+        if (!confirm(`⚠️  PERMANENTLY DELETE this user?\n\nUser: ${userName}\n\nThis will DELETE their user record, wallet, ALL transactions and certificates.\n\nTHIS CANNOT BE UNDONE.`)) {
+            return;
+        }
+        if (!confirm(`⚠️  Type YES to confirm final deletion of: ${userName}\n\nAre you 100% sure? This is irreversible.`)) {
+            return;
+        }
+        try {
+            const result = Admin.deleteUser(uidNumOrStr);
+            if (result && result.success) {
+                showToast(result.message, 'success');
+                if (window.NexgoldGlobalSync) { try { window.NexgoldGlobalSync.forceSync(); } catch (_) {} }
+                renderUsersTable();
+                renderStats();
+                renderPendingApprovals();
+            } else {
+                showToast((result && result.message) || 'Delete failed', 'error');
             }
         } catch (e) {
             showToast('Error: ' + (e.message || 'Unknown error'), 'error');

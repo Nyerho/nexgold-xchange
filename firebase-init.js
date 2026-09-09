@@ -32,13 +32,14 @@
         measurementId:     "G-3GPEVR0Y8W"
     };
 
-    // Load core + auth + firestore + analytics in sequence
+    // Load core + auth + firestore + analytics + storage in sequence
     (async function initFB() {
         try {
             await loadFirebaseScript('app');
             await loadFirebaseScript('auth');
             await loadFirebaseScript('firestore');
             await loadFirebaseScript('analytics');
+            await loadFirebaseScript('storage');
 
             if (!window.firebase || !firebase.initializeApp) {
                 console.warn('[Firebase] SDK failed to load; using localStorage-only mode.');
@@ -50,6 +51,7 @@
             const auth      = firebase.auth();
             const db        = firebase.firestore();
             let analytics   = null;
+            let storage     = null;
 
             try {
                 analytics = firebase.analytics();
@@ -57,9 +59,15 @@
                 // Analytics optional on file:// protocol
             }
 
-            window.FB = { app, auth, db, analytics, enabled: true, config: firebaseConfig };
+            try {
+                storage = firebase.storage();
+            } catch (e) {
+                console.debug('[Firebase] Storage disabled:', e.message);
+            }
+
+            window.FB = { app, auth, db, analytics, storage, enabled: true, config: firebaseConfig };
             window.dispatchEvent(new Event('firebase-ready'));
-            console.info('[Firebase] Ready:', firebaseConfig.projectId);
+            console.info('[Firebase] Ready:', firebaseConfig.projectId, '| storage=', !!storage);
         } catch (err) {
             console.warn('[Firebase] Init failed → localStorage fallback:', err.message);
             window.FB = { enabled: false };

@@ -20,10 +20,365 @@ function initializeDashboard() {
     ['userAvatar', 'userAvatarBig'].forEach(id => {
         const el = document.getElementById(id);
         if (el) {
-            el.textContent = letter;
-            if (id === 'userAvatarBig') { el.setAttribute('data-letter', letter); }
+            if (user && user.photoURL) {
+                el.innerHTML = `<img src="${String(user.photoURL)}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                el.textContent = '';
+                el.style.background = 'transparent';
+            } else {
+                el.textContent = letter;
+                if (id === 'userAvatarBig') { el.setAttribute('data-letter', letter); }
+            }
         }
     });
+
+    const profilePicImg = document.getElementById('profilePicImg');
+    const profilePicLetter = document.getElementById('profilePicLetter');
+    const clearAvatarBtn = document.getElementById('clearAvatarBtn');
+    if (user && user.photoURL) {
+        if (profilePicImg) {
+            profilePicImg.src = String(user.photoURL);
+            profilePicImg.style.display = 'block';
+        }
+        if (profilePicLetter) profilePicLetter.style.display = 'none';
+        if (clearAvatarBtn) clearAvatarBtn.style.display = 'inline-block';
+    }
+
+    if (pfl && !user.photoURL) pfl.textContent = letter;
+
+    // ================================
+    // PROFILE PICTURE UPLOAD
+    // ================================
+    const profilePicInput = document.getElementById('profilePicInput');
+    if (profilePicInput) {
+        profilePicInput.addEventListener('change', async function (e) {
+            const file = (e.target.files && e.target.files[0]) ? e.target.files[0] : null;
+            if (!file) return;
+            if (!/^image\//.test(file.type)) { showToast('Please choose an image file', 'error'); return; }
+            if (file.size > 4 * 1024 * 1024) { showToast('Image must be under 4MB', 'error'); return; }
+            try {
+                const reader = new FileReader();
+                reader.onload = function (ev) {
+                    const dataUrl = String(ev.target.result || '');
+                    // Show preview immediately
+                    if (profilePicImg) {
+                        profilePicImg.src = dataUrl;
+                        profilePicImg.style.display = 'block';
+                    }
+                    if (profilePicLetter) profilePicLetter.style.display = 'none';
+                    if (clearAvatarBtn) clearAvatarBtn.style.display = 'inline-block';
+                    // Save as localStorage photoURL first (works offline + persistent)
+                    const res = Admin.updateUserProfile(userId, { photoURL: dataUrl });
+                    // Update Firebase Auth profile if available
+                    const FB = (typeof window !== 'undefined') && window.FB;
+                    if (FB && FB.enabled && FB.auth && FB.auth.currentUser && FB.auth.currentUser.updateProfile) {
+                        try {
+                            FB.auth.currentUser.updateProfile({ photoURL: dataUrl }).catch(() => {});
+                        } catch (_) {}
+                    }
+                    // Update header avatars
+                    ['userAvatar', 'userAvatarBig'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) {
+                            el.innerHTML = `<img src="${dataUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                            el.textContent = '';
+                            if (el.id === 'userAvatarBig') el.removeAttribute('data-letter');
+                            el.style.background = 'transparent';
+                        }
+                    });
+                    // Also update sidebar avatar
+                    document.querySelectorAll('.avatar-ring .avatar-inner, .pm-avatar, [data-letter]').forEach(el => {
+                        if (el && el.id !== 'profilePicLetter') {
+                            const hasImg = el.querySelector('img');
+                            if (!hasImg) {
+                                el.style.backgroundImage = `url(${dataUrl})`;
+                                el.style.backgroundSize = 'cover';
+                                el.style.backgroundPosition = 'center';
+                                const childText = el.textContent || '';
+                                if (childText && childText.length <= 2 && /^[A-Z0-9]$/.test(childText)) {
+                                    el.textContent = '';
+                                }
+                            }
+                        }
+                    });
+                    if (res && res.success) showToast('Profile picture updated', 'success');
+                };
+                reader.readAsDataURL(file);
+            } catch (err) {
+                showToast('Could not update picture: ' + err.message, 'error');
+            }
+        });
+    }
+    if (clearAvatarBtn) {
+        clearAvatarBtn.addEventListener('click', function () {
+            Admin.updateUserProfile(userId, { photoURL: '' });
+            if (profilePicImg) { profilePicImg.src = ''; profilePicImg.style.display = 'none'; }
+            if (profilePicLetter) { profilePicLetter.style.display = ''; profilePicLetter.textContent = letter; }
+            clearAvatarBtn.style.display = 'none';
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (FB && FB.enabled && FB.auth && FB.auth.currentUser && FB.auth.currentUser.updateProfile) {
+                try { FB.auth.currentUser.updateProfile({ photoURL: '' }).catch(() => {}); } catch (_) {}
+            }
+            ['userAvatar', 'userAvatarBig'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.innerHTML = '';
+                    el.textContent = letter;
+                    if (id === 'userAvatarBig') el.setAttribute('data-letter', letter);
+                    el.style.background = '';
+                }
+            });
+            showToast('Profile picture removed', 'success');
+        });
+    }
+
+    // ================================
+    // PROFILE FIELDS
+    // ================================
+    const profileNameEl = document.getElementById('profileName');
+    const profileEmailEl = document.getElementById('profileEmail');
+    const profileCountryEl = document.getElementById('profileCountry');
+    const profileAddressEl = document.getElementById('profileAddress');
+    if (profileNameEl && user) profileNameEl.value = user.name || '';
+    if (profileEmailEl && user) profileEmailEl.value = user.email || '';
+    if (profileCountryEl && user) profileCountryEl.value = user.country || '';
+    if (profileAddressEl && user) profileAddressEl.value = user.address || '';
+
+    const saveProfileBtn = document.getElementById('saveProfileBtn');
+    if (saveProfileBtn) {
+        saveProfileBtn.addEventListener('click', function () {
+            const updates = {};
+            if (profileNameEl) updates.name = profileNameEl.value;
+            if (profileCountryEl) updates.country = profileCountryEl.value;
+            if (profileAddressEl) updates.address = profileAddressEl.value;
+            const res = Admin.updateUserProfile(userId, updates);
+            const status = document.getElementById('profileSaveStatus');
+            if (res && res.success) {
+                if (status) { status.textContent = '✓ Saved'; setTimeout(() => status.textContent = '', 2500); }
+                // Update welcome header/side
+                if (updates.name) {
+                    welcomeHeader && (welcomeHeader.textContent = updates.name);
+                    ['welcomeName', 'welcomeNameBig'].forEach(id => {
+                        const el = document.getElementById(id);
+                        if (el) el.textContent = updates.name;
+                    });
+                    // Update avatar letter
+                    const newLetter = String(updates.name).charAt(0).toUpperCase() || letter;
+                    if (!user.photoURL) {
+                        ['userAvatar', 'userAvatarBig', 'profilePicLetter'].forEach(id => {
+                            const el = document.getElementById(id);
+                            if (el && id !== 'profilePicLetter' && !el.querySelector('img')) {
+                                el.textContent = newLetter;
+                                if (id === 'userAvatarBig') el.setAttribute('data-letter', newLetter);
+                            } else if (id === 'profilePicLetter' && profilePicLetter && profilePicLetter.style.display !== 'none') {
+                                profilePicLetter.textContent = newLetter;
+                            }
+                        });
+                    }
+                }
+                showToast('Profile saved', 'success');
+            } else {
+                if (status) { status.textContent = ''; }
+                showToast((res && res.message) || 'Could not save', 'error');
+            }
+        });
+    }
+
+    // ================================
+    // SECURITY - PASSWORD CHANGE
+    // ================================
+    const secPwdBtn = document.getElementById('secPwdBtn');
+    if (secPwdBtn) {
+        secPwdBtn.addEventListener('click', async function () {
+            const cur = document.getElementById('secCurPwd').value;
+            const nw1 = document.getElementById('secNewPwd').value;
+            const nw2 = document.getElementById('secNewPwd2').value;
+            const status = document.getElementById('secPwdStatus');
+            if (!cur || !nw1 || !nw2) { showToast('Fill in all three fields', 'error'); return; }
+            if (nw1.length < 8) { showToast('New password must be at least 8 characters', 'error'); return; }
+            if (nw1 !== nw2) { showToast('New passwords don\'t match', 'error'); return; }
+            const curUser = Auth.getCurrentUser();
+            if (curUser && curUser.password && String(curUser.password).trim() !== String(cur).trim()) {
+                if (status) { status.textContent = ''; status.style.color = '#ef4444'; }
+                showToast('Current password is wrong', 'error');
+                return;
+            }
+            Admin.updateUserProfile(userId, { password: nw1 });
+            const FB = (typeof window !== 'undefined') && window.FB;
+            if (FB && FB.enabled && FB.auth && FB.auth.currentUser && FB.auth.currentUser.updatePassword) {
+                try {
+                    await Promise.race([
+                        FB.auth.currentUser.updatePassword(nw1),
+                        new Promise((res, rej) => setTimeout(() => rej(new Error('timeout')), 5000))
+                    ]).catch(() => {});
+                } catch (_) {}
+            }
+            if (status) { status.style.color = '#22c55e'; status.textContent = '✓ Password updated'; setTimeout(() => status.textContent = '', 4000); }
+            document.getElementById('secCurPwd').value = '';
+            document.getElementById('secNewPwd').value = '';
+            document.getElementById('secNewPwd2').value = '';
+            showToast('Password updated successfully', 'success');
+        });
+    }
+
+    // ================================
+    // PAYOUT METHODS
+    // ================================
+    function getUserPayoutPrefs() {
+        const prefs = getFromStorage('payoutPrefs_' + String(userId), null);
+        return prefs || { bankName: '', accountHolder: '', accountNumber: '', swift: '', usdt: '', btc: '', otherCrypto: '' };
+    }
+    function saveUserPayoutPrefs(prefs) {
+        saveToStorage('payoutPrefs_' + String(userId), prefs);
+    }
+    (function initPrefs() {
+        const p = getUserPayoutPrefs();
+        ['payBankName','payAccHolder','payAccNum','paySwift','payUSDT','payBTC','payOtherCrypto'].forEach(id => {
+            const key = id === 'payBankName' ? 'bankName'
+                     : id === 'payAccHolder' ? 'accountHolder'
+                     : id === 'payAccNum' ? 'accountNumber'
+                     : id === 'paySwift' ? 'swift'
+                     : id === 'payUSDT' ? 'usdt'
+                     : id === 'payBTC' ? 'btc' : 'otherCrypto';
+            const el = document.getElementById(id);
+            if (el && p[key]) el.value = p[key];
+        });
+    })();
+    const paySaveBtn = document.getElementById('paySaveBtn');
+    if (paySaveBtn) {
+        paySaveBtn.addEventListener('click', function () {
+            const prefs = {
+                bankName: (document.getElementById('payBankName').value || '').trim(),
+                accountHolder: (document.getElementById('payAccHolder').value || '').trim(),
+                accountNumber: (document.getElementById('payAccNum').value || '').trim(),
+                swift: (document.getElementById('paySwift').value || '').trim(),
+                usdt: (document.getElementById('payUSDT').value || '').trim(),
+                btc: (document.getElementById('payBTC').value || '').trim(),
+                otherCrypto: (document.getElementById('payOtherCrypto').value || '').trim()
+            };
+            saveUserPayoutPrefs(prefs);
+            const status = document.getElementById('paySaveStatus');
+            if (status) { status.textContent = '✓ Saved'; setTimeout(() => status.textContent = '', 3000); }
+            showToast('Payout methods saved', 'success');
+        });
+    }
+
+    // ================================
+    // REFERRAL
+    // ================================
+    function getReferralCode() {
+        let ref = '';
+        try {
+            const u = Auth.getCurrentUser();
+            const uid = (u && (u.fbUid || u.id)) ? (u.fbUid || String(u.id)) : String(userId);
+            const emailPart = (u && u.email) ? String(u.email).split('@')[0].toUpperCase().slice(0, 4) : 'REF';
+            const uidPart = String(uid).toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+            ref = (emailPart || 'NG') + (uidPart || String(Math.random()).slice(2, 7).toUpperCase());
+        } catch (_) { ref = 'NG' + String(userId || Date.now()).slice(0, 6).toUpperCase(); }
+        return ref;
+    }
+    (function initRef() {
+        const codeEl = document.getElementById('refCode');
+        const linkEl = document.getElementById('refLink');
+        const code = getReferralCode();
+        if (codeEl) codeEl.textContent = code;
+        if (linkEl) {
+            const url = (location.origin + location.pathname.replace(/dashboard\.html?$/i, 'index.html'));
+            linkEl.textContent = url + (url.indexOf('?') >= 0 ? '&' : '?') + 'ref=' + encodeURIComponent(code);
+        }
+        const cpy = document.getElementById('refCopyCode');
+        if (cpy) cpy.addEventListener('click', () => copyToClipboard(code, cpy));
+        // Save code on user
+        const u = Auth.getCurrentUser();
+        if (u && (!u.referralCode || u.referralCode !== code)) {
+            Admin.updateUserProfile(userId, { referralCode: code });
+        }
+    })();
+    window.shareReferral = function (type) {
+        const code = getReferralCode();
+        const url = document.getElementById('refLink') ? document.getElementById('refLink').textContent : location.href + '?ref=' + encodeURIComponent(code);
+        if (type === 'whatsapp') {
+            const text = encodeURIComponent('Hi! I use NEXGOLD Exchange to invest in physical gold. Sign up with my code ' + code + ' to get a $25 welcome bonus: ' + url);
+            window.open('https://wa.me/?text=' + text, '_blank');
+        } else if (type === 'telegram') {
+            const text = encodeURIComponent('Join NEXGOLD Exchange — $25 bonus with code ' + code + ' · ' + url);
+            window.open('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + text, '_blank');
+        } else if (type === 'email') {
+            const subject = encodeURIComponent('$25 Bonus to invest in Gold');
+            const body = encodeURIComponent('Hey!\n\nJoin NEXGOLD Exchange using my referral code ' + code + ' and you\'ll get a $25 welcome bonus once you buy $500+ of gold.\n\n' + url + '\n\nCheers!');
+            window.open('mailto:?subject=' + subject + '&body=' + body, '_blank');
+        }
+    };
+
+    // ================================
+    // SUPPORT
+    // ================================
+    const supSendBtn = document.getElementById('supSendBtn');
+    if (supSendBtn) {
+        supSendBtn.addEventListener('click', function () {
+            const subject = document.getElementById('supSubject').value || '';
+            const txnRef = document.getElementById('supTxnId').value || '';
+            const msg = document.getElementById('supMsg').value || '';
+            const status = document.getElementById('supStatus');
+            if (!msg.trim()) { showToast('Please write a message first', 'error'); return; }
+            const tickets = getFromStorage('supportTickets', []);
+            tickets.unshift({ id: 'T' + Date.now(), subject, txnRef, message: msg, createdAt: new Date().toISOString(), status: 'open' });
+            saveToStorage('supportTickets', tickets);
+            document.getElementById('supTxnId').value = '';
+            document.getElementById('supMsg').value = '';
+            if (status) { status.textContent = '✓ Message sent — we\'ll reply within 4 hours'; setTimeout(() => status.textContent = '', 5000); }
+            showToast('Support ticket opened — check your email for replies.', 'success');
+        });
+    }
+
+    // ================================
+    // SETTINGS PAGE
+    // ================================
+    (function initSettingsPage() {
+        const syncNow = document.getElementById('setSyncNow');
+        if (syncNow) {
+            syncNow.addEventListener('click', async function () {
+                showToast('Syncing…', 'info');
+                try {
+                    const gs = window.NexgoldGlobalSync;
+                    if (gs && gs.pullAllFromFirestore) {
+                        await Promise.race([gs.pullAllFromFirestore(), new Promise(r => setTimeout(r, 8000))]);
+                    }
+                    refreshDashboardViews(userId);
+                    const ls = document.getElementById('setLastSync');
+                    if (ls) ls.textContent = new Date().toLocaleTimeString();
+                    showToast('Sync complete', 'success');
+                } catch (_) {
+                    showToast('Sync done', 'success');
+                }
+            });
+        }
+        const exportBtn = document.getElementById('setExport');
+        if (exportBtn) {
+            exportBtn.addEventListener('click', function () {
+                const keys = ['users','wallets','transactions','certificates','settings','paymentMethods','supportTickets'];
+                const dump = {};
+                keys.forEach(k => dump[k] = getFromStorage(k, null));
+                const blob = new Blob([JSON.stringify(dump, null, 2)], { type: 'application/json' });
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = 'nexgold-data-' + new Date().toISOString().slice(0, 10) + '.json';
+                a.click();
+                URL.revokeObjectURL(a.href);
+                showToast('Data exported', 'success');
+            });
+        }
+        const clearBtn = document.getElementById('setClearCache');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', function () {
+                if (!confirm('Clear cached data (users, wallets, transactions from localStorage)? This won\'t delete cloud data. Continue?')) return;
+                ['users','wallets','transactions','certificates'].forEach(k => {
+                    try { localStorage.removeItem(k); } catch (_) {}
+                });
+                showToast('Cache cleared — syncing now…', 'info');
+                setTimeout(() => location.reload(), 800);
+            });
+        }
+    })();
 
     const welcomeHeader = document.getElementById('welcomeHeader');
     if (welcomeHeader && user) welcomeHeader.textContent = user.name;

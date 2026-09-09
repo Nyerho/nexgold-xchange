@@ -81,11 +81,13 @@
                                 <div class="pm-tier"><i class="bi bi-patch-check-fill"></i> Gold Member</div>
                             </div>
                         </div>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-person-circle"></i> Profile Settings</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-shield-lock"></i> Security & 2FA</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-credit-card"></i> Payment Methods</a></li>
-                        <li><a class="dropdown-item" href="#"><i class="bi bi-gift"></i> Referral Program</a></li>
+                        <li><a class="dropdown-item sidebar-link" href="#" data-target="profileSettings"><i class="bi bi-person-circle"></i> Profile Settings</a></li>
+                        <li><a class="dropdown-item sidebar-link" href="#" data-target="security"><i class="bi bi-shield-lock"></i> Security & 2FA</a></li>
+                        <li><a class="dropdown-item sidebar-link" href="#" data-target="paymentMethods"><i class="bi bi-credit-card"></i> Payment Methods</a></li>
+                        <li><a class="dropdown-item sidebar-link" href="#" data-target="referral"><i class="bi bi-gift"></i> Referral Program</a></li>
                         <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item sidebar-link" href="#" data-target="support"><i class="bi bi-headset"></i> Support Center</a></li>
+                        <li><a class="dropdown-item sidebar-link" href="#" data-target="settingsPage"><i class="bi bi-gear"></i> Settings</a></li>
                         <li><a class="dropdown-item" href="index.html"><i class="bi bi-house-door"></i> Back to Homepage</a></li>
                         <li><button class="dropdown-item danger" onclick="Auth.logout()"><i class="bi bi-box-arrow-right"></i> Sign Out</button></li>
                     </ul>
@@ -136,8 +138,12 @@
                             <i class="bi bi-file-earmark-check"></i> Certificates
                         </a>
                         <hr style="border-color:#1a1a1a;margin:14px 8px;">
-                        <a href="#" class="sidebar-link"><i class="bi bi-question-circle"></i> Support Center</a>
-                        <a href="#" class="sidebar-link"><i class="bi bi-gear"></i> Settings</a>
+                        <a href="#" class="sidebar-link" data-target="profileSettings"><i class="bi bi-person-circle"></i> Profile Settings</a>
+                        <a href="#" class="sidebar-link" data-target="security"><i class="bi bi-shield-lock"></i> Security & 2FA</a>
+                        <a href="#" class="sidebar-link" data-target="paymentMethods"><i class="bi bi-credit-card"></i> Payment Methods</a>
+                        <a href="#" class="sidebar-link" data-target="referral"><i class="bi bi-gift"></i> Referral Program</a>
+                        <a href="#" class="sidebar-link" data-target="support"><i class="bi bi-question-circle"></i> Support Center</a>
+                        <a href="#" class="sidebar-link" data-target="settingsPage"><i class="bi bi-gear"></i> Settings</a>
                         <button class="sidebar-link" style="width:100%;text-align:left;border:0;background:transparent;" onclick="Auth.logout()">
                             <i class="bi bi-box-arrow-right"></i> Sign Out
                         </button>
@@ -604,6 +610,434 @@
                             </div>
                         </div>
                         <div id="certificatesList"></div>
+                    </section>
+
+                    <!-- PROFILE SETTINGS -->
+                    <section class="dashboard-section" id="profileSettings" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>ACCOUNT</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Profile <em class="gold-word">Settings</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Manage your personal profile and account preferences.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-4">
+                                <div class="card" style="text-align:center;padding:28px 20px;">
+                                    <h5 class="mb-3"><i class="bi bi-person-badge-fill text-gold me-2"></i>Profile Picture</h5>
+                                    <div style="width:120px;height:120px;margin:8px auto 16px;border-radius:50%;border:3px solid rgba(212,175,55,0.5);overflow:hidden;display:flex;align-items:center;justify-content:center;background:#111;position:relative;">
+                                        <div id="profilePicPreview" style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;">
+                                            <div id="profilePicLetter" style="font-size:48px;font-weight:800;color:#D4AF37;">I</div>
+                                            <img id="profilePicImg" alt="avatar" style="display:none;width:100%;height:100%;object-fit:cover;border-radius:50%;">
+                                        </div>
+                                        <label for="profilePicInput" title="Upload photo" style="position:absolute;bottom:-4px;right:-4px;width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#D4AF37,#b8902e);display:flex;align-items:center;justify-content:center;color:#0a0a0a;cursor:pointer;box-shadow:0 6px 18px rgba(212,175,55,0.45);"><i class="bi bi-camera-fill"></i></label>
+                                        <input id="profilePicInput" type="file" accept="image/*" style="display:none;">
+                                    </div>
+                                    <button id="clearAvatarBtn" class="btn-sm-gold" style="margin-top:6px;display:none;background:transparent;border:1px solid rgba(212,175,55,0.5);color:#D4AF37;"><i class="bi bi-trash me-1"></i> Remove Picture</button>
+                                    <div style="margin-top:16px;text-align:left;">
+                                        <small style="color:#8a8a8a;">Upload a JPG or PNG under 4MB. Face/headshot recommended.</small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-8">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-card-list text-gold me-2"></i>Personal Information</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Full Name</label>
+                                            <input id="profileName" type="text" class="input-dark" placeholder="Your full name">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Email Address</label>
+                                            <input id="profileEmail" type="email" class="input-dark" placeholder="you@example.com" disabled>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Country</label>
+                                            <input id="profileCountry" type="text" class="input-dark" placeholder="Country of residence">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Address / Phone</label>
+                                            <input id="profileAddress" type="text" class="input-dark" placeholder="Optional">
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button id="saveProfileBtn" class="btn-home-square-gold" style="padding:12px 26px;">
+                                            <i class="bi bi-save2 me-2"></i>Save Changes
+                                        </button>
+                                        <span id="profileSaveStatus" style="margin-left:14px;color:#22c55e;font-size:13px;"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SECURITY & 2FA -->
+                    <section class="dashboard-section" id="security" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>SAFETY</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Security &amp; <em class="gold-word">2FA</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Protect your account with a strong password and two-factor authentication.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-key-fill text-gold me-2"></i>Change Password</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Current Password</label>
+                                        <input id="secCurPwd" type="password" class="input-dark" placeholder="••••••••">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">New Password</label>
+                                        <input id="secNewPwd" type="password" class="input-dark" placeholder="Min 8 characters">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Confirm New Password</label>
+                                        <input id="secNewPwd2" type="password" class="input-dark" placeholder="Re-enter new password">
+                                    </div>
+                                    <button id="secPwdBtn" class="btn-home-square-gold" style="padding:12px 26px;">
+                                        <i class="bi bi-shield-lock me-2"></i>Update Password
+                                    </button>
+                                    <span id="secPwdStatus" style="margin-left:14px;font-size:13px;"></span>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-phone-fill text-gold me-2"></i>Two-Factor Authentication (2FA)</h5>
+                                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                                        <div>
+                                            <h6 style="margin:0 0 2px;">Authenticator App</h6>
+                                            <small style="color:#8a8a8a;">Generate one-time codes with Google Authenticator, Authy, or 1Password.</small>
+                                        </div>
+                                        <div class="form-check form-switch" style="margin:0;">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="tfaSwitch" disabled>
+                                        </div>
+                                    </div>
+                                    <div style="padding:16px;background:rgba(34,197,94,0.06);border:1px solid rgba(34,197,94,0.18);border-radius:12px;margin-bottom:14px;">
+                                        <div style="display:flex;gap:10px;align-items:flex-start;">
+                                            <i class="bi bi-info-circle-fill" style="color:#22c55e;margin-top:2px;"></i>
+                                            <div style="font-size:13px;color:#b0b0b0;line-height:1.6;">
+                                                <strong style="color:#fff;">Feature Available Soon</strong><br>
+                                                2FA via TOTP authenticator apps is being rolled out. You will be notified via email when it's ready for your account.
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <h6 style="margin:18px 0 10px;"><i class="bi bi-file-lock2 me-1"></i> Login Activity</h6>
+                                    <div id="loginActivityList" style="border:1px solid #1a1a1a;border-radius:10px;overflow:hidden;font-size:13px;">
+                                        <div style="padding:10px 14px;border-bottom:1px solid #1a1a1a;color:#8a8a8a;">Recent sessions will appear here.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- PAYMENT METHODS -->
+                    <section class="dashboard-section" id="paymentMethods" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>BANKING</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Your <em class="gold-word">Payout Methods</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Save where you'd like your SELL proceeds to be sent. We never charge payout fees.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-bank2 text-gold me-2"></i>Bank Account</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">Bank Name</label>
+                                        <input id="payBankName" type="text" class="input-dark" placeholder="e.g. Chase Bank, HSBC UK">
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Account Holder Name</label>
+                                        <input id="payAccHolder" type="text" class="input-dark" placeholder="Your full name on account">
+                                    </div>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Account / IBAN</label>
+                                            <input id="payAccNum" type="text" class="input-dark" placeholder="Account number or IBAN">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Routing / SWIFT / BIC</label>
+                                            <input id="paySwift" type="text" class="input-dark" placeholder="Routing or SWIFT code">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-currency-exchange text-gold me-2"></i>Crypto Wallets (Optional)</h5>
+                                    <div class="mb-3">
+                                        <label class="form-label">USDT Wallet (TRC20 / ERC20)</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text" style="background:#0a0a0a;border-color:#2a2a2a;color:#34d399;">
+                                                <i class="bi bi-tether"></i>
+                                            </span>
+                                            <input id="payUSDT" type="text" class="input-dark" placeholder="Tron or Ethereum USDT address">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Bitcoin (BTC) Wallet</label>
+                                        <div class="input-group">
+                                            <span class="input-group-text" style="background:#0a0a0a;border-color:#2a2a2a;color:#f7931a;">
+                                                <i class="bi bi-currency-bitcoin"></i>
+                                            </span>
+                                            <input id="payBTC" type="text" class="input-dark" placeholder="On-chain BTC address">
+                                        </div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label class="form-label">Other Crypto (optional notes)</label>
+                                        <input id="payOtherCrypto" type="text" class="input-dark" placeholder="ETH, SOL, etc">
+                                    </div>
+                                    <div class="mt-3">
+                                        <button id="paySaveBtn" class="btn-home-square-gold" style="padding:12px 26px;">
+                                            <i class="bi bi-wallet2 me-2"></i>Save Payout Methods
+                                        </button>
+                                        <span id="paySaveStatus" style="margin-left:14px;color:#22c55e;font-size:13px;"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- REFERRAL PROGRAM -->
+                    <section class="dashboard-section" id="referral" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>EARN MORE</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Referral <em class="gold-word">Rewards</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Invite friends to NEXGOLD and earn bonus gold on every deposit.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-5">
+                                <div class="card" style="padding:24px 28px;background:linear-gradient(135deg,rgba(212,175,55,0.08),rgba(0,0,0,0.02));border:1px solid rgba(212,175,55,0.2);">
+                                    <h5 class="mb-3"><i class="bi bi-gift-fill text-gold me-2"></i>Your Referral Code</h5>
+                                    <div style="padding:16px 18px;border-radius:12px;background:#0a0a0a;border:1px solid rgba(212,175,55,0.35);display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+                                        <span id="refCode" style="font-size:22px;font-weight:800;letter-spacing:2px;color:#D4AF37;word-break:break-word;">LOADING…</span>
+                                        <button id="refCopyCode" class="btn-sm-gold" style="margin-left:auto;"><i class="bi bi-copy"></i> Copy</button>
+                                    </div>
+                                    <div style="margin:14px 0;">
+                                        <small style="color:#8a8a8a;">Share link:</small>
+                                        <div style="padding:10px 14px;border-radius:10px;background:#0a0a0a;border:1px solid #2a2a2a;font-size:12px;color:#b0b0b0;margin-top:6px;word-break:break-all;" id="refLink">https://nexgold.exchange/?ref=…</div>
+                                    </div>
+                                    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:10px;">
+                                        <button onclick="shareReferral('whatsapp')" style="padding:10px;border-radius:10px;background:#25D366;color:#fff;border:0;font-weight:700;font-size:13px;"><i class="bi bi-whatsapp me-1"></i> WhatsApp</button>
+                                        <button onclick="shareReferral('telegram')" style="padding:10px;border-radius:10px;background:#229ED9;color:#fff;border:0;font-weight:700;font-size:13px;"><i class="bi bi-telegram me-1"></i> Telegram</button>
+                                        <button onclick="shareReferral('email')" style="padding:10px;border-radius:10px;background:#3b82f6;color:#fff;border:0;font-weight:700;font-size:13px;"><i class="bi bi-envelope me-1"></i> Email</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-7">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-trophy-fill text-gold me-2"></i>Your Earnings</h5>
+                                    <div class="row g-3 mb-4">
+                                        <div class="col-md-4">
+                                            <div class="stat-card stat-gold">
+                                                <div class="stat-label">Friends Invited</div>
+                                                <div class="stat-value" id="refInvited">0</div>
+                                                <div class="stat-icon"><i class="bi bi-person-plus-fill"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="stat-card stat-green">
+                                                <div class="stat-label">Active Deposits</div>
+                                                <div class="stat-value" id="refActive">0</div>
+                                                <div class="stat-icon"><i class="bi bi-check2-circle"></i></div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <div class="stat-card stat-blue">
+                                                <div class="stat-label">Bonus Earned</div>
+                                                <div class="stat-value" id="refBonus">0.00g</div>
+                                                <div class="stat-icon"><i class="bi bi-gem"></i></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div style="padding:16px 20px;border-radius:12px;background:rgba(212,175,55,0.05);border:1px solid rgba(212,175,55,0.18);">
+                                        <h6 style="margin:0 0 8px;"><i class="bi bi-stars me-1" style="color:#D4AF37;"></i> How it works</h6>
+                                        <ol style="margin:0;padding-left:20px;font-size:13.5px;color:#b0b0b0;line-height:1.9;">
+                                            <li>Share your referral code with friends</li>
+                                            <li>They signup and buy gold worth $500+</li>
+                                            <li>You receive <strong style="color:#fff;">0.15g of gold</strong> (≈ $10) credited to your Bonus Rewards wallet</li>
+                                            <li>Your friend also gets a <strong style="color:#fff;">$25 welcome bonus</strong></li>
+                                        </ol>
+                                    </div>
+                                    <h6 style="margin:20px 0 10px;"><i class="bi bi-people-fill"></i> Referrals</h6>
+                                    <div id="refList" style="border:1px solid #1a1a1a;border-radius:10px;overflow:hidden;font-size:13px;">
+                                        <div style="padding:14px;text-align:center;color:#6c757d;">Share your code to see your referrals appear here.</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SUPPORT CENTER -->
+                    <section class="dashboard-section" id="support" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>HELP</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    Support <em class="gold-word">Center</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Get help — our team replies within 4 business hours.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-4">
+                                <div class="card" style="padding:24px 28px;text-align:center;">
+                                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(34,197,94,0.15);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="bi bi-whatsapp" style="font-size:32px;color:#25D366;"></i>
+                                    </div>
+                                    <h5 class="mb-1">WhatsApp Support</h5>
+                                    <small style="color:#8a8a8a;display:block;margin-bottom:12px;">Fastest response · Mon–Fri 9AM–7PM GMT</small>
+                                    <a href="https://wa.me/18000000000?text=Hi%20NEXGOLD%20Support%2C%20I%20need%20help%20with..." target="_blank" rel="noopener" class="btn-sm-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;"><i class="bi bi-send"></i> Chat on WhatsApp</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card" style="padding:24px 28px;text-align:center;">
+                                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(59,130,246,0.15);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="bi bi-envelope-fill" style="font-size:32px;color:#3b82f6;"></i>
+                                    </div>
+                                    <h5 class="mb-1">Email Support</h5>
+                                    <small style="color:#8a8a8a;display:block;margin-bottom:12px;">Detailed inquiries &amp; documents</small>
+                                    <a href="mailto:support@nexagold.exchange?subject=Support%20Request%20-%20NEXGOLD" class="btn-sm-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:transparent;border:1px solid rgba(212,175,55,0.5);color:#D4AF37;"><i class="bi bi-envelope"></i> support@nexagold.exchange</a>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card" style="padding:24px 28px;text-align:center;">
+                                    <div style="width:64px;height:64px;border-radius:50%;background:rgba(212,175,55,0.15);margin:0 auto 12px;display:flex;align-items:center;justify-content:center;">
+                                        <i class="bi bi-lightbulb-fill" style="font-size:32px;color:#D4AF37;"></i>
+                                    </div>
+                                    <h5 class="mb-1">FAQ &amp; Knowledge Base</h5>
+                                    <small style="color:#8a8a8a;display:block;margin-bottom:12px;">Instant answers to common questions</small>
+                                    <a href="index.html#faq" class="btn-sm-gold" style="display:inline-flex;align-items:center;gap:8px;text-decoration:none;background:transparent;border:1px solid rgba(212,175,55,0.5);color:#D4AF37;"><i class="bi bi-book"></i> Browse FAQs</a>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-chat-left-text-fill text-gold me-2"></i>Quick Message to Support</h5>
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
+                                            <label class="form-label">Subject</label>
+                                            <select id="supSubject" class="input-dark">
+                                                <option>Account Issue</option>
+                                                <option>Buy / Sell Order</option>
+                                                <option>Deposit / Withdrawal</option>
+                                                <option>Certificate / Proof of Ownership</option>
+                                                <option>Referral Bonus</option>
+                                                <option>Other</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label">Order / Transaction ID (optional)</label>
+                                            <input id="supTxnId" type="text" class="input-dark" placeholder="Reference ID if applicable">
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label">Message</label>
+                                            <textarea id="supMsg" class="input-dark" rows="5" placeholder="Describe your issue in detail…"></textarea>
+                                        </div>
+                                    </div>
+                                    <div class="mt-4">
+                                        <button id="supSendBtn" class="btn-home-square-gold" style="padding:12px 26px;">
+                                            <i class="bi bi-send-fill me-2"></i>Send Message
+                                        </button>
+                                        <span id="supStatus" style="margin-left:14px;color:#22c55e;font-size:13px;"></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- SETTINGS -->
+                    <section class="dashboard-section" id="settingsPage" style="display:none;">
+                        <div class="row mb-4 align-items-end g-4">
+                            <div class="col-md-8">
+                                <div class="section-eyebrow" style="color:#d4b86a;"><span class="eyebrow-dot"></span>PREFERENCES</div>
+                                <h2 class="mb-0" style="font-family:'Playfair Display',Georgia,serif;font-size:clamp(26px,3vw,40px);font-weight:700;">
+                                    App <em class="gold-word">Settings</em>
+                                </h2>
+                                <p style="color:#8a8a8a;margin-top:8px;">Customize your dashboard experience.</p>
+                            </div>
+                        </div>
+                        <div class="row g-4">
+                            <div class="col-lg-6">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-sliders2 text-gold me-2"></i>Display</h5>
+                                    <div class="mb-3" style="display:flex;align-items:center;justify-content:space-between;">
+                                        <div>
+                                            <h6 style="margin:0;">Dark Mode</h6>
+                                            <small style="color:#8a8a8a;">Use the premium dark theme.</small>
+                                        </div>
+                                        <div class="form-check form-switch" style="margin:0;">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="setDark" checked disabled>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3" style="display:flex;align-items:center;justify-content:space-between;">
+                                        <div>
+                                            <h6 style="margin:0;">Show Balances</h6>
+                                            <small style="color:#8a8a8a;">Display wallet balances on the overview page.</small>
+                                        </div>
+                                        <div class="form-check form-switch" style="margin:0;">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="setShowBal" checked>
+                                        </div>
+                                    </div>
+                                    <div class="mb-3" style="display:flex;align-items:center;justify-content:space-between;">
+                                        <div>
+                                            <h6 style="margin:0;">Desktop Notifications</h6>
+                                            <small style="color:#8a8a8a;">Alerts for approved / rejected orders.</small>
+                                        </div>
+                                        <div class="form-check form-switch" style="margin:0;">
+                                            <input class="form-check-input" type="checkbox" role="switch" id="setNotif">
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <h6 style="margin:0 0 8px;">Currency Display</h6>
+                                        <select id="setCurrency" class="input-dark">
+                                            <option value="USD">USD — US Dollar</option>
+                                            <option value="EUR">EUR — Euro</option>
+                                            <option value="GBP">GBP — British Pound</option>
+                                            <option value="GHS">GHS — Ghana Cedi</option>
+                                            <option value="NGN">NGN — Nigerian Naira</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-6">
+                                <div class="card" style="padding:24px 28px;">
+                                    <h5 class="mb-3"><i class="bi bi-cloud-arrow-down-fill text-gold me-2"></i>Data &amp; Sync</h5>
+                                    <div style="padding:12px 16px;border-radius:10px;background:rgba(0,0,0,0.4);border:1px solid #2a2a2a;margin-bottom:14px;">
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0;">
+                                            <span style="color:#8a8a8a;">Cloud Sync Status</span>
+                                            <span id="setSyncStatus" style="color:#22c55e;font-weight:700;"><i class="bi bi-check-circle-fill me-1"></i>Live</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 0;">
+                                            <span style="color:#8a8a8a;">Last Synced</span>
+                                            <span id="setLastSync" style="color:#fff;font-weight:600;font-size:13px;">Just now</span>
+                                        </div>
+                                    </div>
+                                    <div class="d-flex gap-2 flex-wrap">
+                                        <button id="setSyncNow" class="btn-sm-gold"><i class="bi bi-arrow-clockwise me-1"></i>Sync Now</button>
+                                        <button id="setExport" class="btn-sm-gold" style="background:transparent;border:1px solid rgba(212,175,55,0.5);color:#D4AF37;"><i class="bi bi-file-earmark-text me-1"></i>Export Data (JSON)</button>
+                                        <button id="setClearCache" class="btn-sm-gold" style="background:transparent;border:1px solid rgba(239,68,68,0.5);color:#ef4444;"><i class="bi bi-trash me-1"></i>Clear Cache</button>
+                                    </div>
+                                    <h6 style="margin:22px 0 10px;"><i class="bi bi-info-circle-fill"></i> Version Info</h6>
+                                    <div style="font-size:13px;color:#8a8a8a;">
+                                        NEXGOLD Exchange v2.4.0 &nbsp;·&nbsp; Build 2026.09.09<br>
+                                        Client data stays on your device. Transactions &amp; balances are securely backed up to Firestore.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </section>
 
                 </main>
