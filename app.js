@@ -554,45 +554,82 @@ const Auth = (function () {
             };
 
             // Utility: ensure Firebase Auth is signed in as this admin (critical for Firestore rules)
+            // AND ensure admins/<authUid> Firestore doc exists (required for rules to recognize admin)
             async function _ensureFbAuthSignedIn(FB, fallbackLocalData) {
                 if (!FB || !FB.enabled || !FB.auth || typeof FB.auth.signInWithEmailAndPassword !== 'function') {
                     return false;
                 }
+                let finalFbUser = null;
                 try {
                     const alreadySigned = FB.auth.currentUser &&
                         String(FB.auth.currentUser.email || '').trim().toLowerCase() === tEmail;
                     if (alreadySigned) {
-                        console.debug('[Auth:Admin] Firebase Auth already signed in as admin:', tEmail);
-                        return true;
-                    }
-                    const uc = await FB.auth.signInWithEmailAndPassword(tEmail, tPwd);
-                    const ok = !!(uc && uc.user && uc.user.uid);
-                    if (ok) {
+                        console.debug('[Auth:Admin] Firebase Auth already signed in as admin:', tEmail,
+                            'uid=', FB.auth.currentUser.uid);
+                        finalFbUser = FB.auth.currentUser;
+                    } else {
+                        const uc = await FB.auth.signInWithEmailAndPassword(tEmail, tPwd);
+                        const ok = !!(uc && uc.user && uc.user.uid);
+                        if (!ok) return false;
                         console.debug('[Auth:Admin] 🔐 Firebase Auth sign-in (from local cache path) SUCCESS -> uid=', uc.user.uid);
-                        if (FB.db) {
-                            try {
-                                const adminUid = uc.user.uid;
-                                const uidDocRef = FB.db.collection('admins').doc(String(adminUid));
-                                const uidDocSnap = await uidDocRef.get().catch(() => ({ exists: false }));
-                                if (!uidDocSnap || !uidDocSnap.exists) {
-                                    const adminName = String((fallbackLocalData && (fallbackLocalData.name || fallbackLocalData.fullName)) || '').trim() || tEmail.split('@')[0];
-                                    await uidDocRef.set({
-                                        name: adminName,
-                                        email: tEmail,
-                                        password: tPwd,
-                                        role: (fallbackLocalData && fallbackLocalData.role) || 'admin',
-                                        active: true,
-                                        createdAt: new Date().toISOString(),
-                                        _autoCreatedFromCache: true
-                                    });
-                                    console.debug('[Auth:Admin] 🆕 Auto-created missing admins/{uid} doc from local cache login:', adminUid);
+                        finalFbUser = uc.user;
+                    }
+                    // ---- ALWAYS ensure admins/<authUid> Firestore doc exists ----
+                    // This doc is MANDATORY for Firestore rules' isAdminByUid() to return true.
+                    // Without it, EVERY collection read/write gets PERMISSION DENIED.
+                    if (FB.db && finalFbUser && finalFbUser.uid) {
+                        const adminUid = finalFbUser.uid;
+                        try {
+                            const uidDocRef = FB.db.collection('admins').doc(String(adminUid));
+                            const uidDocSnap = await uidDocRef.get().catch(err => {
+                                console.warn('[Auth:Admin] admins/<uid> get() failed — code=' +
+                                    ((err && err.code) || '?') + ' msg=' + ((err && err.message) || '?'));
+                                return { exists: false };
+                            });
+                            if (!uidDocSnap || !uidDocSnap.exists) {
+                                const adminName = String((fallbackLocalData && (fallbackLocalData.name || fallbackLocalData.fullName)) || '').trim()
+                                    || tEmail.split('@')[0];
+                                const adminRole = String((fallbackLocalData && fallbackLocalData.role) || 'admin').trim();
+                                await uidDocRef.set({
+                                    name: adminName,
+                                    email: tEmail,
+                                    password: tPwd,
+                                    role: adminRole,
+                                    active: true,
+                                    createdAt: new Date().toISOString(),
+                                    _autoCreatedFromCacheLogin: true,
+                                    _syncedAt: new Date().toISOString()
+                                });
+                                console.info('[Auth:Admin] 🆕 SUCCESS auto-created admins/' + adminUid +
+                                    ' Firestore doc for admin: ' + tEmail +
+                                    ' — refresh page or click Sync to pull users!');
+                                if (window.showToast && typeof window.showToast === 'function') {
+                                    try {
+                                        window.showToast('✅ Admin permissions activated. Click 🔄 Sync now to load users.', 'success', 6000);
+                                    } catch (_) {}
                                 }
-                            } catch (e2) {
-                                console.warn('[Auth:Admin] Ensuring admins/<uid> doc failed:', (e2 && e2.code) || e2.message);
+                            } else {
+                                console.debug('[Auth:Admin] ✅ admins/' + adminUid + ' Firestore doc already exists for ' + tEmail);
+                                try {
+                                    await uidDocRef.set({
+                                        _lastAdminLogin: new Date().toISOString(),
+                                        _syncedAt: new Date().toISOString()
+                                    }, { merge: true });
+                                } catch (_) {}
+                            }
+                        } catch (e2) {
+                            console.error('[Auth:Admin] ❌ FAILED to write admins/' + (finalFbUser && finalFbUser.uid) +
+                                ' doc. Firestore rules CREATE permission rejected it. code=' +
+                                ((e2 && e2.code) || '?') + ' msg=' + ((e2 && e2.message) || '?') +
+                                ' — Upload the updated firestore.rules file to Firebase Console -> Firestore -> Rules.');
+                            if (window.showToast && typeof window.showToast === 'function') {
+                                try {
+                                    window.showToast('⚠️ Admin doc blocked by rules. Upload new firestore.rules (see chat).', 'warning', 10000);
+                                } catch (_) {}
                             }
                         }
                     }
-                    return ok;
+                    return !!(finalFbUser && finalFbUser.uid);
                 } catch (e) {
                     console.debug('[Auth:Admin] Firebase Auth sign-in (local cache path) skipped/failed:',
                         (e && e.code) || e.message, ' — proceeding with local-only session.');
