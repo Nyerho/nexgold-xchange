@@ -503,10 +503,6 @@ const Auth = (function () {
                 return { success: false, message: 'Email and password are required' };
             }
 
-            if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
-                try { window.NexgoldGlobalSync.pullAllFromFirestore(); } catch (_) {}
-            }
-
             // Utility: mark admin session + cache locally
             const _establishAdminSession = (data, docId, sourceLabel) => {
                 const adminName = String((data && (data.name || data.fullName || data.displayName)) || '').trim() || tEmail.split('@')[0];
@@ -557,6 +553,53 @@ const Auth = (function () {
                 return false;
             };
 
+            // Utility: ensure Firebase Auth is signed in as this admin (critical for Firestore rules)
+            async function _ensureFbAuthSignedIn(FB, fallbackLocalData) {
+                if (!FB || !FB.enabled || !FB.auth || typeof FB.auth.signInWithEmailAndPassword !== 'function') {
+                    return false;
+                }
+                try {
+                    const alreadySigned = FB.auth.currentUser &&
+                        String(FB.auth.currentUser.email || '').trim().toLowerCase() === tEmail;
+                    if (alreadySigned) {
+                        console.debug('[Auth:Admin] Firebase Auth already signed in as admin:', tEmail);
+                        return true;
+                    }
+                    const uc = await FB.auth.signInWithEmailAndPassword(tEmail, tPwd);
+                    const ok = !!(uc && uc.user && uc.user.uid);
+                    if (ok) {
+                        console.debug('[Auth:Admin] 🔐 Firebase Auth sign-in (from local cache path) SUCCESS -> uid=', uc.user.uid);
+                        if (FB.db) {
+                            try {
+                                const adminUid = uc.user.uid;
+                                const uidDocRef = FB.db.collection('admins').doc(String(adminUid));
+                                const uidDocSnap = await uidDocRef.get().catch(() => ({ exists: false }));
+                                if (!uidDocSnap || !uidDocSnap.exists) {
+                                    const adminName = String((fallbackLocalData && (fallbackLocalData.name || fallbackLocalData.fullName)) || '').trim() || tEmail.split('@')[0];
+                                    await uidDocRef.set({
+                                        name: adminName,
+                                        email: tEmail,
+                                        password: tPwd,
+                                        role: (fallbackLocalData && fallbackLocalData.role) || 'admin',
+                                        active: true,
+                                        createdAt: new Date().toISOString(),
+                                        _autoCreatedFromCache: true
+                                    });
+                                    console.debug('[Auth:Admin] 🆕 Auto-created missing admins/{uid} doc from local cache login:', adminUid);
+                                }
+                            } catch (e2) {
+                                console.warn('[Auth:Admin] Ensuring admins/<uid> doc failed:', (e2 && e2.code) || e2.message);
+                            }
+                        }
+                    }
+                    return ok;
+                } catch (e) {
+                    console.debug('[Auth:Admin] Firebase Auth sign-in (local cache path) skipped/failed:',
+                        (e && e.code) || e.message, ' — proceeding with local-only session.');
+                    return false;
+                }
+            }
+
             // 1. Check localStorage admins cache first (for offline + after first successful login)
             const localAdmins = getFromStorage('admins', []);
             const localMatch = localAdmins.find(a =>
@@ -566,6 +609,16 @@ const Auth = (function () {
             );
             if (localMatch) {
                 console.debug('[Auth:Admin] ✅ Matched local admin cache for', tEmail);
+                const FB = (typeof window !== 'undefined') && window.FB;
+                if (FB && FB.enabled && (FB.db || FB.auth)) {
+                    return (async () => {
+                        await Promise.race([
+                            _ensureFbAuthSignedIn(FB, localMatch),
+                            new Promise(res => setTimeout(res, 6000))
+                        ]);
+                        return _establishAdminSession(localMatch, localMatch.id, 'local cache + Firebase Auth');
+                    })();
+                }
                 return _establishAdminSession(localMatch, localMatch.id, 'local cache');
             }
 

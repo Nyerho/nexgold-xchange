@@ -20,14 +20,6 @@ async function initializeAdmin() {
             const originalHTML = btn ? btn.innerHTML : null;
             if (btn) { btn.disabled = true; btn.innerHTML = '<i class="bi bi-arrow-repeat spin me-2"></i>AUTHORIZING...'; }
             try {
-                if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
-                    try {
-                        await Promise.race([
-                            window.NexgoldGlobalSync.pullAllFromFirestore(),
-                            new Promise(function(res) { setTimeout(res, 2500); })
-                        ]);
-                    } catch (_) {}
-                }
                 const result = await Promise.resolve(Auth.adminLogin(email, pw));
                 if (result && result.success) {
                     showToast(result.message || 'Admin access granted — syncing Firestore…', 'success');

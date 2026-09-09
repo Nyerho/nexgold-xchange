@@ -49,13 +49,23 @@
                 }).catch(function (err) {
                     const code = (err && err.code) || 'unknown';
                     const msg = (err && err.message) || String(err);
-                    console.warn('[GlobalSync] 🔴 ' + label + ' FAILED — code=' + code + ' msg=' + msg);
+                    const FB = window.FB || {};
+                    const isAuthed = !!(FB.auth && FB.auth.currentUser);
+                    console.warn('[GlobalSync] 🔴 ' + label + ' FAILED — code=' + code + ' msg=' + msg +
+                        ' | isAuthed=' + isAuthed + ' | authUid=' + (isAuthed && FB.auth.currentUser ? FB.auth.currentUser.uid : 'N/A'));
                     if (code === 'permission-denied' || code === 'permission-denied') {
-                        console.warn('[GlobalSync] ⚠️  PERMISSION DENIED on /' + collectionName + ' — is admin authenticated? Check that admins/<authUid> doc exists in Firestore.');
+                        console.warn('[GlobalSync] ⚠️  PERMISSION DENIED on /' + collectionName +
+                            (isAuthed
+                                ? ' — Admin auth UID=' + FB.auth.currentUser.uid + ' has NO matching /admins/<uid> Firestore doc! Login again to auto-create it.'
+                                : ' — no user signed in (expected during login screen)'));
                     }
-                    if (window.showToast && typeof window.showToast === 'function') {
+                    if (window.showToast && typeof window.showToast === 'function' && isAuthed) {
                         try {
-                            window.showToast('Sync warning: /' + collectionName + ' (' + code + ')', 'warning');
+                            if (code === 'permission-denied' || code === 'permission-denied') {
+                                window.showToast('⚠️ Admin permissions not active. Logout & login once to fix, then click Sync.', 'warning', 8000);
+                            } else {
+                                window.showToast('Sync warning: /' + collectionName + ' (' + code + ')', 'warning');
+                            }
                         } catch (_) {}
                     }
                     return { size: 0, docs: [] };
