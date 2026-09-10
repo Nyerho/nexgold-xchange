@@ -43,7 +43,7 @@ function initializeDashboard() {
         if (clearAvatarBtn) clearAvatarBtn.style.display = 'inline-block';
     }
 
-    if (pfl && !user.photoURL) pfl.textContent = letter;
+    if (profilePicLetter && user && !user.photoURL) profilePicLetter.textContent = letter;
 
     // ================================
     // PROFILE PICTURE UPLOAD
