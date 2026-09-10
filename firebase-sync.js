@@ -72,15 +72,21 @@
                         });
                     }
                     if (collectionName === 'transactions') {
-                        return db.collection('transactions').where('_userId', '==', String(authUser.uid)).get()
-                            .then(function (snap) {
-                                console.debug('[GlobalSync] 🟢 own transactions pulled:', snap && snap.size != null ? snap.size : '?');
-                                return snap;
-                            })
-                            .catch(function (err) {
-                                console.warn('[GlobalSync] own transactions read failed:', (err && err.code) || err.message || err);
-                                return { size: 0, docs: [] };
-                            });
+                        const docsById = new Map();
+                        const addTxnSnap = function (snap) {
+                            if (!snap || !snap.docs) return;
+                            snap.docs.forEach(function (doc) { docsById.set(String(doc.id), doc); });
+                        };
+                        const txnReads = [
+                            db.collection('transactions').where('_userId', '==', String(authUser.uid)).get().then(addTxnSnap).catch(function () {}),
+                            db.collection('transactions').where('fbUid', '==', String(authUser.uid)).get().then(addTxnSnap).catch(function () {}),
+                            db.collection('transactions').where('userEmail', '==', String(authUser.email || '').trim().toLowerCase()).get().then(addTxnSnap).catch(function () {})
+                        ];
+                        return Promise.all(txnReads).then(function () {
+                            const docs = Array.from(docsById.values());
+                            console.debug('[GlobalSync] 🟢 own transactions pulled:', docs.length);
+                            return { size: docs.length, docs: docs };
+                        });
                     }
                     return db.collection(collectionName).doc(String(authUser.uid)).get().then(function (doc) {
                         console.debug('[GlobalSync] 🟢 own ' + label + ' pulled:', doc && doc.exists ? '1 doc' : '0 docs');
@@ -555,6 +561,8 @@
             } else {
                 listen(db.collection('wallets').doc(String(user.uid)));
                 listen(db.collection('transactions').where('_userId', '==', String(user.uid)));
+                listen(db.collection('transactions').where('fbUid', '==', String(user.uid)));
+                listen(db.collection('transactions').where('userEmail', '==', String(user.email || '').trim().toLowerCase()));
                 listen(db.collection('users').doc(String(user.uid)));
                 // A user may have a pending transaction whose owner field was
                 // written with a legacy/local ID. Listen to its document

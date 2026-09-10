@@ -132,6 +132,8 @@ service cloud.firestore {
       allow read: if isAdmin() || isSuperAdmin() ||
         (isSignedIn() && (
            resource.data.get('_userId', null) == request.auth.uid ||
+           resource.data.get('fbUid', '') == request.auth.uid ||
+           resource.data.get('userEmail', '').lower() == userEmail() ||
            (resource.data.get('userId', null) != null && (
              resource.data.userId == request.auth.uid ||
              (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
@@ -142,6 +144,8 @@ service cloud.firestore {
       allow create: if isSignedIn() && (
         isAdmin() || isSuperAdmin() ||
         request.resource.data.get('_userId', null) == request.auth.uid ||
+        request.resource.data.get('fbUid', '') == request.auth.uid ||
+        request.resource.data.get('userEmail', '').lower() == userEmail() ||
         (request.resource.data.get('userId', null) != null && request.resource.data.userId == request.auth.uid)
       );
 
