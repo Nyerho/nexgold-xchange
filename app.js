@@ -1954,7 +1954,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (_saveWallet) {
             window.saveWallet = function (w) {
                 _saveWallet(w);
-                if (auth.currentUser) mirrorToFirestore('wallets', auth.currentUser.uid, w);
             };
         }
         if (_saveTransaction) {

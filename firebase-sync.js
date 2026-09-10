@@ -349,7 +349,7 @@
     }
 
     async function writeWalletByLocalUserId(db, auth, userIdOrEmail, wallet) {
-        if (!db || !wallet) return;
+        if (!db || !wallet) return { success: false, message: 'Firebase wallet writer is unavailable' };
         try {
             const users = _get('users', []);
             const tgt = String(userIdOrEmail || '').trim().toLowerCase();
@@ -357,21 +357,33 @@
                        users.find(u => String(u.email || '').trim().toLowerCase() === tgt) ||
                        users.find(u => String(u.fbUid || '') === String(userIdOrEmail));
             let fbUid = user ? user.fbUid : null;
-            if (!fbUid && auth && auth.currentUser && user &&
-                String(user.email || '').trim().toLowerCase() === String(auth.currentUser.email || '').trim().toLowerCase()) {
-                fbUid = auth.currentUser.uid;
+            if (!fbUid && user && user.email) {
+                const userSnap = await db.collection('users')
+                    .where('email', '==', String(user.email).trim().toLowerCase())
+                    .limit(1).get();
+                if (userSnap && userSnap.docs && userSnap.docs.length) fbUid = userSnap.docs[0].id;
             }
             if (!fbUid && wallet.fbUid) fbUid = wallet.fbUid;
-            if (!fbUid) return;
+            if (!fbUid && user && user.id != null) {
+                const localSnap = await db.collection('users')
+                    .where('localUserId', '==', user.id)
+                    .limit(1).get();
+                if (localSnap && localSnap.docs && localSnap.docs.length) fbUid = localSnap.docs[0].id;
+            }
+            if (!fbUid) return { success: false, message: 'No Firebase UID found for target user' };
             await db.collection('wallets').doc(String(fbUid)).set({
                 userId: (user && user.id) || wallet.userId || userIdOrEmail,
+                fbUid: String(fbUid),
+                email: user && user.email ? String(user.email).trim().toLowerCase() : null,
                 main:  parseFloat(wallet.main  || 0),
                 vault: parseFloat(wallet.vault || 0),
                 bonus: parseFloat(wallet.bonus || 0),
                 updatedAt: new Date().toISOString()
             }, { merge: true });
+            return { success: true, fbUid: String(fbUid) };
         } catch (e) {
-            console.debug('[GlobalSync] wallet push skipped:', e.code || e.message);
+            console.warn('[GlobalSync] wallet push failed:', e.code || e.message);
+            return { success: false, message: e.message || 'Firestore wallet write failed', code: e.code };
         }
     }
 
@@ -547,24 +559,26 @@
         if (window.Admin) {
             const origCredit = window.Admin.creditWallet ? window.Admin.creditWallet.bind(window.Admin) : null;
             if (origCredit) {
-                window.Admin.creditWallet = async function (userId, walletType, grams) {
-                    const r = origCredit(userId, walletType, grams);
+                window.Admin.creditWallet = async function (userId, walletType, usdAmount) {
+                    const r = await Promise.resolve(origCredit(userId, walletType, usdAmount));
                     if (r && r.success) {
                         const wallet = (typeof window.getUserWallet === 'function') ? window.getUserWallet(userId) : null;
-                        if (wallet) await writeWalletByLocalUserId(db, auth, userId, wallet);
+                        const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet) : { success: false, message: 'Wallet not found after update' };
+                        if (!write.success) return { success: false, message: r.message + ' locally, but Firestore sync failed: ' + write.message };
                     }
-                    if (analytics) { try { analytics.logEvent('admin_credit', { userId, walletType, grams }); } catch (_) {} }
+                    if (analytics) { try { analytics.logEvent('admin_credit', { userId, walletType, usdAmount }); } catch (_) {} }
                     return r;
                 };
             }
 
             const origDebit = window.Admin.debitWallet ? window.Admin.debitWallet.bind(window.Admin) : null;
             if (origDebit) {
-                window.Admin.debitWallet = async function (userId, walletType, grams) {
-                    const r = origDebit(userId, walletType, grams);
+                window.Admin.debitWallet = async function (userId, walletType, usdAmount) {
+                    const r = await Promise.resolve(origDebit(userId, walletType, usdAmount));
                     if (r && r.success) {
                         const wallet = (typeof window.getUserWallet === 'function') ? window.getUserWallet(userId) : null;
-                        if (wallet) await writeWalletByLocalUserId(db, auth, userId, wallet);
+                        const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet) : { success: false, message: 'Wallet not found after update' };
+                        if (!write.success) return { success: false, message: r.message + ' locally, but Firestore sync failed: ' + write.message };
                     }
                     return r;
                 };
