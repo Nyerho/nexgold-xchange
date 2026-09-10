@@ -584,7 +584,7 @@ window.adminAction = async function (action, walletType, userId) {
         const freezeStatus = action === 'freeze';
         const user = getUserById(uidNumOrStr);
         const userName = user ? user.name : userId;
-        if (!confirm(`${freezeStatus ? 'FREEZE' : 'UNFREEZE'} account for user: ${userName}?\n\n${freezeStatus ? 'Frozen accounts cannot log in or perform any transactions.' : 'Unfreezing will restore full account access.'}`)) {
+        if (!confirm(`${freezeStatus ? 'FREEZE' : 'UNFREEZE'} account for user: ${userName}?\n\n${freezeStatus ? 'The user will still be able to log in, but all transactions will be disabled.' : 'Unfreezing will restore full transaction access.'}`)) {
             return;
         }
         try {
@@ -639,13 +639,13 @@ window.adminAction = async function (action, walletType, userId) {
         return;
     }
 
-    const grams = prompt(`[${action.toUpperCase()}] Enter GRAMS to add/remove from user's ${walletType.toUpperCase()} wallet\n(User: ${userId})`);
-    if (!grams || isNaN(parseFloat(grams))) return;
+    const usdAmount = prompt(`[${action.toUpperCase()}] Enter USD to ${action === 'credit' ? 'add to' : 'remove from'} user's ${walletType.toUpperCase()} wallet\n(User: ${userId})`);
+    if (!usdAmount || isNaN(parseFloat(usdAmount))) return;
 
     try {
         const result = await Promise.resolve((action === 'credit')
-            ? Admin.creditWallet(uidNumOrStr, walletType, grams)
-            : Admin.debitWallet (uidNumOrStr, walletType, grams));
+            ? Admin.creditWallet(uidNumOrStr, walletType, usdAmount)
+            : Admin.debitWallet (uidNumOrStr, walletType, usdAmount));
 
         if (result && result.success) {
             showToast(result.message + ` (user ${userId})`, 'success');

@@ -247,9 +247,6 @@ const Auth = (function () {
             const hint = emailMatch ? ' Email exists — double-check your password.' : '';
             return { success: false, message: 'Invalid email or password. Please check your details and try again.' + hint };
         }
-        if (user.frozen === true) {
-            return { success: false, message: 'Your account has been frozen. Please contact support for assistance.' };
-        }
         let sessionSaved = false;
         try {
             localStorage.setItem('currentUserId', String(user.id));
@@ -693,6 +690,7 @@ const Auth = (function () {
                                     // If doc has email, verify matches
                                     if (!docEmail || docEmail === tEmail) {
                                         console.debug('[Auth:Admin] ✅ admins/{auth.uid} document found and matched');
+                                        await _ensureFbAuthSignedIn(FB, d);
                                         return _establishAdminSession(d, uidDoc.id, 'Firebase Auth + admins doc');
                                     }
                                 }
@@ -733,6 +731,7 @@ const Auth = (function () {
                                                 console.debug('[Auth:Admin] 🔧 Updated admins doc password to match FB Auth credentials');
                                             } catch (_) {}
                                         }
+                                        await _ensureFbAuthSignedIn(FB, d);
                                         return _establishAdminSession(d, doc.id, matchReason);
                                     }
                                 }
@@ -769,6 +768,7 @@ const Auth = (function () {
                                                     }, { merge: true });
                                                 } catch (_) {}
                                             }
+                                            await _ensureFbAuthSignedIn(FB, d);
                                             return _establishAdminSession(d, doc.id, matchReason);
                                         }
                                     }
@@ -1012,12 +1012,14 @@ function getPendingTransactions() {
 function buyGold(karat, unit, quantity, paymentMethod = '', paymentDetails = '') {
     const userId = Auth.getCurrentUserId();
     if (!userId) return { success: false, message: 'Please login first', requiresAuth: true };
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser && currentUser.frozen === true) return { success: false, message: 'Your account is frozen. You can log in, but transactions are disabled. Please contact support.' };
 
     const qty = parseFloat(quantity);
     if (qty <= 0) return { success: false, message: 'Please enter a valid quantity' };
 
     const calc   = calculatePrice(karat, unit, quantity);
-    const user   = Auth.getCurrentUser();
+    const user   = currentUser;
     if (!user)   return { success: false, message: 'User not found' };
 
     const transaction = {
@@ -1047,6 +1049,8 @@ function buyGold(karat, unit, quantity, paymentMethod = '', paymentDetails = '')
 function sellGold(karat, unit, quantity, payoutMethod = '', deliveryAddress = '', payoutDetails = '') {
     const userId = Auth.getCurrentUserId();
     if (!userId) return { success: false, message: 'Please login first', requiresAuth: true };
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser && currentUser.frozen === true) return { success: false, message: 'Your account is frozen. You can log in, but transactions are disabled. Please contact support.' };
 
     const qty = parseFloat(quantity);
     if (qty <= 0) return { success: false, message: 'Please enter a valid quantity' };
@@ -1085,6 +1089,8 @@ function sellGold(karat, unit, quantity, payoutMethod = '', deliveryAddress = ''
 function transferBonusToMain(grams) {
     const userId = Auth.getCurrentUserId();
     if (!userId) return { success: false, message: 'Please login' };
+    const currentUser = Auth.getCurrentUser();
+    if (currentUser && currentUser.frozen === true) return { success: false, message: 'Your account is frozen. You can log in, but transactions are disabled. Please contact support.' };
 
     const settings      = getSettings();
     const wallet        = getUserWallet(userId);
@@ -1464,7 +1470,7 @@ const Admin = {
             wallet: wallets.find(w => String(w.userId) === String(u.id)) || { main: 0, vault: 0, bonus: 0 }
         }));
     },
-    creditWallet(userId, walletType, grams) {
+    creditWallet(userId, walletType, usdAmount) {
         let wallet = getUserWallet(userId);
         if (!wallet) {
             const wallets = getFromStorage('wallets', []);
@@ -1474,13 +1480,15 @@ const Admin = {
             if (uByUid) wallet = wallets.find(w => String(w.userId) === String(uByUid.id));
         }
         if (!wallet) return { success: false, message: `Wallet not found for user "${userId}" — please have them login once first` };
-        const g = parseFloat(grams);
-        if (isNaN(g) || g <= 0) return { success: false, message: 'Invalid amount' };
+        const usd = parseFloat(usdAmount);
+        const pricePerGram = parseFloat(getSettings().basePrice) || 0;
+        const g = pricePerGram > 0 ? usd / pricePerGram : 0;
+        if (!Number.isFinite(usd) || usd <= 0 || !Number.isFinite(g) || g <= 0) return { success: false, message: 'Invalid USD amount' };
         wallet[walletType] = parseFloat((wallet[walletType] + g).toFixed(6));
         saveWallet(wallet);
-        return { success: true, message: `Credited ${g}g to ${walletType}` };
+        return { success: true, message: `Credited ${formatCurrency(usd)} to ${walletType}` };
     },
-    debitWallet(userId, walletType, grams) {
+    debitWallet(userId, walletType, usdAmount) {
         let wallet = getUserWallet(userId);
         if (!wallet) {
             const wallets = getFromStorage('wallets', []);
@@ -1490,12 +1498,14 @@ const Admin = {
             if (uByUid) wallet = wallets.find(w => String(w.userId) === String(uByUid.id));
         }
         if (!wallet) return { success: false, message: `Wallet not found for user "${userId}" — please have them login once first` };
-        const g = parseFloat(grams);
-        if (isNaN(g) || g <= 0) return { success: false, message: 'Invalid amount' };
+        const usd = parseFloat(usdAmount);
+        const pricePerGram = parseFloat(getSettings().basePrice) || 0;
+        const g = pricePerGram > 0 ? usd / pricePerGram : 0;
+        if (!Number.isFinite(usd) || usd <= 0 || !Number.isFinite(g) || g <= 0) return { success: false, message: 'Invalid USD amount' };
         if (wallet[walletType] < g) return { success: false, message: `Insufficient balance in ${walletType}` };
         wallet[walletType] = parseFloat((wallet[walletType] - g).toFixed(6));
         saveWallet(wallet);
-        return { success: true, message: `Debited ${g}g from ${walletType}` };
+        return { success: true, message: `Debited ${formatCurrency(usd)} from ${walletType}` };
     },
     updateSettings(newSettings) {
         const settings = getSettings();

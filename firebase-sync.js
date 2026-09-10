@@ -59,10 +59,14 @@
                                 ? ' — Admin auth UID=' + FB.auth.currentUser.uid + ' has NO matching /admins/<uid> Firestore doc! Login again to auto-create it.'
                                 : ' — no user signed in (expected during login screen)'));
                     }
-                    if (window.showToast && typeof window.showToast === 'function' && isAuthed) {
+                    const isAdminSession = localStorage.getItem('adminLoggedIn') === 'true';
+                    const adminEmail = String(localStorage.getItem('currentAdminEmail') || '').trim().toLowerCase();
+                    const authEmail = String(isAuthed && FB.auth.currentUser ? (FB.auth.currentUser.email || '') : '').trim().toLowerCase();
+                    const isAdminAuth = isAdminSession && (!adminEmail || !authEmail || adminEmail === authEmail);
+                    if (window.showToast && typeof window.showToast === 'function' && isAdminAuth) {
                         try {
                             if (code === 'permission-denied' || code === 'permission-denied') {
-                                window.showToast('⚠️ Admin permissions not active. Logout & login once to fix, then click Sync.', 'warning', 8000);
+                                window.showToast('Sync is waiting for admin permissions. Please sign in to the admin portal again, then click Sync.', 'warning');
                             } else {
                                 window.showToast('Sync warning: /' + collectionName + ' (' + code + ')', 'warning');
                             }
