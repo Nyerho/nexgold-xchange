@@ -504,6 +504,42 @@
         if (!FB || !FB.enabled || !FB.db) return;
         const { auth, db, analytics } = FB;
 
+        let realtimeUnsubs = [];
+        let realtimePullTimer = null;
+        function scheduleRealtimePull() {
+            clearTimeout(realtimePullTimer);
+            realtimePullTimer = setTimeout(function () {
+                pullAllFromFirestore(db).catch(function (e) {
+                    console.debug('[GlobalSync] realtime pull skipped:', e && e.message);
+                });
+            }, 150);
+        }
+        function installRealtimeListeners(user) {
+            realtimeUnsubs.forEach(function (unsubscribe) { try { unsubscribe(); } catch (_) {} });
+            realtimeUnsubs = [];
+            if (!user || !db || typeof db.collection !== 'function') return;
+            const isAdminSession = localStorage.getItem('adminLoggedIn') === 'true';
+            const listen = function (query) {
+                if (!query || typeof query.onSnapshot !== 'function') return;
+                try {
+                    realtimeUnsubs.push(query.onSnapshot(function () {
+                        scheduleRealtimePull();
+                    }, function (err) {
+                        console.debug('[GlobalSync] realtime listener unavailable:', err && (err.code || err.message));
+                    }));
+                } catch (_) {}
+            };
+            if (isAdminSession) {
+                ['users', 'wallets', 'transactions', 'certificates', 'admins'].forEach(function (name) {
+                    listen(db.collection(name));
+                });
+            } else {
+                listen(db.collection('wallets').doc(String(user.uid)));
+                listen(db.collection('transactions').where('_userId', '==', String(user.uid)));
+                listen(db.collection('users').doc(String(user.uid)));
+            }
+        }
+
         async function ensureRestoredAdminDocument() {
             if (!auth || !auth.currentUser || localStorage.getItem('adminLoggedIn') !== 'true') return false;
             const adminUser = auth.currentUser;
@@ -535,6 +571,7 @@
 
         if (auth && typeof auth.onAuthStateChanged === 'function') {
             auth.onAuthStateChanged(function (user) {
+                installRealtimeListeners(user);
                 if (user) setTimeout(ensureRestoredAdminDocument, 0);
             });
         }

@@ -605,7 +605,12 @@ function initializeDashboard() {
 
         Sync.on('transactionUpdated', function (tx) {
             if (!tx) return;
-            if (String(tx.userId) !== String(userId)) return;
+            const currentUser = Auth.getCurrentUser && Auth.getCurrentUser();
+            const matchesUser = String(tx.userId || '') === String(userId) ||
+                String(tx.fbUid || '') === String(currentUser && currentUser.fbUid || '') ||
+                String(tx._userId || '') === String(currentUser && currentUser.fbUid || '') ||
+                String(tx.userEmail || '').trim().toLowerCase() === String(currentUser && currentUser.email || '').trim().toLowerCase();
+            if (!matchesUser) return;
             refreshDashboard();
             if (tx.status === TX_STATUS_APPROVED) {
                 if (tx.type === 'BUY') {
@@ -652,7 +657,13 @@ function initializeDashboard() {
         });
 
         Sync.on('transactionAdded', function (tx) {
-            if (!tx || String(tx.userId) !== String(userId)) return;
+            if (!tx) return;
+            const currentUser = Auth.getCurrentUser && Auth.getCurrentUser();
+            const matchesUser = String(tx.userId || '') === String(userId) ||
+                String(tx.fbUid || '') === String(currentUser && currentUser.fbUid || '') ||
+                String(tx._userId || '') === String(currentUser && currentUser.fbUid || '') ||
+                String(tx.userEmail || '').trim().toLowerCase() === String(currentUser && currentUser.email || '').trim().toLowerCase();
+            if (!matchesUser) return;
             refreshDashboard();
         });
     }
