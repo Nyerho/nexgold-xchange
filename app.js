@@ -261,20 +261,42 @@ const Auth = (function () {
         _localLogin: _loginLocal,
         getCurrentUser() {
             const userId = localStorage.getItem('currentUserId');
-            if (!userId) return null;
             const users = getFromStorage('users', []);
-            let u = users.find(x => String(x.id) === String(userId));
-            if (!u) u = users.find(x => x.id == userId);
+            let u = userId ? users.find(x => String(x.id) === String(userId)) : null;
+            if (!u && userId) u = users.find(x => x.id == userId || String(x.fbUid || '') === String(userId));
+            const FB = (typeof window !== 'undefined') && window.FB;
+            const fbUser = FB && FB.enabled && FB.auth ? FB.auth.currentUser : null;
+            if (!u && fbUser) {
+                const fbEmail = String(fbUser.email || '').trim().toLowerCase();
+                u = users.find(x => String(x.fbUid || '') === String(fbUser.uid)) ||
+                    users.find(x => String(x.email || '').trim().toLowerCase() === fbEmail);
+                if (u) {
+                    try { localStorage.setItem('currentUserId', String(u.id)); } catch (_) {}
+                }
+            }
             return u || null;
         },
-        getCurrentUserId() {
+    getCurrentUserId() {
             const raw = localStorage.getItem('currentUserId');
-            if (!raw) return null;
-            const n = parseInt(raw);
-            if (Number.isFinite(n) && String(n) === String(raw).trim()) return n;
             const users = getFromStorage('users', []);
-            const match = users.find(x => String(x.id) === String(raw) || x.id == raw);
-            return match ? match.id : (Number.isFinite(n) ? n : null);
+            if (raw) {
+                const n = parseInt(raw);
+                if (Number.isFinite(n) && String(n) === String(raw).trim()) return n;
+                const match = users.find(x => String(x.id) === String(raw) || x.id == raw || String(x.fbUid || '') === String(raw));
+                if (match) return match.id;
+            }
+            const FB = (typeof window !== 'undefined') && window.FB;
+            const fbUser = FB && FB.enabled && FB.auth ? FB.auth.currentUser : null;
+            if (fbUser) {
+                const fbEmail = String(fbUser.email || '').trim().toLowerCase();
+                const match = users.find(x => String(x.fbUid || '') === String(fbUser.uid)) ||
+                    users.find(x => String(x.email || '').trim().toLowerCase() === fbEmail);
+                if (match) {
+                    try { localStorage.setItem('currentUserId', String(match.id)); } catch (_) {}
+                    return match.id;
+                }
+            }
+            return null;
         },
         checkSession(redirect = true) {
             const user = this.getCurrentUser();
@@ -928,6 +950,13 @@ function getUserWallet(userId) {
     let w = wallets.find(x => String(x.userId) === String(userId));
     if (!w) w = wallets.find(x => x.userId === userId);
     if (!w) w = wallets.find(x => x.id == userId);
+    if (!w) {
+        const user = getUserById(userId);
+        if (user) {
+            w = wallets.find(x => String(x.userId) === String(user.id));
+            if (!w && user.fbUid) w = wallets.find(x => String(x.fbUid || '') === String(user.fbUid));
+        }
+    }
     return w || null;
 }
 const Sync = (function () {
@@ -1339,10 +1368,17 @@ function renderCertificatesList(userId, containerId) {
 }
 
 function renderWalletCards(userId) {
-    const wallet   = getUserWallet(userId);
     const user     = Auth.getCurrentUser();
+    const wallet   = getUserWallet(userId) || { main: 0, vault: 0, bonus: 0 };
     const settings = getSettings();
-    if (!wallet || !user) return;
+    if (!user) return;
+
+    const displayName = String(user.name || '').trim() ||
+        String(user.email || '').split('@')[0].trim() || 'Investor';
+    ['welcomeName', 'welcomeNameBig', 'welcomeHeader'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = displayName;
+    });
 
     const pricePerGram = settings.basePrice;
     const mainUSD  = wallet.main  * pricePerGram;
@@ -1371,9 +1407,6 @@ function renderWalletCards(userId) {
         if (gramsEl) gramsEl.textContent = formatNumber(wallet.bonus, 4);
         if (usdEl)   usdEl.textContent   = formatCurrency(bonusUSD);
     }
-    const welcomeEl = document.getElementById('welcomeName');
-    if (welcomeEl) welcomeEl.textContent = user.name;
-
     document.querySelectorAll('.live-price').forEach(el => {
         el.textContent = formatCurrency(pricePerGram) + '/g (24K)';
     });

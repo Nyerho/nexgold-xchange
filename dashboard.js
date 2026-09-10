@@ -21,7 +21,7 @@ function initializeDashboard() {
         const el = document.getElementById(id);
         if (el) {
             if (user && user.photoURL) {
-                el.innerHTML = `<img src="${String(user.photoURL)}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                el.innerHTML = `<img src="${String(user.photoURL)}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
                 el.textContent = '';
                 el.style.background = 'transparent';
             } else {
@@ -79,7 +79,7 @@ function initializeDashboard() {
                     ['userAvatar', 'userAvatarBig'].forEach(id => {
                         const el = document.getElementById(id);
                         if (el) {
-                            el.innerHTML = `<img src="${dataUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">';
+                            el.innerHTML = `<img src="${dataUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
                             el.textContent = '';
                             if (el.id === 'userAvatarBig') el.removeAttribute('data-letter');
                             el.style.background = 'transparent';
@@ -380,11 +380,14 @@ function initializeDashboard() {
         }
     })();
 
+    const displayName = user
+        ? (String(user.name || '').trim() || String(user.email || '').split('@')[0].trim() || 'Investor')
+        : 'Investor';
     const welcomeHeader = document.getElementById('welcomeHeader');
-    if (welcomeHeader && user) welcomeHeader.textContent = user.name;
+    if (welcomeHeader && user) welcomeHeader.textContent = displayName;
     ['welcomeName', 'welcomeNameBig'].forEach(id => {
         const el = document.getElementById(id);
-        if (el && user) el.textContent = user.name;
+        if (el && user) el.textContent = displayName;
     });
     const emailEl = document.getElementById('userEmail');
     if (emailEl && user) emailEl.textContent = user.email;
@@ -542,6 +545,7 @@ function initializeDashboard() {
     }, 120);
 
     if (window.Sync) {
+        Sync.on('users', refreshDashboard);
         Sync.on('wallets', refreshDashboard);
         Sync.on('walletUpdated', refreshDashboard);
         Sync.on('transactions', refreshDashboard);
