@@ -274,15 +274,13 @@
                 tx = tx || existingNumeric;
                 if (!tx) {
                     let userId = d.userId;
-                    if (!userId && d._userId) {
-                        const u = byFbUid.get(String(d._userId));
-                        if (u) userId = u.id;
-                    }
-                    if (!userId && d.userId) {
-                        const u = byId.get(String(d.userId));
-                        if (!u) return;
-                        userId = u.id;
-                    }
+                    const remoteUid = d.fbUid || d._userId || '';
+                    const remoteEmail = String(d.userEmail || '').trim().toLowerCase();
+                    const mappedUser = (userId && (byId.get(String(userId)) || byFbUid.get(String(userId)))) ||
+                        (remoteUid && byFbUid.get(String(remoteUid))) ||
+                        (remoteEmail && byEmailNow.get(remoteEmail));
+                    if (mappedUser) userId = mappedUser.id;
+                    if (!userId) return;
                     const numId = Number(rawId);
                     const newId = Number.isFinite(numId) && String(numId) === rawId.trim()
                         ? numId
@@ -290,6 +288,8 @@
                     tx = {
                         id: newId,
                         userId: userId,
+                        fbUid: String(d.fbUid || d._userId || ''),
+                        userEmail: remoteEmail,
                         type: d.type || 'BUY',
                         karat: d.karat || '24K',
                         unit: d.unit || 'Gram',
@@ -315,6 +315,12 @@
                     txnsDirty = true;
                 } else {
                     let dirty = false;
+                    const owner = (tx.userId && (byId.get(String(tx.userId)) || byFbUid.get(String(tx.userId)))) ||
+                        (d._userId && byFbUid.get(String(d._userId))) ||
+                        (d.userEmail && byEmailNow.get(String(d.userEmail).trim().toLowerCase()));
+                    if (owner && String(tx.userId) !== String(owner.id)) { tx.userId = owner.id; dirty = true; }
+                    if (d.fbUid || d._userId) { tx.fbUid = String(d.fbUid || d._userId); dirty = true; }
+                    if (d.userEmail) { tx.userEmail = String(d.userEmail).trim().toLowerCase(); dirty = true; }
                     if (d.status &&
                         (d.status === TX_STATUS_APPROVED || d.status === TX_STATUS_REJECTED) &&
                         tx.status !== d.status) {

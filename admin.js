@@ -338,7 +338,9 @@ window.renderPendingApprovals = function () {
     }
 
     const rows = pending.map(t => {
-        const u = allUsers.find(x => String(x.id) === String(t.userId));
+        const u = getUserById(t.userId || t.fbUid || t._userId || t.userEmail) ||
+            allUsers.find(x => String(x.fbUid || '') === String(t.fbUid || t._userId || '')) ||
+            allUsers.find(x => String(x.email || '').trim().toLowerCase() === String(t.userEmail || '').trim().toLowerCase());
         const userDisplay = u
             ? `<strong style="color:#fff;">${u.name}</strong><br><small class="text-muted">${u.email}</small>`
             : `<strong>Unknown User</strong>`;
@@ -414,7 +416,7 @@ window.renderPendingApprovals = function () {
 window.approveTxn = async function (txId) {
     const tx = getTransactionById(txId);
     if (!tx) { showToast('Transaction not found — refresh pending list', 'error'); renderPendingApprovals(); return; }
-    const u = getUserById(tx.userId);
+    const u = getUserById(tx.userId || tx.fbUid || tx._userId || tx.userEmail);
     const ok = confirm(`APPROVE this ${tx.type} of ${formatNumber(tx.grams,4)}g ${tx.karat} gold for ${u ? u.name : 'Unknown user'}?\n\nThis will ${tx.type==='BUY' ? 'credit gold wallet + issue insurance certificate': 'debit gold wallet'}.`);
     if (!ok) return;
 

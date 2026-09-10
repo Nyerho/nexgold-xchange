@@ -912,6 +912,8 @@ function getUserById(userId) {
     const uid = String(userId);
     let u = users.find(x => String(x.id) === uid);
     if (!u) u = users.find(x => String(x.fbUid || '') === uid);
+    if (!u) u = users.find(x => String(x.localUserId || '') === uid);
+    if (!u && uid.includes('@')) u = users.find(x => String(x.email || '').trim().toLowerCase() === uid.toLowerCase());
     if (!u) u = users.find(x => x.id == userId);
     return u || null;
 }
@@ -920,11 +922,13 @@ function getUserWallet(userId) {
     let w = wallets.find(x => String(x.userId) === String(userId));
     if (!w) w = wallets.find(x => x.userId === userId);
     if (!w) w = wallets.find(x => x.id == userId);
+    if (!w) w = wallets.find(x => String(x.fbUid || '') === String(userId));
     if (!w) {
         const user = getUserById(userId);
         if (user) {
             w = wallets.find(x => String(x.userId) === String(user.id));
             if (!w && user.fbUid) w = wallets.find(x => String(x.fbUid || '') === String(user.fbUid));
+            if (!w && user.localUserId) w = wallets.find(x => String(x.userId) === String(user.localUserId));
         }
     }
     return w || null;
@@ -1063,6 +1067,8 @@ function sellGold(karat, unit, quantity, payoutMethod = '', deliveryAddress = ''
     const transaction = {
         id: Date.now(),
         userId,
+        fbUid: currentUser && currentUser.fbUid ? String(currentUser.fbUid) : '',
+        userEmail: currentUser && currentUser.email ? String(currentUser.email).trim().toLowerCase() : '',
         type: 'SELL',
         karat,
         unit,
@@ -1533,9 +1539,12 @@ const Admin = {
         if (tx.status === TX_STATUS_APPROVED) return { success: true, message: 'Already approved', transaction: tx };
         if (tx.status === TX_STATUS_REJECTED) return { success: false, message: 'Cannot approve a rejected transaction' };
 
-        const users = getFromStorage('users', []);
-        const user = users.find(u => String(u.id) === String(tx.userId));
-        const wallet = getUserWallet(tx.userId);
+        const ownerKey = tx.userId || tx.fbUid || tx._userId || tx.userEmail;
+        const user = getUserById(ownerKey);
+        const wallet = getUserWallet(ownerKey) ||
+            (tx.fbUid ? getUserWallet(tx.fbUid) : null) ||
+            (tx._userId ? getUserWallet(tx._userId) : null) ||
+            (tx.userEmail ? getUserWallet(tx.userEmail) : null);
         console.info('[Admin:Approve] found user=', !!user, '| wallet=', !!wallet, '| userId=', tx.userId, '| type=', tx.type);
         if (!wallet) return { success: false, message: 'User wallet not found — unable to process' };
 
