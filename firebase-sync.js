@@ -41,15 +41,29 @@
         if (!db) return false;
         try {
             console.debug('[GlobalSync] Pulling all collections from Firestore…');
+            const FB = window.FB || {};
+            const authUser = FB.auth && FB.auth.currentUser ? FB.auth.currentUser : null;
+            const isAdminSession = localStorage.getItem('adminLoggedIn') === 'true';
 
             function guardedGet(label, collectionName) {
+                // Firestore rules intentionally allow regular users to read only
+                // their own documents. Collection reads therefore fail on a
+                // phone/new device even though the user's account is valid.
+                if (!isAdminSession && authUser && (collectionName === 'users' || collectionName === 'wallets')) {
+                    return db.collection(collectionName).doc(String(authUser.uid)).get().then(function (doc) {
+                        console.debug('[GlobalSync] 🟢 own ' + label + ' pulled:', doc && doc.exists ? '1 doc' : '0 docs');
+                        return { size: doc && doc.exists ? 1 : 0, docs: doc && doc.exists ? [doc] : [] };
+                    }).catch(function (err) {
+                        console.warn('[GlobalSync] own /' + collectionName + ' read failed:', (err && err.code) || err.message || err);
+                        return { size: 0, docs: [] };
+                    });
+                }
                 return db.collection(collectionName).get().then(function (snap) {
                     console.debug('[GlobalSync] 🟢 ' + label + ' pulled: ' + (snap && snap.size != null ? snap.size : '?') + ' docs');
                     return snap;
                 }).catch(function (err) {
                     const code = (err && err.code) || 'unknown';
                     const msg = (err && err.message) || String(err);
-                    const FB = window.FB || {};
                     const isAuthed = !!(FB.auth && FB.auth.currentUser);
                     console.warn('[GlobalSync] 🔴 ' + label + ' FAILED — code=' + code + ' msg=' + msg +
                         ' | isAuthed=' + isAuthed + ' | authUid=' + (isAuthed && FB.auth.currentUser ? FB.auth.currentUser.uid : 'N/A'));
