@@ -265,9 +265,15 @@
                 const newM = parseFloat(d.main  || 0);
                 const newV = parseFloat(d.vault || 0);
                 const newB = parseFloat(d.bonus || 0);
-                if (newM > parseFloat(wallet.main  || 0)) { wallet.main  = newM; walletsDirty = true; }
-                if (newV > parseFloat(wallet.vault || 0)) { wallet.vault = newV; walletsDirty = true; }
-                if (newB > parseFloat(wallet.bonus || 0)) { wallet.bonus = newB; walletsDirty = true; }
+                // Firestore is canonical. Do not use max() here: approved
+                // sells legitimately reduce the main balance.
+                if (newM !== parseFloat(wallet.main  || 0)) { wallet.main  = newM; walletsDirty = true; }
+                if (newV !== parseFloat(wallet.vault || 0)) { wallet.vault = newV; walletsDirty = true; }
+                if (newB !== parseFloat(wallet.bonus || 0)) { wallet.bonus = newB; walletsDirty = true; }
+                if (d.updatedAt && wallet._firestoreUpdatedAt !== d.updatedAt) {
+                    wallet._firestoreUpdatedAt = d.updatedAt;
+                    walletsDirty = true;
+                }
             });
 
             const byEmailNow = new Map();
@@ -818,7 +824,14 @@
                         if (!txWrite.success) return { success: false, message: 'Approved locally, but Firestore sync failed: ' + txWrite.message };
                         if (r.transaction && r.transaction.userId && typeof window.getUserWallet === 'function') {
                             const w = window.getUserWallet(r.transaction.userId);
-                            if (w) await writeWalletByLocalUserId(db, auth, r.transaction.userId, w);
+                            if (w) {
+                                const walletWrite = await writeWalletByLocalUserId(db, auth, r.transaction.userId, w);
+                                if (!walletWrite.success) {
+                                    return { success: false, message: 'Sale approved locally, but wallet balance sync failed: ' + walletWrite.message };
+                                }
+                            } else {
+                                return { success: false, message: 'Sale approved locally, but the user wallet could not be found for Firestore sync' };
+                            }
                         }
                     }
                     return r;
