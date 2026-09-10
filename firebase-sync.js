@@ -186,16 +186,44 @@
                     const email = String(d.email || '').trim().toLowerCase();
                     user = byEmail.get(email);
                 }
+                // A newly created account can have its wallet document ready
+                // before its profile has been pulled/created on this device.
+                // When this is the signed-in user's own wallet, do not discard
+                // it just because localUserId is unavailable yet.
+                if (!user && !isAdminSession && authUser && String(authUser.uid) === String(fbUid)) {
+                    const authEmail = String(authUser.email || d.email || '').trim().toLowerCase();
+                    user = byEmail.get(authEmail) || {
+                        id: d.userId || (Date.now() + Math.floor(Math.random() * 9999999)),
+                        fbUid: String(fbUid),
+                        name: String(authUser.displayName || (authEmail ? authEmail.split('@')[0] : 'User')).trim(),
+                        email: authEmail,
+                        password: '__firebase_only__',
+                        country: '',
+                        address: '',
+                        role: 'user',
+                        createdAt: new Date().toISOString(),
+                        _fromFirebaseWallet: true
+                    };
+                    if (!byId.has(String(user.id))) {
+                        localUsers.push(user);
+                        byId.set(String(user.id), user);
+                        if (user.email) byEmail.set(String(user.email).trim().toLowerCase(), user);
+                        byFbUid.set(String(fbUid), user);
+                        usersDirty = true;
+                    }
+                }
                 if (!user && !d.userId) return;
                 if (!user) return;
                 const userId = user.id;
-                let wallet = walletsByUid.get(String(userId));
+                let wallet = walletsByUid.get(String(userId)) ||
+                    localWallets.find(w => String(w.fbUid || '') === String(fbUid));
                 if (!wallet) {
-                    wallet = { userId: userId, main: 0, vault: 0, bonus: 0 };
+                    wallet = { userId: userId, fbUid: String(fbUid), main: 0, vault: 0, bonus: 0 };
                     localWallets.push(wallet);
                     walletsByUid.set(String(userId), wallet);
                     walletsDirty = true;
                 }
+                if (!wallet.fbUid) { wallet.fbUid = String(fbUid); walletsDirty = true; }
                 const newM = parseFloat(d.main  || 0);
                 const newV = parseFloat(d.vault || 0);
                 const newB = parseFloat(d.bonus || 0);
