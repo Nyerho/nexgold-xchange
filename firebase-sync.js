@@ -497,17 +497,25 @@
     }
 
     async function writeTxnById(db, txId) {
-        if (!db || !txId) return;
+        if (!db || !txId) return { success: false, message: 'Transaction sync is unavailable' };
         try {
             const txs = _get('transactions', []);
             const tx = txs.find(t => String(t.id) === String(txId));
-            if (!tx) return;
-            await db.collection('transactions').doc(String(txId)).set({
+            if (!tx) return { success: false, message: 'Transaction not found locally' };
+            const owner = (typeof window.getUserById === 'function')
+                ? window.getUserById(tx.userId || tx.fbUid || tx._userId || tx.userEmail)
+                : null;
+            const ownerUid = String(tx.fbUid || tx._userId || (owner && owner.fbUid) || '').trim();
+            const payload = {
                 ...tx,
+                ...(ownerUid ? { _userId: ownerUid, fbUid: ownerUid } : {}),
                 _syncedAt: new Date().toISOString()
-            }, { merge: true });
+            };
+            await db.collection('transactions').doc(String(txId)).set(payload, { merge: true });
+            return { success: true };
         } catch (e) {
             console.debug('[GlobalSync] tx push skipped:', e.code || e.message);
+            return { success: false, message: e.message || 'Transaction Firestore write failed', code: e.code };
         }
     }
 
@@ -548,6 +556,33 @@
                 listen(db.collection('wallets').doc(String(user.uid)));
                 listen(db.collection('transactions').where('_userId', '==', String(user.uid)));
                 listen(db.collection('users').doc(String(user.uid)));
+                // A user may have a pending transaction whose owner field was
+                // written with a legacy/local ID. Listen to its document
+                // directly as a fallback; document reads are authorized by the
+                // transaction ownership rules even when a collection query is not.
+                _get('transactions', []).filter(function (tx) {
+                    return tx && tx.status === TX_STATUS_PENDING;
+                }).forEach(function (tx) {
+                    const txRef = db.collection('transactions').doc(String(tx.id));
+                    try {
+                        realtimeUnsubs.push(txRef.onSnapshot(function (snap) {
+                            if (!snap || !snap.exists) return;
+                            const remote = snap.data() || {};
+                            const current = _get('transactions', []);
+                            const index = current.findIndex(function (item) {
+                                return String(item.id) === String(tx.id);
+                            });
+                            if (index < 0) return;
+                            current[index] = Object.assign({}, current[index], remote);
+                            _set('transactions', current);
+                            if (window.Sync && typeof window.Sync.emit === 'function') {
+                                window.Sync.emit('transactionUpdated', current[index]);
+                            }
+                        }, function (err) {
+                            console.debug('[GlobalSync] direct transaction listener unavailable:', err && (err.code || err.message));
+                        }));
+                    } catch (_) {}
+                });
             }
         }
 
@@ -771,7 +806,8 @@
                 window.Admin.approveTransaction = async function (txId) {
                     const r = origApprove(txId);
                     if (r && r.success) {
-                        await writeTxnById(db, txId);
+                        const txWrite = await writeTxnById(db, txId);
+                        if (!txWrite.success) return { success: false, message: 'Approved locally, but Firestore sync failed: ' + txWrite.message };
                         if (r.transaction && r.transaction.userId && typeof window.getUserWallet === 'function') {
                             const w = window.getUserWallet(r.transaction.userId);
                             if (w) await writeWalletByLocalUserId(db, auth, r.transaction.userId, w);
