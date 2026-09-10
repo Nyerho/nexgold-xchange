@@ -498,6 +498,42 @@
         if (!FB || !FB.enabled || !FB.db) return;
         const { auth, db, analytics } = FB;
 
+        async function ensureRestoredAdminDocument() {
+            if (!auth || !auth.currentUser || localStorage.getItem('adminLoggedIn') !== 'true') return false;
+            const adminUser = auth.currentUser;
+            const adminRef = db.collection('admins').doc(String(adminUser.uid));
+            try {
+                const existing = await adminRef.get();
+                if (!existing.exists) {
+                    await adminRef.set({
+                        name: String(localStorage.getItem('currentAdminName') || adminUser.displayName || adminUser.email || 'Admin'),
+                        email: String(adminUser.email || localStorage.getItem('currentAdminEmail') || '').trim().toLowerCase(),
+                        role: 'admin',
+                        active: true,
+                        createdAt: new Date().toISOString(),
+                        _autoCreatedFromRestoredSession: true,
+                        _syncedAt: new Date().toISOString()
+                    });
+                } else if (existing.data() && existing.data().active !== false) {
+                    await adminRef.set({
+                        _lastAdminLogin: new Date().toISOString(),
+                        _syncedAt: new Date().toISOString()
+                    }, { merge: true });
+                }
+                return true;
+            } catch (e) {
+                console.warn('[GlobalSync] Admin UID document repair failed:', e.code || e.message);
+                return false;
+            }
+        }
+
+        if (auth && typeof auth.onAuthStateChanged === 'function') {
+            auth.onAuthStateChanged(function (user) {
+                if (user) setTimeout(ensureRestoredAdminDocument, 0);
+            });
+        }
+        setTimeout(ensureRestoredAdminDocument, 0);
+
         if (!window.__nexgoldGlobalSyncInstalled) {
             let authResolved = false;
             let authUser = null;
