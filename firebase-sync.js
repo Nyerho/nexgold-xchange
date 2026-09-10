@@ -50,6 +50,27 @@
                 // their own documents. Collection reads therefore fail on a
                 // phone/new device even though the user's account is valid.
                 if (!isAdminSession && authUser && (collectionName === 'users' || collectionName === 'wallets')) {
+                    if (collectionName === 'wallets') {
+                        const walletDocsById = new Map();
+                        const addWalletSnap = function (snap) {
+                            if (!snap || !snap.docs) return;
+                            snap.docs.forEach(function (doc) { walletDocsById.set(String(doc.id), doc); });
+                        };
+                        const walletReads = [
+                            db.collection('wallets').doc(String(authUser.uid)).get().then(function (doc) {
+                                if (doc && doc.exists) walletDocsById.set(String(doc.id), doc);
+                            }).catch(function () {}),
+                            db.collection('wallets').where('fbUid', '==', String(authUser.uid)).limit(5).get()
+                                .then(addWalletSnap).catch(function () {}),
+                            db.collection('wallets').where('email', '==', String(authUser.email || '').trim().toLowerCase()).limit(5).get()
+                                .then(addWalletSnap).catch(function () {})
+                        ];
+                        return Promise.all(walletReads).then(function () {
+                            const docs = Array.from(walletDocsById.values());
+                            console.debug('[GlobalSync] 🟢 own wallets pulled:', docs.length, 'linked doc(s)');
+                            return { size: docs.length, docs: docs };
+                        });
+                    }
                     return db.collection(collectionName).doc(String(authUser.uid)).get().then(function (doc) {
                         console.debug('[GlobalSync] 🟢 own ' + label + ' pulled:', doc && doc.exists ? '1 doc' : '0 docs');
                         return { size: doc && doc.exists ? 1 : 0, docs: doc && doc.exists ? [doc] : [] };
