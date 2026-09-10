@@ -49,7 +49,7 @@
                 // Firestore rules intentionally allow regular users to read only
                 // their own documents. Collection reads therefore fail on a
                 // phone/new device even though the user's account is valid.
-                if (!isAdminSession && authUser && (collectionName === 'users' || collectionName === 'wallets')) {
+                if (!isAdminSession && authUser && (collectionName === 'users' || collectionName === 'wallets' || collectionName === 'transactions')) {
                     if (collectionName === 'wallets') {
                         const walletDocsById = new Map();
                         const addWalletSnap = function (snap) {
@@ -70,6 +70,17 @@
                             console.debug('[GlobalSync] 🟢 own wallets pulled:', docs.length, 'linked doc(s)');
                             return { size: docs.length, docs: docs };
                         });
+                    }
+                    if (collectionName === 'transactions') {
+                        return db.collection('transactions').where('_userId', '==', String(authUser.uid)).get()
+                            .then(function (snap) {
+                                console.debug('[GlobalSync] 🟢 own transactions pulled:', snap && snap.size != null ? snap.size : '?');
+                                return snap;
+                            })
+                            .catch(function (err) {
+                                console.warn('[GlobalSync] own transactions read failed:', (err && err.code) || err.message || err);
+                                return { size: 0, docs: [] };
+                            });
                     }
                     return db.collection(collectionName).doc(String(authUser.uid)).get().then(function (doc) {
                         console.debug('[GlobalSync] 🟢 own ' + label + ' pulled:', doc && doc.exists ? '1 doc' : '0 docs');
