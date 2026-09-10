@@ -400,6 +400,36 @@ function initializeDashboard() {
     setupCalculator('buy');
     setupCalculator('sell');
 
+    function refreshSellQuote() {
+        const karatEl = document.getElementById('sellkarat');
+        const unitEl = document.getElementById('sellunit');
+        const qtyEl = document.getElementById('sellquantity');
+        if (!karatEl || !unitEl || !qtyEl) return;
+        const qty = parseFloat(qtyEl.value) || 0;
+        const result = qty > 0 ? calculatePrice(karatEl.value, unitEl.value, qty) : {
+            totalGrams: 0, karatMultiplier: 1, basePrice: 0, totalPrice: 0
+        };
+        const pureGrams = result.totalGrams * (result.karatMultiplier || 1);
+        const gramsEl = document.getElementById('sellbreakdownGrams');
+        const ppgEl = document.getElementById('sellbreakdownPPG');
+        const totalEl = document.getElementById('selltotalPrice');
+        const displayEl = document.getElementById('sellDisplayTotal');
+        const display2El = document.getElementById('sellDisplayTotal2');
+        if (gramsEl) gramsEl.textContent = formatNumber(pureGrams, 4) + ' g';
+        if (ppgEl) ppgEl.textContent = formatCurrency(result.basePrice || 0);
+        if (totalEl) totalEl.textContent = formatCurrency(result.totalPrice || 0);
+        if (displayEl) displayEl.textContent = formatCurrency(result.totalPrice || 0);
+        if (display2El) display2El.textContent = formatCurrency(result.totalPrice || 0);
+    }
+    ['sellkarat', 'sellunit', 'sellquantity'].forEach(function (id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', refreshSellQuote);
+            el.addEventListener('change', refreshSellQuote);
+        }
+    });
+    refreshSellQuote();
+
     setupPaymentMethodDisplay();
 
     setInterval(() => {
@@ -510,14 +540,25 @@ function initializeDashboard() {
             document.getElementById('sidebarBackdrop')?.classList.remove('show');
         });
     });
-    document.getElementById('mobileMenuToggle')?.addEventListener('click', function () {
-        document.getElementById('sidebar')?.classList.toggle('open');
-        document.getElementById('sidebarBackdrop')?.classList.toggle('show');
-    });
-    document.getElementById('sidebarBackdrop')?.addEventListener('click', function () {
-        document.getElementById('sidebar')?.classList.remove('open');
-        document.getElementById('sidebarBackdrop')?.classList.remove('show');
-    });
+    const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarBackdrop = document.getElementById('sidebarBackdrop');
+    function setMobileMenuOpen(open) {
+        if (sidebar) sidebar.classList.toggle('open', !!open);
+        if (sidebarBackdrop) sidebarBackdrop.classList.toggle('show', !!open);
+        if (mobileMenuToggle) {
+            mobileMenuToggle.setAttribute('aria-expanded', open ? 'true' : 'false');
+            mobileMenuToggle.setAttribute('aria-label', open ? 'Close navigation' : 'Open navigation');
+        }
+    }
+    if (mobileMenuToggle) {
+        mobileMenuToggle.addEventListener('click', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            setMobileMenuOpen(!(sidebar && sidebar.classList.contains('open')));
+        });
+    }
+    if (sidebarBackdrop) sidebarBackdrop.addEventListener('click', function () { setMobileMenuOpen(false); });
 
     document.querySelectorAll('.switchToBuy, .switchToSell, .switchToInvest, .switchToTransfer').forEach(btn => {
         btn.addEventListener('click', function (e) {
@@ -604,7 +645,7 @@ function initializeDashboard() {
                         btn.disabled = false;
                         btn.style.background = '';
                         btn.style.boxShadow = '';
-                        btn.innerHTML = '<i class="bi bi-check-circle-fill"></i> I HAVE MADE PAYMENT · <span id="sellDisplayTotal2">$0.00</span>';
+                        btn.innerHTML = '<i class="bi bi-cash-coin"></i> SUBMIT SELL ORDER · <span id="sellDisplayTotal2">$0.00</span>';
                     }
                 }
             }
@@ -853,7 +894,7 @@ function setupSellSubmit(userId) {
                 } else {
                     showToast(result.message, 'success');
                     sellSubmitBtn.disabled = false;
-                    sellSubmitBtn.innerHTML = original;
+                    sellSubmitBtn.innerHTML = '<i class="bi bi-cash-coin"></i> SUBMIT SELL ORDER · <span id="sellDisplayTotal2">$0.00</span>';
                 }
                 refreshDashboardViews(userId);
             } else {

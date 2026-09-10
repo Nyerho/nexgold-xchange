@@ -174,8 +174,13 @@ function setupCalculator(prefix = '') {
 function updateBreakdown(prefix, result) {
     const g  = document.getElementById(prefix + 'breakdownGrams');
     const p  = document.getElementById(prefix + 'breakdownPPG');
-    if (g) g.textContent = formatNumber(result.totalGrams, 4) + ' g';
-    if (p) p.textContent = formatCurrency(result.pricePerGram);
+    const isSell = prefix === 'sell';
+    const pureGrams = isSell
+        ? result.totalGrams * result.karatMultiplier
+        : result.totalGrams;
+    const displayedPricePerGram = isSell ? result.basePrice : result.pricePerGram;
+    if (g) g.textContent = formatNumber(pureGrams, 4) + ' g';
+    if (p) p.textContent = formatCurrency(displayedPricePerGram);
 }
 
 // ========================================

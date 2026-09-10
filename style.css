@@ -1726,6 +1726,9 @@ body[data-page="dashboard"] .dashboard-wrapper {
     border-radius: 10px;
     cursor: pointer;
     padding: 0 11px;
+    appearance: none;
+    -webkit-appearance: none;
+    color: inherit;
 }
 .nav-hamburger span {
     display: block; height: 2px;
