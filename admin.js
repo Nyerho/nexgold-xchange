@@ -113,7 +113,7 @@ async function initializeAdmin() {
                     name: tpl.name || 'User ' + String(tpl.fbUid || '').slice(-4),
                     country: '—',
                     address: '',
-                    password: 'password',
+                    password: '__firebase_only__',
                     createdAt: new Date().toISOString(),
                     _source: 'seeded-from-auth',
                     _seededAt: new Date().toISOString(),

@@ -12,20 +12,13 @@ const TX_STATUS_PENDING  = 'PENDING';
 const TX_STATUS_APPROVED = 'APPROVED';
 const TX_STATUS_REJECTED = 'REJECTED';
 
-// Default admin credentials (fallback if admins collection empty or offline)
-// You should change these in production or rely on Firestore admins collection
-const DEFAULT_ADMIN_EMAIL = 'admin@nexgold.exchange';
-const DEFAULT_ADMIN_PASSWORD = 'admin123';
-
 // Helper to get current admin email from session (for audit fields)
 function getCurrentAdminEmail() {
     try {
         const stored = localStorage.getItem('currentAdminEmail');
         if (stored) return stored;
     } catch (_) {}
-    // Fallback for legacy sessions
-    const legacyOk = localStorage.getItem('adminLoggedIn') === 'true';
-    return legacyOk ? DEFAULT_ADMIN_EMAIL : 'system@nexgold.exchange';
+    return 'system@nexgold.exchange';
 }
 
 // ========================================
@@ -683,10 +676,6 @@ const Auth = (function () {
                 return _establishAdminSession(localMatch, localMatch.id, 'local cache');
             }
 
-            // 2. If we have a default admin email hardcoded AND they are providing it, let them in as a last resort
-            const _isDefaultCreds = () =>
-                (tEmail === DEFAULT_ADMIN_EMAIL.toLowerCase() && tPwd === DEFAULT_ADMIN_PASSWORD);
-
             // 3. Try Firestore + Firebase Auth fallbacks (async)
             const FB = (typeof window !== 'undefined') && window.FB;
             if (FB && FB.enabled && (FB.db || FB.auth)) {
@@ -877,34 +866,10 @@ const Auth = (function () {
                     }
 
                     // --- Strategy F: Default bootstrap credentials ---
-                    if (_isDefaultCreds()) {
-                        console.debug('[Auth:Admin] ⚠️  Using default bootstrap admin credentials');
-                        const defaultAdminData = { name: 'Bootstrap Admin', email: DEFAULT_ADMIN_EMAIL, role: 'super' };
-                        if (FB.db) {
-                            try {
-                                await FB.db.collection('admins').doc('bootstrap-default').set({
-                                    ...defaultAdminData,
-                                    password: DEFAULT_ADMIN_PASSWORD,
-                                    active: true,
-                                    createdAt: new Date().toISOString()
-                                }, { merge: true });
-                            } catch (_) {}
-                        }
-                        return _establishAdminSession(defaultAdminData, 'bootstrap-default', 'default credentials');
-                    }
 
                     console.warn('[Auth:Admin] ❌ All strategies exhausted for email=', tEmail, '| FB Auth ok?', fbSignInOk);
                     return { success: false, message: 'Invalid admin email or password' };
                 })();
-            }
-
-            // 4. No Firestore/Auth available offline -> default admin fallback
-            if (_isDefaultCreds()) {
-                return _establishAdminSession(
-                    { name: 'Bootstrap Admin', email: DEFAULT_ADMIN_EMAIL, role: 'super' },
-                    'bootstrap-default',
-                    'default credentials'
-                );
             }
 
             return { success: false, message: 'Invalid admin email or password' };
@@ -2146,50 +2111,6 @@ window.authDump = function authDump() {
     console.groupEnd();
     return info;
 };
-
-/* ========================================
-   DEMO USER SEEDER (console + auth page banner)
-   ======================================== */
-const DEMO_USER = {
-    name: 'Demo User',
-    email: 'demo@nexgold.exchange',
-    password: 'Demo@123',
-    country: 'Global',
-    address: '1 NEXGOLD Tower, Digital Gold District'
-};
-Object.assign(window, { DEMO_USER });
-
-window.createDemoUser = async function () {
-    try {
-        const r = await Auth.register(DEMO_USER.name, DEMO_USER.email, DEMO_USER.password, DEMO_USER.country, DEMO_USER.address);
-        if (!r.success && (r.message || '').includes('already registered')) {
-            const l = await Auth.login(DEMO_USER.email, DEMO_USER.password);
-            console.log('[DEMO] Already existed -> logged in.');
-            return l;
-        }
-        if (r && r.success) {
-            const uid = r.user.id;
-            const wallets = getFromStorage('wallets', []);
-            const w = wallets.find(x => String(x.userId) === String(uid));
-            if (w) {
-                w.main  = parseFloat((w.main + 1.5).toFixed(4));
-                w.bonus = parseFloat((w.bonus + 0.5).toFixed(4));
-                saveWallet(w);
-                saveTransaction({
-                    id: Date.now() - 1000, userId: uid, type: 'BUY', karat: '24K',
-                    grams: 1.5, price: 1.5 * getSettings().basePrice, date: new Date(Date.now() - 86400000).toISOString(),
-                    note: 'Demo seed', status: TX_STATUS_APPROVED
-                });
-            }
-        }
-        return r;
-    } catch (e) {
-        console.error('[DEMO] create failed:', e);
-        return { success: false, message: e.message };
-    }
-};
-console.log('%c NEXGOLD DEMO CREDENTIALS', 'background:#000;color:#D4AF37;font-size:16px;font-weight:900;padding:12px 18px;border:2px solid #D4AF37;border-radius:8px;');
-console.log('%c Email:    demo@nexgold.exchange\n Password: Demo@123\n Admin PW: admin123\n Run `await createDemoUser()` in console to seed.', 'font-family:monospace;font-size:13px;color:#D4AF37;');
 
 /* ========================================
    ADMIN BULK USER IMPORT UTILITIES
