@@ -411,7 +411,7 @@
         }
     }
 
-    async function writeWalletByLocalUserId(db, auth, userIdOrEmail, wallet) {
+    async function writeWalletByLocalUserId(db, auth, userIdOrEmail, wallet, adjustment) {
         if (!db || !wallet) return { success: false, message: 'Firebase wallet writer is unavailable' };
         try {
             const users = _get('users', []);
@@ -420,6 +420,10 @@
                        users.find(u => String(u.email || '').trim().toLowerCase() === tgt) ||
                        users.find(u => String(u.fbUid || '') === String(userIdOrEmail));
             let fbUid = user ? user.fbUid : null;
+            // If the caller supplied a Firebase Auth UID directly, use it.
+            if (!fbUid && typeof userIdOrEmail === 'string' && /^[A-Za-z0-9_-]{20,}$/.test(userIdOrEmail)) {
+                fbUid = String(userIdOrEmail);
+            }
             if (!fbUid && user && user.email) {
                 const userSnap = await db.collection('users')
                     .where('email', '==', String(user.email).trim().toLowerCase())
@@ -434,7 +438,7 @@
                 if (localSnap && localSnap.docs && localSnap.docs.length) fbUid = localSnap.docs[0].id;
             }
             if (!fbUid) return { success: false, message: 'No Firebase UID found for target user' };
-            await db.collection('wallets').doc(String(fbUid)).set({
+            const walletPayload = {
                 userId: (user && user.id) || wallet.userId || userIdOrEmail,
                 fbUid: String(fbUid),
                 email: user && user.email ? String(user.email).trim().toLowerCase() : null,
@@ -442,8 +446,33 @@
                 vault: parseFloat(wallet.vault || 0),
                 bonus: parseFloat(wallet.bonus || 0),
                 updatedAt: new Date().toISOString()
-            }, { merge: true });
-            return { success: true, fbUid: String(fbUid) };
+            };
+            const walletRef = db.collection('wallets').doc(String(fbUid));
+            await walletRef.set(walletPayload, { merge: true });
+            const savedWallet = await walletRef.get();
+            const savedData = savedWallet && savedWallet.exists ? (savedWallet.data() || {}) : {};
+            const verified = savedWallet && savedWallet.exists &&
+                parseFloat(savedData.main || 0) === walletPayload.main &&
+                parseFloat(savedData.vault || 0) === walletPayload.vault &&
+                parseFloat(savedData.bonus || 0) === walletPayload.bonus;
+            if (!verified) return { success: false, message: 'Firestore wallet write could not be verified' };
+            if (adjustment) {
+                await db.collection('adminWalletAdjustments').add({
+                    userId: walletPayload.userId,
+                    fbUid: String(fbUid),
+                    email: walletPayload.email,
+                    walletType: adjustment.walletType,
+                    action: adjustment.action,
+                    usdAmount: parseFloat(adjustment.usdAmount || 0),
+                    main: walletPayload.main,
+                    vault: walletPayload.vault,
+                    bonus: walletPayload.bonus,
+                    adminUid: auth && auth.currentUser ? auth.currentUser.uid : null,
+                    adminEmail: auth && auth.currentUser ? (auth.currentUser.email || null) : null,
+                    createdAt: new Date().toISOString()
+                });
+            }
+            return { success: true, fbUid: String(fbUid), wallet: savedData };
         } catch (e) {
             console.warn('[GlobalSync] wallet push failed:', e.code || e.message);
             return { success: false, message: e.message || 'Firestore wallet write failed', code: e.code };
@@ -626,7 +655,7 @@
                     const r = await Promise.resolve(origCredit(userId, walletType, usdAmount));
                     if (r && r.success) {
                         const wallet = (typeof window.getUserWallet === 'function') ? window.getUserWallet(userId) : null;
-                        const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet) : { success: false, message: 'Wallet not found after update' };
+                        const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet, { action: 'credit', walletType, usdAmount }) : { success: false, message: 'Wallet not found after update' };
                         if (!write.success) return { success: false, message: r.message + ' locally, but Firestore sync failed: ' + write.message };
                     }
                     if (analytics) { try { analytics.logEvent('admin_credit', { userId, walletType, usdAmount }); } catch (_) {} }
@@ -640,7 +669,7 @@
                     const r = await Promise.resolve(origDebit(userId, walletType, usdAmount));
                     if (r && r.success) {
                         const wallet = (typeof window.getUserWallet === 'function') ? window.getUserWallet(userId) : null;
-                        const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet) : { success: false, message: 'Wallet not found after update' };
+                        const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet, { action: 'debit', walletType, usdAmount }) : { success: false, message: 'Wallet not found after update' };
                         if (!write.success) return { success: false, message: r.message + ' locally, but Firestore sync failed: ' + write.message };
                     }
                     return r;

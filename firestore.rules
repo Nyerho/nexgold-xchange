@@ -123,6 +123,11 @@ service cloud.firestore {
       allow delete: if isAdmin() || isSuperAdmin();
     }
 
+    match /adminWalletAdjustments/{adjustmentId} {
+      allow read, create: if isAdmin() || isSuperAdmin();
+      allow update, delete: if isSuperAdmin();
+    }
+
     match /transactions/{txId} {
       allow read: if isAdmin() || isSuperAdmin() ||
         (isSignedIn() && (
