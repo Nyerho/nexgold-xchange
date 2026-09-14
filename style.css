@@ -3520,6 +3520,14 @@ textarea {
     transition: color .2s ease;
 }
 .foot-link:hover { color: #D4AF37; padding-left: 2px; }
+.footer-admin-link { color: #D4AF37; font-weight: 700; }
+.footer-admin-link:hover { color: #F4CF57; }
+.footer-admin-link:focus-visible,
+.auth-admin-link:focus-visible {
+    outline: 2px solid #F4CF57;
+    outline-offset: 4px;
+    border-radius: 3px;
+}
 .trust-logos {
     display: grid; grid-template-columns: repeat(4, 1fr);
     gap: 10px;

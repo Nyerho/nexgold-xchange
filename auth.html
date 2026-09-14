@@ -297,6 +297,8 @@
                         <div class="auth-foot-note">
                             <i class="bi bi-shield-lock-fill text-gold"></i>
                             Protected with enterprise-grade 256-bit TLS encryption
+                            <span class="auth-foot-divider" aria-hidden="true"> · </span>
+                            <a href="admin.html" class="auth-admin-link"><i class="bi bi-person-lock me-1" aria-hidden="true"></i>Admin Portal</a>
                         </div>
                     </div>
                 </div>
@@ -386,6 +388,14 @@
             letter-spacing: 0.3px;
         }
         .auth-foot-note i { margin-right: 6px; }
+        .auth-admin-link {
+            color: #D4AF37;
+            text-decoration: none;
+            font-weight: 700;
+            white-space: nowrap;
+            transition: color .2s ease;
+        }
+        .auth-admin-link:hover { color: #F4CF57; }
         .fw-600 { font-weight: 600 !important; }
 
         @media (max-width: 991px) {
