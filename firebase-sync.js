@@ -561,7 +561,7 @@
                 } catch (_) {}
             };
             if (isAdminSession) {
-                ['users', 'wallets', 'transactions', 'certificates', 'admins'].forEach(function (name) {
+                ['users', 'wallets', 'transactions', 'investments', 'certificates', 'admins'].forEach(function (name) {
                     listen(db.collection(name));
                 });
             } else {

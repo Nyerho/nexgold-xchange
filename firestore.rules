@@ -128,6 +128,21 @@ service cloud.firestore {
       allow update, delete: if isSuperAdmin();
     }
 
+    match /investments/{investmentId} {
+      allow read: if isAdmin() || isSuperAdmin() || (isSignedIn() && (
+        resource.data.get('fbUid', '') == request.auth.uid ||
+        resource.data.get('userId', '') == request.auth.uid ||
+        (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.localUserId == resource.data.get('userId', ''))
+      ));
+      allow create: if isAdmin() || isSuperAdmin() || (isSignedIn() && (
+        request.resource.data.get('fbUid', '') == request.auth.uid ||
+        request.resource.data.get('userId', '') == request.auth.uid
+      ));
+      allow update: if isAdmin() || isSuperAdmin();
+      allow delete: if isAdmin() || isSuperAdmin();
+    }
+
     match /transactions/{txId} {
       allow read: if isAdmin() || isSuperAdmin() ||
         (isSignedIn() && (
