@@ -179,6 +179,17 @@ function updateBreakdown(prefix, result) {
 // ========================================
 // AUTHENTICATION MODULE (shared)
 // ========================================
+async function signInWithFirebaseRetry(auth, email, password) {
+    try {
+        return await auth.signInWithEmailAndPassword(email, password);
+    } catch (err) {
+        const code = err && err.code;
+        if (!['auth/network-request-failed', 'auth/internal-error', 'auth/timeout'].includes(code)) throw err;
+        await new Promise(resolve => setTimeout(resolve, 400));
+        return auth.signInWithEmailAndPassword(email, password);
+    }
+}
+
 const Auth = (function () {
     const _registerLocal = function (name, email, password, country, address) {
         const tEmail = String(email).trim().toLowerCase();
@@ -363,7 +374,7 @@ const Auth = (function () {
                 const local = _loginLocal(tEmail, tPwd);
                 if (local && local.success) {
                     if (FB && FB.enabled && FB.auth && FB.auth.signInWithEmailAndPassword) {
-                        FB.auth.signInWithEmailAndPassword(tEmail, tPwd).catch(() => {});
+                        signInWithFirebaseRetry(FB.auth, tEmail, tPwd).catch(() => {});
                         if (FB.analytics) try { FB.analytics.logEvent('login', { method: 'email' }); } catch (_) {}
                     }
                     return Promise.resolve(local);
@@ -378,7 +389,7 @@ const Auth = (function () {
                 let doc = {};
                 let firestoreDocExists = false;
                 try {
-                    const uc = await fb.auth.signInWithEmailAndPassword(tEmail, tPwd);
+                    const uc = await signInWithFirebaseRetry(fb.auth, tEmail, tPwd);
                     fbUser = uc && uc.user;
                     fbUid = fbUser && fbUser.uid;
                     fbSignInOk = !!fbUid;
@@ -484,20 +495,27 @@ const Auth = (function () {
                 return firebaseTruthFirstLogin(FB);
             }
             if (typeof window !== 'undefined' && window.addEventListener) {
-                const FB_WAIT_MS = 6000;
+                // The Firebase compat SDK is loaded dynamically before auth is
+                // available. Do not misreport a slow first load as bad credentials.
+                const FB_WAIT_MS = 20000;
                 return new Promise(resolve => {
                     let settled = false;
+                    let readyListener;
                     const timer = setTimeout(() => {
                         if (settled) return;
                         settled = true;
+                        window.removeEventListener('firebase-ready', readyListener);
                         const fb = window.FB;
                         if (fb && fb.enabled && fb.auth && typeof fb.auth.signInWithEmailAndPassword === 'function') {
                             resolve(firebaseTruthFirstLogin(fb));
                         } else {
-                            resolve(doLocalOnlyLogin());
+                            doLocalOnlyLogin().then(local => resolve(local && local.success ? local : {
+                                success: false,
+                                message: 'Sign-in is taking longer than expected. Please wait a moment and try again.'
+                            }));
                         }
                     }, FB_WAIT_MS);
-                    window.addEventListener('firebase-ready', function once() {
+                    readyListener = function once() {
                         if (settled) return;
                         settled = true;
                         clearTimeout(timer);
@@ -506,9 +524,13 @@ const Auth = (function () {
                         if (fb && fb.enabled && fb.auth && typeof fb.auth.signInWithEmailAndPassword === 'function') {
                             resolve(firebaseTruthFirstLogin(fb));
                         } else {
-                            resolve(doLocalOnlyLogin());
+                            doLocalOnlyLogin().then(local => resolve(local && local.success ? local : {
+                                success: false,
+                                message: 'Online sign-in is temporarily unavailable. Please try again shortly.'
+                            }));
                         }
-                    }, { once: false });
+                    };
+                    window.addEventListener('firebase-ready', readyListener);
                 });
             }
             return doLocalOnlyLogin();
@@ -1825,13 +1847,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const local = _localLogin(trimmedEmail, trimmedPassword);
             if (local.success) {
                 try {
-                    await auth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword).catch(() => {});
+                    await signInWithFirebaseRetry(auth, trimmedEmail, trimmedPassword).catch(() => {});
                     if (analytics) analytics.logEvent('login', { method: 'email' });
                 } catch (_) {}
                 return local;
             }
             try {
-                const uc = await auth.signInWithEmailAndPassword(trimmedEmail, trimmedPassword);
+                const uc = await signInWithFirebaseRetry(auth, trimmedEmail, trimmedPassword);
                 const fbUid = uc.user.uid;
                 const snap = await db.collection('users').doc(fbUid).get().catch(() => ({ exists: false, data: () => ({}) }));
                 const firestoreDocExists = !!(snap && snap.exists);
