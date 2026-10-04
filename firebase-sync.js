@@ -692,7 +692,9 @@
         const origLogin = window.Auth && window.Auth.login ? window.Auth.login.bind(window.Auth) : null;
         if (origLogin) {
             window.Auth.login = async function (email, password) {
-                await pullAllFromFirestore(db).catch(() => {});
+                // Authenticate first. Pulling collections while signed out is
+                // denied by Firestore rules and can race the first auth-state
+                // transition, causing an otherwise valid first login to fail.
                 const r = await origLogin(email, password);
                 if (r && r.success) setTimeout(() => pullAllFromFirestore(db).catch(() => {}), 500);
                 return r;

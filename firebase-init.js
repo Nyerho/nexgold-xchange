@@ -4,6 +4,15 @@
    Exports: window.FB = { app, auth, db, analytics, enabled }
    ======================================== */
 (function () {
+    // Auth screens can load before the Firebase SDK finishes downloading.
+    // Publish a terminal ready state on both success and failure so login
+    // never mistakes initialization latency for invalid credentials.
+    window.FB = { enabled: false, ready: false };
+    function publishFirebaseState(state) {
+        window.FB = Object.assign({}, state, { ready: true });
+        window.dispatchEvent(new Event('firebase-ready'));
+    }
+
     // Firebase SDK loader (v10.x compatible script-tags fallback)
     const LOADED_SCRIPTS = [];
     function loadFirebaseScript(name) {
@@ -43,7 +52,7 @@
 
             if (!window.firebase || !firebase.initializeApp) {
                 console.warn('[Firebase] SDK failed to load; using localStorage-only mode.');
-                window.FB = { enabled: false };
+                publishFirebaseState({ enabled: false });
                 return;
             }
 
@@ -65,12 +74,11 @@
                 console.debug('[Firebase] Storage disabled:', e.message);
             }
 
-            window.FB = { app, auth, db, analytics, storage, enabled: true, config: firebaseConfig };
-            window.dispatchEvent(new Event('firebase-ready'));
+            publishFirebaseState({ app, auth, db, analytics, storage, enabled: true, config: firebaseConfig });
             console.info('[Firebase] Ready:', firebaseConfig.projectId, '| storage=', !!storage);
         } catch (err) {
             console.warn('[Firebase] Init failed → localStorage fallback:', err.message);
-            window.FB = { enabled: false };
+            publishFirebaseState({ enabled: false, error: err && err.message ? err.message : 'initialization-failed' });
         }
     })();
 })();
