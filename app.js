@@ -472,7 +472,7 @@ const Auth = (function () {
                     if (localAfter && localAfter.success) return localAfter;
                     return {
                         success: true,
-                        message: 'Welcome back! (Signed in via Firebase — account synced to this device.)',
+                        message: 'Welcome back!',
                         _crossDeviceSynced: true
                     };
                 }
@@ -554,9 +554,7 @@ const Auth = (function () {
                 } catch (_) {}
                 return {
                     success: true,
-                    message: sourceLabel
-                        ? `Admin access granted (via ${sourceLabel})`
-                        : 'Admin access granted'
+                    message: 'Admin access granted'
                 };
             };
 
@@ -641,7 +639,7 @@ const Auth = (function () {
                                 ' — Upload the updated firestore.rules file to Firebase Console -> Firestore -> Rules.');
                             if (window.showToast && typeof window.showToast === 'function') {
                                 try {
-                                    window.showToast('⚠️ Admin doc blocked by rules. Upload new firestore.rules (see chat).', 'warning', 10000);
+                                    window.showToast('Administrator account setup needs attention. Please contact support.', 'warning', 10000);
                                 } catch (_) {}
                             }
                         }
@@ -2259,15 +2257,15 @@ window.authDump = function authDump() {
                     if (typeof window.renderPendingApprovals === 'function') try { window.renderPendingApprovals(); } catch (_) {}
                 }, 2500);
             }
-            return { success: true, message: 'Force sync triggered (will complete within ~2s)', result: r };
+            return { success: true, message: 'Data refresh has started.', result: r };
         }
-        return { success: false, message: 'GlobalSync not available yet - page reload suggested' };
+        return { success: false, message: 'Data services are still loading. Please try again shortly.' };
     };
 
     window.adminSyncCurrentFirebaseAuthUser = async function adminSyncCurrentFirebaseAuthUser() {
         const FB = window.FB;
         if (!FB || !FB.enabled || !FB.auth || !FB.auth.currentUser) {
-            return { success: false, message: 'No Firebase Auth user signed in. Have them sign in first via the normal login page (auth.html).' };
+            return { success: false, message: 'Please sign in with an administrator account before refreshing data.' };
         }
         if (typeof hydrateSessionFromFirebaseAuth === 'function') {
             await hydrateSessionFromFirebaseAuth();
@@ -2275,7 +2273,7 @@ window.authDump = function authDump() {
         if (window.NexgoldGlobalSync) {
             try { window.NexgoldGlobalSync.forceSync(); } catch (_) {}
         }
-        return { success: true, message: 'Synced current Firebase Auth user to local + Firestore', user: FB.auth.currentUser.email };
+        return { success: true, message: 'Data refresh completed.', user: FB.auth.currentUser.email };
     };
 
     window.adminRefreshAdminDashboard = function adminRefreshAdminDashboard() {

@@ -22,7 +22,7 @@ async function initializeAdmin() {
             try {
                 const result = await Promise.resolve(Auth.adminLogin(email, pw));
                 if (result && result.success) {
-                    showToast(result.message || 'Admin access granted — syncing Firestore…', 'success');
+                    showToast(result.message || 'Admin access granted — loading your dashboard…', 'success');
                     let pulledCount = 0;
                     if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
                         try {
@@ -243,7 +243,7 @@ window.adminSyncAllNow = async function adminSyncAllNow() {
     window[syncKey] = true;
     try {
         const preUsers = getFromStorage('users', []).length;
-        showToast('🔄 Syncing from Firestore… (pass 1/3)', 'info');
+        showToast('Refreshing account data…', 'info');
         if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.forceSync === 'function') {
             try {
                 window.NexgoldGlobalSync.forceSync();
@@ -258,7 +258,7 @@ window.adminSyncAllNow = async function adminSyncAllNow() {
                 ]);
             } catch (_) {}
         }
-        showToast('🔄 Sync pass 2/3…', 'info');
+        showToast('Updating account records…', 'info');
         await new Promise(function (res) { setTimeout(res, 2000); });
         if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
             try {
@@ -268,7 +268,7 @@ window.adminSyncAllNow = async function adminSyncAllNow() {
                 ]);
             } catch (_) {}
         }
-        showToast('🔄 Sync pass 3/3 — finalizing…', 'info');
+        showToast('Finalizing data refresh…', 'info');
         await new Promise(function (res) { setTimeout(res, 2000); });
         if (window.NexgoldGlobalSync && typeof window.NexgoldGlobalSync.pullAllFromFirestore === 'function') {
             try {
@@ -283,14 +283,15 @@ window.adminSyncAllNow = async function adminSyncAllNow() {
             const users = getFromStorage('users', []).length;
             const newUsers = users - preUsers;
             const msg = newUsers > 0
-                ? ('✅ Sync complete! ' + users + ' users total (+' + newUsers + ' new)')
-                : ('✅ Sync complete! ' + users + ' users loaded locally');
+                ? ('Data refresh complete. ' + users + ' accounts available (+' + newUsers + ' new).')
+                : ('Data refresh complete. ' + users + ' accounts available.');
             showToast(msg, 'success');
         } catch (_) {
-            showToast('✅ Sync complete!', 'success');
+            showToast('Data refresh complete.', 'success');
         }
     } catch (e) {
-        showToast('Sync error: ' + e.message, 'error');
+        console.warn('[Admin] Account data refresh failed:', e);
+        showToast('Could not refresh account data. Please try again.', 'error');
     } finally {
         delete window[syncKey];
     }

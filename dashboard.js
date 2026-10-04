@@ -59,7 +59,7 @@ function initializeDashboard() {
                 const reader = new FileReader();
                 reader.onload = function (ev) {
                     const dataUrl = String(ev.target.result || '');
-                    // Show preview immediately
+                    // Render cached image data immediately.
                     if (profilePicImg) {
                         profilePicImg.src = dataUrl;
                         profilePicImg.style.display = 'block';

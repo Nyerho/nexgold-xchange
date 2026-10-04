@@ -441,7 +441,7 @@
     }
 
     async function writeWalletByLocalUserId(db, auth, userIdOrEmail, wallet, adjustment) {
-        if (!db || !wallet) return { success: false, message: 'Firebase wallet writer is unavailable' };
+        if (!db || !wallet) return { success: false, message: 'Balance updates are temporarily unavailable.' };
         try {
             const users = _get('users', []);
             const tgt = String(userIdOrEmail || '').trim().toLowerCase();
@@ -466,7 +466,7 @@
                     .limit(1).get();
                 if (localSnap && localSnap.docs && localSnap.docs.length) fbUid = localSnap.docs[0].id;
             }
-            if (!fbUid) return { success: false, message: 'No Firebase UID found for target user' };
+            if (!fbUid) return { success: false, message: 'The account could not be found for this balance update.' };
             const walletPayload = {
                 userId: (user && user.id) || wallet.userId || userIdOrEmail,
                 fbUid: String(fbUid),
@@ -484,7 +484,7 @@
                 parseFloat(savedData.main || 0) === walletPayload.main &&
                 parseFloat(savedData.vault || 0) === walletPayload.vault &&
                 parseFloat(savedData.bonus || 0) === walletPayload.bonus;
-            if (!verified) return { success: false, message: 'Firestore wallet write could not be verified' };
+            if (!verified) return { success: false, message: 'The balance update could not be verified.' };
             if (adjustment) {
                 await db.collection('adminWalletAdjustments').add({
                     userId: walletPayload.userId,
@@ -504,7 +504,7 @@
             return { success: true, fbUid: String(fbUid), wallet: savedData };
         } catch (e) {
             console.warn('[GlobalSync] wallet push failed:', e.code || e.message);
-            return { success: false, message: e.message || 'Firestore wallet write failed', code: e.code };
+            return { success: false, message: 'The balance update could not be completed. Please try again.', code: e.code };
         }
     }
 
@@ -513,7 +513,7 @@
         try {
             const txs = _get('transactions', []);
             const tx = txs.find(t => String(t.id) === String(txId));
-            if (!tx) return { success: false, message: 'Transaction not found locally' };
+            if (!tx) return { success: false, message: 'The transaction could not be found.' };
             const owner = (typeof window.getUserById === 'function')
                 ? window.getUserById(tx.userId || tx.fbUid || tx._userId || tx.userEmail)
                 : null;
@@ -527,7 +527,7 @@
             return { success: true };
         } catch (e) {
             console.debug('[GlobalSync] tx push skipped:', e.code || e.message);
-            return { success: false, message: e.message || 'Transaction Firestore write failed', code: e.code };
+            return { success: false, message: 'The transaction update could not be completed. Please try again.', code: e.code };
         }
     }
 
@@ -795,7 +795,7 @@
                     if (r && r.success) {
                         const wallet = (typeof window.getUserWallet === 'function') ? window.getUserWallet(userId) : null;
                         const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet, { action: 'credit', walletType, usdAmount }) : { success: false, message: 'Wallet not found after update' };
-                        if (!write.success) return { success: false, message: r.message + ' locally, but Firestore sync failed: ' + write.message };
+                        if (!write.success) return { success: false, message: 'The wallet balance update needs attention. Please verify the balance before retrying.' };
                     }
                     if (analytics) { try { analytics.logEvent('admin_credit', { userId, walletType, usdAmount }); } catch (_) {} }
                     return r;
@@ -809,7 +809,7 @@
                     if (r && r.success) {
                         const wallet = (typeof window.getUserWallet === 'function') ? window.getUserWallet(userId) : null;
                         const write = wallet ? await writeWalletByLocalUserId(db, auth, userId, wallet, { action: 'debit', walletType, usdAmount }) : { success: false, message: 'Wallet not found after update' };
-                        if (!write.success) return { success: false, message: r.message + ' locally, but Firestore sync failed: ' + write.message };
+                        if (!write.success) return { success: false, message: 'The wallet balance update needs attention. Please verify the balance before retrying.' };
                     }
                     return r;
                 };
@@ -821,16 +821,16 @@
                     const r = origApprove(txId);
                     if (r && r.success) {
                         const txWrite = await writeTxnById(db, txId);
-                        if (!txWrite.success) return { success: false, message: 'Approved locally, but Firestore sync failed: ' + txWrite.message };
+                        if (!txWrite.success) return { success: false, message: 'The transaction approval could not be synced. Please verify its status before retrying.' };
                         if (r.transaction && r.transaction.userId && typeof window.getUserWallet === 'function') {
                             const w = window.getUserWallet(r.transaction.userId);
                             if (w) {
                                 const walletWrite = await writeWalletByLocalUserId(db, auth, r.transaction.userId, w);
                                 if (!walletWrite.success) {
-                                    return { success: false, message: 'Sale approved locally, but wallet balance sync failed: ' + walletWrite.message };
+                                    return { success: false, message: 'The sale was approved, but the account balance update needs attention. Please review the account.' };
                                 }
                             } else {
-                                return { success: false, message: 'Sale approved locally, but the user wallet could not be found for Firestore sync' };
+                                return { success: false, message: 'The sale was approved, but its account balance could not be updated. Please review the account.' };
                             }
                         }
                     }

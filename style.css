@@ -2361,8 +2361,6 @@ textarea:disabled {
 
 /* ------- Accidental white page flashes / body bg ------- */
 body, html {
-    background: #000000 !important;
-    background-color: #000000 !important;
     color: #ffffff !important;
 }
 
@@ -3648,4 +3646,78 @@ textarea {
     .float-price-card.float-tr .fpc-foot span:first-child { display: none; }
     .float-verified-card.float-bl { left: 10px; bottom: 10px; padding: 8px 12px 8px 8px; }
     .float-verified-card.float-bl .fvc-sub { display: none; }
+}
+
+/* ========================================
+   SHARED GLASSMORPHISM BACKDROP
+   Visual-only shared styling; no behavior or layout changes.
+   ======================================== */
+body.bg-pattern {
+    background-color: #030303;
+    background-image:
+        linear-gradient(180deg, rgba(3, 3, 3, 0.16), rgba(3, 3, 3, 0.32)),
+        url("assest/nexgold-glass-bg.jpg"),
+        radial-gradient(circle at 25% 25%, rgba(212, 175, 55, 0.03) 1px, transparent 1px),
+        radial-gradient(circle at 75% 75%, rgba(212, 175, 55, 0.03) 1px, transparent 1px);
+    background-size: cover, cover, 50px 50px, 50px 50px;
+    background-position: center, center, 0 0, 0 0;
+    background-repeat: no-repeat, no-repeat, repeat, repeat;
+    background-attachment: fixed, fixed, fixed, fixed;
+}
+
+.hero-section,
+.auth-wrapper,
+.dashboard-wrapper {
+    background-color: transparent;
+}
+
+body.bg-pattern .hero-v2 {
+    background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.24)),
+        radial-gradient(ellipse at 85% 20%, rgba(212, 175, 55, 0.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 15% 90%, rgba(212, 175, 55, 0.08) 0%, transparent 45%),
+        transparent;
+}
+
+.hero-section {
+    background-image:
+        radial-gradient(ellipse at top right, rgba(212, 175, 55, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at bottom left, rgba(212, 175, 55, 0.05) 0%, transparent 50%);
+}
+
+.auth-wrapper {
+    background-image: radial-gradient(ellipse at center, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
+}
+
+.section-dark-stripe {
+    background: linear-gradient(180deg, rgba(5, 5, 5, 0.56), rgba(8, 7, 3, 0.50) 50%, rgba(5, 5, 5, 0.56));
+}
+
+body.bg-pattern .hero-section.hero-ref {
+    background:
+        radial-gradient(ellipse at 85% 20%, rgba(212, 175, 55, 0.14) 0%, transparent 55%),
+        radial-gradient(ellipse at 15% 90%, rgba(212, 175, 55, 0.08) 0%, transparent 45%),
+        transparent;
+}
+
+body.bg-pattern .hero-section.hero-ref::before {
+    background: linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.48) 20%, rgba(0, 0, 0, 0.16) 45%, rgba(0, 0, 0, 0.02) 55%, rgba(0, 0, 0, 0.12) 75%, rgba(0, 0, 0, 0.38) 100%);
+}
+
+body[data-page="admin"] #adminLoginScreen {
+    background: radial-gradient(ellipse at 30% 20%, rgba(212, 175, 55, 0.12) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(139, 92, 246, 0.08) 0%, transparent 55%), rgba(0, 0, 0, 0.22) !important;
+}
+
+.card,
+.auth-card,
+.sidebar,
+.trust-card,
+.calculator-card,
+.wallet-card,
+.hero-row {
+    background: rgba(10, 10, 10, 0.56) !important;
+    background-color: rgba(10, 10, 10, 0.56) !important;
+    border-color: rgba(212, 175, 55, 0.28) !important;
+    -webkit-backdrop-filter: blur(20px) saturate(145%);
+    backdrop-filter: blur(20px) saturate(145%);
 }
